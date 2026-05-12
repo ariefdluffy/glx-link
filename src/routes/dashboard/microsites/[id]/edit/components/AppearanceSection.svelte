@@ -24,7 +24,21 @@
 			{ value: 'shake', label: 'Shake', icon: '📳' },
 			{ value: 'wiggle', label: 'Wiggle', icon: '🐛' },
 			{ value: 'glow', label: 'Glow', icon: '✨' },
-			{ value: 'blur-in', label: 'Blur In', icon: '👁️' }
+			{ value: 'blur-in', label: 'Blur In', icon: '👁️' },
+			// Continuous (looping)
+			{ value: 'continuous-float', label: '▶ Terus Melayang', icon: '🎈' },
+			{ value: 'continuous-pulse', label: '▶ Terus Berdenyut', icon: '💗' },
+			{ value: 'continuous-wiggle', label: '▶ Terus Goyang', icon: '🦐' },
+			{ value: 'continuous-breathe', label: '▶ Terus Bernapas', icon: '🫁' },
+			{ value: 'continuous-bounce', label: '▶ Terus Memantul', icon: '🏀' },
+			{ value: 'continuous-shake', label: '▶ Terus Gemetar', icon: '📳' },
+			{ value: 'continuous-glow', label: '▶ Terus Bercahaya', icon: '💡' },
+			// Cycle (1min on / 1min off)
+			{ value: 'cycle-float', label: '⟳ Siklus Melayang', icon: '🎈' },
+			{ value: 'cycle-pulse', label: '⟳ Siklus Berdenyut', icon: '💗' },
+			{ value: 'cycle-wiggle', label: '⟳ Siklus Goyang', icon: '🦐' },
+			{ value: 'cycle-breathe', label: '⟳ Siklus Bernapas', icon: '🫁' },
+			{ value: 'cycle-bounce', label: '⟳ Siklus Memantul', icon: '🏀' }
 		],
 		links = [],
 		expandedIndex = $bindable(null),
@@ -193,22 +207,22 @@
 		<label class="mb-3 block text-xs font-medium text-white/60" for="appearance-link-color">
 			Warna Teks Link
 		</label>
-		<div class="flex items-center gap-3">
+		<div class="flex flex-wrap items-center gap-3">
 			<input
 				id="appearance-link-color"
 				type="color"
 				bind:value={linkTextColor}
-				class="h-12 w-16 cursor-pointer rounded-xl border border-white/20 bg-white/5 p-1"
+				class="h-12 w-16 shrink-0 cursor-pointer rounded-xl border border-white/20 bg-white/5 p-1"
 			/>
 			<input
 				type="text"
 				bind:value={linkTextColor}
 				placeholder="#111827"
-				class="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white transition outline-none focus:border-violet-400/50"
+				class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white transition outline-none focus:border-violet-400/50"
 			/>
 			<button
 				type="button"
-				class="rounded-full border border-white/15 px-3 py-2 text-[11px] text-white/70 transition hover:border-white/40"
+				class="shrink-0 rounded-full border border-white/15 px-3 py-2 text-[11px] text-white/70 transition hover:border-white/40"
 				onclick={() => (linkTextColor = '')}
 			>
 				Reset

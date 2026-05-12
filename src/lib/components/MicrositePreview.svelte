@@ -93,6 +93,10 @@
 	const getAnimClass = (linkAnim: string | undefined) => {
 		const anim = linkAnim || animation || 'fade';
 		if (anim === 'none') return '';
+		// Cycle → show continuous in preview
+		if (anim.startsWith('cycle-')) {
+			return `anim-${anim.replace('cycle-', 'continuous-')}`;
+		}
 		return `anim-${anim}`;
 	};
 
@@ -106,7 +110,13 @@
 		})
 	);
 
-	const animClass = $derived(animation === 'none' ? '' : `anim-${animation}`);
+	const animClass = $derived(
+		animation === 'none'
+			? ''
+			: animation.startsWith('cycle-')
+				? `anim-${animation.replace('cycle-', 'continuous-')}`
+				: `anim-${animation}`
+	);
 
 	const bannerStyle = $derived(
 		headerBg ? `background: ${headerBg}; background-size: cover; background-position: center;` : ''
@@ -600,6 +610,111 @@
 		to {
 			opacity: 1;
 			filter: blur(0);
+		}
+	}
+
+	/* === CONTINUOUS / LOOPING ANIMATIONS === */
+	.anim-continuous-float {
+		animation: contFloat 3s ease-in-out infinite;
+	}
+	.anim-continuous-pulse {
+		animation: contPulse 2s ease-in-out infinite;
+	}
+	.anim-continuous-wiggle {
+		animation: contWiggle 1.5s ease-in-out infinite;
+	}
+	.anim-continuous-breathe {
+		animation: contBreathe 4s ease-in-out infinite;
+	}
+	.anim-continuous-shake {
+		animation: contShake 0.5s ease-in-out infinite;
+	}
+	.anim-continuous-glow {
+		animation: contGlow 2s ease-in-out infinite;
+	}
+	.anim-continuous-bounce {
+		animation: contBounce 1.2s ease-in-out infinite;
+	}
+
+	@keyframes contFloat {
+		0%,
+		100% {
+			transform: translateY(0px);
+		}
+		50% {
+			transform: translateY(-8px);
+		}
+	}
+	@keyframes contPulse {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.05);
+		}
+	}
+	@keyframes contWiggle {
+		0%,
+		100% {
+			transform: rotate(0deg);
+		}
+		25% {
+			transform: rotate(-4deg);
+		}
+		75% {
+			transform: rotate(4deg);
+		}
+	}
+	@keyframes contBreathe {
+		0%,
+		100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		50% {
+			transform: scale(1.02);
+			opacity: 0.85;
+		}
+	}
+	@keyframes contShake {
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		25% {
+			transform: translateX(-4px);
+		}
+		75% {
+			transform: translateX(4px);
+		}
+	}
+	@keyframes contGlow {
+		0%,
+		100% {
+			box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+		}
+		50% {
+			box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+		}
+	}
+	@keyframes contBounce {
+		0%,
+		100% {
+			transform: translateY(0);
+			animation-timing-function: ease-out;
+		}
+		25% {
+			transform: translateY(-10px);
+			animation-timing-function: ease-in;
+		}
+		50% {
+			transform: translateY(0);
+			animation-timing-function: ease-out;
+		}
+		75% {
+			transform: translateY(-5px);
+			animation-timing-function: ease-in;
 		}
 	}
 

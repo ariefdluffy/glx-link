@@ -378,9 +378,9 @@
 
 	<div class="grid gap-8 lg:grid-cols-[1fr_420px]">
 		<!-- Left Column: Main Editor -->
-		<div class="glass-panel rounded-3xl p-6 md:p-8">
+		<div class="glass-panel overflow-hidden rounded-3xl p-6 md:p-8">
 			<div class="space-y-4">
-				<div class="mb-1 flex items-start justify-between gap-3">
+				<div class="mb-1 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div>
 						<div class="font-display text-base font-semibold">Pengaturan Form</div>
 						<p class="text-[11px] text-white/50">
@@ -391,7 +391,7 @@
 						type="button"
 						onclick={handleSubmit}
 						disabled={isLoading}
-						class="rounded-xl bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-all hover:bg-cyan-400 disabled:opacity-50"
+						class="self-start rounded-xl bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-all hover:bg-cyan-400 disabled:opacity-50"
 					>
 						{isLoading ? 'Menyimpan...' : 'Simpan Perubahan'}
 					</button>

@@ -477,6 +477,38 @@
 							{/each}
 						</div>
 
+						<!-- Continuous Animations (looping) -->
+						<div class="mt-1 flex flex-wrap gap-1">
+							<span class="mr-1 self-center text-[9px] text-white/30">▶ terus:</span>
+							{#each ['continuous-float', 'continuous-pulse', 'continuous-wiggle', 'continuous-breathe', 'continuous-shake', 'continuous-bounce'] as anim (anim)}
+								<button
+									type="button"
+									class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') === anim
+										? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+										: 'text-white/40 hover:text-white/60'}"
+									onclick={() => (links[index].animation = anim || '')}
+								>
+									{anim.replace('continuous-', '')}
+								</button>
+							{/each}
+						</div>
+
+						<!-- Cycle Animations (1min on / 1min off) -->
+						<div class="mt-1 flex flex-wrap gap-1">
+							<span class="mr-1 self-center text-[9px] text-white/30">⟳ siklus:</span>
+							{#each ['cycle-float', 'cycle-pulse', 'cycle-wiggle', 'cycle-breathe', 'cycle-bounce'] as anim (anim)}
+								<button
+									type="button"
+									class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') === anim
+										? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+										: 'text-white/40 hover:text-white/60'}"
+									onclick={() => (links[index].animation = anim || '')}
+								>
+									{anim.replace('cycle-', '')}
+								</button>
+							{/each}
+						</div>
+
 						<!-- Delete Button -->
 						<button
 							type="button"

@@ -29,7 +29,21 @@ export const animations = [
 	{ value: 'shake', label: 'Shake', icon: '📳' },
 	{ value: 'wiggle', label: 'Wiggle', icon: '🐛' },
 	{ value: 'glow', label: 'Glow', icon: '✨' },
-	{ value: 'blur-in', label: 'Blur In', icon: '👁️' }
+	{ value: 'blur-in', label: 'Blur In', icon: '👁️' },
+	// Continuous (looping)
+	{ value: 'continuous-float', label: '▶ Terus Melayang', icon: '🎈' },
+	{ value: 'continuous-pulse', label: '▶ Terus Berdenyut', icon: '💗' },
+	{ value: 'continuous-wiggle', label: '▶ Terus Goyang', icon: '🦐' },
+	{ value: 'continuous-breathe', label: '▶ Terus Bernapas', icon: '🫁' },
+	{ value: 'continuous-bounce', label: '▶ Terus Memantul', icon: '🏀' },
+	{ value: 'continuous-shake', label: '▶ Terus Gemetar', icon: '📳' },
+	{ value: 'continuous-glow', label: '▶ Terus Bercahaya', icon: '💡' },
+	// Cycle (1min on / 1min off)
+	{ value: 'cycle-float', label: '⟳ Siklus Melayang', icon: '🎈' },
+	{ value: 'cycle-pulse', label: '⟳ Siklus Berdenyut', icon: '💗' },
+	{ value: 'cycle-wiggle', label: '⟳ Siklus Goyang', icon: '🦐' },
+	{ value: 'cycle-breathe', label: '⟳ Siklus Bernapas', icon: '🫁' },
+	{ value: 'cycle-bounce', label: '⟳ Siklus Memantul', icon: '🏀' }
 ];
 
 export interface IconOption {

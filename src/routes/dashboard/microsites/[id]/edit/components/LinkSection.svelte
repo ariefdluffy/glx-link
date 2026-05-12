@@ -87,7 +87,7 @@
 		</div>
 	</div>
 
-	<div class="max-h-[500px] space-y-2 overflow-y-auto pr-1">
+	<div class="max-h-[300px] space-y-2 overflow-x-hidden overflow-y-auto pr-1 md:max-h-[500px]">
 		{#if links.length === 0}
 			<div class="rounded-2xl border border-dashed border-white/20 bg-white/5 py-10 text-center">
 				<svg
@@ -121,12 +121,12 @@
 				>
 					<!-- Collapsed View -->
 					<div
-						class="flex cursor-pointer items-center gap-3 p-3"
+						class="flex min-w-0 cursor-pointer items-center gap-3 p-3"
 						onclick={() => toggleExpand(index)}
 					>
 						<button
 							onmousedown={() => ondragstart(index)}
-							class="cursor-grab text-white/40 hover:text-white/70 active:cursor-grabbing"
+							class="shrink-0 cursor-grab text-white/40 hover:text-white/70 active:cursor-grabbing"
 							onclick={(e) => e.stopPropagation()}
 						>
 							<svg
@@ -153,7 +153,7 @@
 							{/if}
 						</div>
 
-						<div class="min-w-0 flex-1">
+						<div class="min-w-0 flex-1 overflow-hidden">
 							<p class="truncate text-sm font-medium text-white/80">
 								{link.label ||
 									(link.type === 'link'
@@ -165,8 +165,8 @@
 							{/if}
 						</div>
 
-						<div class="flex items-center gap-3">
-							<div class="flex flex-col gap-0.5">
+						<div class="flex shrink-0 items-center gap-3">
+							<div class="hidden flex-col gap-0.5 sm:flex">
 								{#if index > 0}
 									<button
 										onclick={(e) => {
@@ -280,7 +280,7 @@
 							</div>
 
 							{#if link.type === 'link'}
-								<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+								<div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
 									<div class="space-y-1">
 										<label
 											for="link-label-{index}"
@@ -364,7 +364,7 @@
 											</div>
 										{/if}
 									</div>
-									<div class="col-span-full space-y-1">
+									<div class="col-span-full min-w-0 space-y-1">
 										<label
 											for="link-url-{index}"
 											class="text-[10px] font-semibold text-white/40 uppercase">URL</label
@@ -374,10 +374,10 @@
 											type="url"
 											bind:value={link.url}
 											placeholder="https://..."
-											class="w-full rounded-xl border border-cyan-400/40 bg-cyan-500/5 px-3 py-2 text-xs text-white placeholder-cyan-200/50 transition outline-none focus:border-cyan-400"
+											class="w-full min-w-0 rounded-xl border border-cyan-400/40 bg-cyan-500/5 px-3 py-2 text-xs text-white placeholder-cyan-200/50 transition outline-none focus:border-cyan-400"
 										/>
 									</div>
-									<div class="col-span-full space-y-1">
+									<div class="col-span-full min-w-0 space-y-1">
 										<label
 											for="link-caption-{index}"
 											class="text-[10px] font-semibold text-white/40 uppercase"
@@ -388,7 +388,7 @@
 											type="text"
 											bind:value={link.caption}
 											placeholder="Keterangan singkat"
-											class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
+											class="w-full min-w-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
 										/>
 									</div>
 								</div>
@@ -540,6 +540,36 @@
 										</button>
 									{/each}
 								</div>
+								<!-- Continuous Animations (looping) -->
+								<div class="mt-1 flex flex-wrap gap-1">
+									<span class="mr-1 self-center text-[9px] text-white/30">▶ terus:</span>
+									{#each ['continuous-float', 'continuous-pulse', 'continuous-wiggle', 'continuous-breathe', 'continuous-shake', 'continuous-bounce'] as anim (anim)}
+										<button
+											onclick={() => (link.animation = anim)}
+											class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') ===
+											anim
+												? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+												: 'text-white/40 hover:text-white/60'}"
+										>
+											{anim.replace('continuous-', '')}
+										</button>
+									{/each}
+								</div>
+								<!-- Cycle Animations (1min on / 1min off) -->
+								<div class="mt-1 flex flex-wrap gap-1">
+									<span class="mr-1 self-center text-[9px] text-white/30">⟳ siklus:</span>
+									{#each ['cycle-float', 'cycle-pulse', 'cycle-wiggle', 'cycle-breathe', 'cycle-bounce'] as anim (anim)}
+										<button
+											onclick={() => (link.animation = anim)}
+											class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') ===
+											anim
+												? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+												: 'text-white/40 hover:text-white/60'}"
+										>
+											{anim.replace('cycle-', '')}
+										</button>
+									{/each}
+								</div>
 							</div>
 
 							<div class="flex justify-end pt-2">
@@ -572,13 +602,15 @@
 
 <style>
 	/* Hide scrollbar for Chrome, Safari and Opera */
-	.max-h-\[500px\]::-webkit-scrollbar {
+	.max-h-\[300px\]::-webkit-scrollbar,
+	.md\:max-h-\[500px\]::-webkit-scrollbar {
 		display: none;
 	}
 
 	/* Hide scrollbar for IE, Edge and Firefox */
-	.max-h-\[500px\] {
-		-ms-overflow-style: none; /* IE and Edge */
-		scrollbar-width: none; /* Firefox */
+	.max-h-\[300px\],
+	.md\:max-h-\[500px\] {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
 	}
 </style>
