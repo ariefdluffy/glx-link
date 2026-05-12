@@ -3,5 +3,5 @@ import { clearSession } from '$lib/auth/session';
 
 export const POST = async ({ cookies }) => {
 	clearSession(cookies);
-	throw redirect(302, '/login?logged_out=true');
+	throw redirect(302, '/?logged_out=true');
 };

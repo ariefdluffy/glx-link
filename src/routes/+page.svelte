@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import Toast from '$lib/components/toast/Toast.svelte';
 
 	interface PageData {
@@ -7,6 +8,10 @@
 	}
 
 	let { data }: { data: PageData } = $props();
+
+	let logoutMessage = $state(
+		$page.url.searchParams.get('logged_out') ? 'Berhasil logout dari akun.' : ''
+	);
 
 	const baseUrl = 'glx.my.id';
 
@@ -125,6 +130,16 @@
 				{/if}
 			</div>
 		</nav>
+		{#if logoutMessage}
+			<div class="mx-auto max-w-prose px-6 pt-2">
+				<Toast
+					message={logoutMessage}
+					type="success"
+					duration={3000}
+					onClose={() => (logoutMessage = '')}
+				/>
+			</div>
+		{/if}
 	</header>
 
 	<section class="relative z-10 mx-auto max-w-6xl px-6 pt-12 pb-24">
@@ -137,7 +152,7 @@
 					<span>Shortlink dan microsite untuk kreator digital</span>
 				</div>
 				<h1 class="font-display text-4xl leading-tight font-semibold md:text-5xl">
-					Satu Link, Semua Kamu.
+					Satu Link, Banyak Cerita.
 				</h1>
 				<p class="text-base text-white/70 md:text-lg">
 					Buat shortlink instan dan microsite rapi tanpa coding. Cocok untuk content creator, UMKM,
@@ -344,7 +359,7 @@
 						{/if}
 					</div>
 					<div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/60">
-						QR Code siap di v1.0. Untuk sekarang, gunakan shortlink di bio dan story.
+						Login untuk menggunakan QR Code, gunakan shortlink di bio dan story.
 					</div>
 				</div>
 			</div>
