@@ -56,10 +56,18 @@
 		linktree: 'Linktree'
 	};
 
+	const emojiIcon: Record<string, string> = {
+		snapchat: '👻',
+		pinterest: '📌',
+		twitch: '🎮',
+		threads: '🧵',
+		linktree: '🌳'
+	};
+
 	const getIcon = (icon: string | null | undefined) => {
 		if (!icon) return 'Link';
 		const key = icon.toLowerCase().trim();
-		return iconMap[key] ?? icon;
+		return emojiIcon[key] ?? iconMap[key] ?? icon;
 	};
 
 	const socialIconPath = (icon: string | null | undefined) => {
@@ -69,6 +77,16 @@
 		if (key === 'twitter' || key === 'x') return '/icons/social/x.svg';
 		if (key === 'facebook') return '/icons/social/facebook.svg';
 		if (key === 'website' || key === 'globe' || key === 'web') return '/icons/social/website.svg';
+		if (key === 'github') return '/icons/social/github.svg';
+		if (key === 'tiktok') return '/icons/social/tiktok.svg';
+		if (key === 'linkedin') return '/icons/social/linkedin.svg';
+		if (key === 'spotify') return '/icons/social/spotify.svg';
+		if (key === 'telegram') return '/icons/social/telegram.svg';
+		if (key === 'whatsapp') return '/icons/social/whatsapp.svg';
+		if (key === 'email') return '/icons/social/email.svg';
+		if (key === 'discord') return '/icons/social/discord.svg';
+		if (key === 'store' || key === 'shop') return '/icons/social/store.svg';
+		if (key === 'link') return '/icons/social/link.svg';
 		return null;
 	};
 
@@ -99,42 +117,82 @@
 			? 'overflow-hidden rounded-2xl bg-gradient-to-br from-violet-50 to-fuchsia-50 shadow-[0_8px_24px_rgba(76,29,149,0.18)]'
 			: theme === 'neon'
 				? 'overflow-hidden rounded-2xl bg-[#0b1220] shadow-[0_8px_24px_rgba(8,145,178,0.22)]'
-				: 'overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(15,23,42,0.12)]'
+				: theme === 'tech'
+					? 'overflow-hidden rounded-2xl bg-gradient-to-b from-slate-50 to-white shadow-[0_8px_24px_rgba(251,191,36,0.12)] ring-1 ring-amber-200/50'
+					: 'overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(15,23,42,0.12)]'
 	);
 
 	const titleClass = $derived(
-		theme === 'gradient' ? 'text-violet-800' : theme === 'neon' ? 'text-cyan-300' : 'text-zinc-900'
+		theme === 'gradient'
+			? 'text-violet-800'
+			: theme === 'neon'
+				? 'text-cyan-300'
+				: theme === 'tech'
+					? 'bg-gradient-to-r from-amber-600 via-blue-600 to-purple-600 bg-clip-text text-transparent'
+					: 'text-zinc-900'
 	);
 
 	const bioClass = $derived(
-		theme === 'gradient' ? 'text-violet-600' : theme === 'neon' ? 'text-zinc-300' : 'text-zinc-500'
+		theme === 'gradient'
+			? 'text-violet-600'
+			: theme === 'neon'
+				? 'text-zinc-300'
+				: theme === 'tech'
+					? 'text-slate-500'
+					: 'text-zinc-500'
 	);
 
-	const dividerClass = $derived(theme === 'neon' ? 'bg-zinc-700' : 'bg-zinc-200');
+	const dividerClass = $derived(
+		theme === 'neon' ? 'bg-zinc-700' : theme === 'tech' ? 'bg-slate-300' : 'bg-zinc-200'
+	);
 
 	const linkItemClass = $derived(
 		theme === 'gradient'
 			? 'border-violet-200 bg-white/90 text-violet-900 hover:bg-violet-100'
 			: theme === 'neon'
 				? 'border-cyan-900/60 bg-[#111b2f] text-cyan-100 hover:bg-[#18253f]'
-				: 'border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50'
+				: theme === 'tech'
+					? 'border-white/50 bg-white/40 text-slate-700 hover:bg-white/60 hover:border-amber-300/60 backdrop-blur-sm'
+					: 'border-zinc-200 bg-white text-zinc-800 hover:bg-zinc-50'
 	);
 
 	const arrowClass = $derived(
-		theme === 'gradient' ? 'text-violet-400' : theme === 'neon' ? 'text-cyan-400' : 'text-zinc-400'
+		theme === 'gradient'
+			? 'text-violet-400'
+			: theme === 'neon'
+				? 'text-cyan-400'
+				: theme === 'tech'
+					? 'text-slate-400'
+					: 'text-zinc-400'
 	);
 
 	const defaultLinkTextClass = $derived(
-		theme === 'gradient' ? 'text-violet-900' : theme === 'neon' ? 'text-cyan-100' : 'text-zinc-800'
+		theme === 'gradient'
+			? 'text-violet-900'
+			: theme === 'neon'
+				? 'text-cyan-100'
+				: theme === 'tech'
+					? 'text-slate-700'
+					: 'text-zinc-800'
 	);
 
 	const customLinkTextStyle = $derived(linkTextColor ? `color: ${linkTextColor};` : '');
 
 	const emptyClass = $derived(
-		theme === 'neon' ? 'border-zinc-700 text-zinc-400' : 'border-zinc-200 text-zinc-400'
+		theme === 'neon'
+			? 'border-zinc-700 text-zinc-400'
+			: theme === 'tech'
+				? 'border-slate-300 text-slate-400'
+				: 'border-zinc-200 text-zinc-400'
 	);
 
-	const avatarFallbackClass = $derived(theme === 'neon' ? 'text-cyan-200' : 'text-zinc-700');
+	const avatarFallbackClass = $derived(
+		theme === 'neon'
+			? 'text-cyan-200'
+			: theme === 'tech'
+				? 'bg-gradient-to-br from-amber-500 via-blue-500 to-purple-500 bg-clip-text text-transparent'
+				: 'text-zinc-700'
+	);
 </script>
 
 <div class="mx-auto w-full max-w-[480px]">
@@ -144,7 +202,7 @@
 		<div class="px-6 pb-6">
 			<div class="-mt-10 flex flex-col items-center">
 				<div
-					class="h-20 w-20 overflow-hidden rounded-full border-[3px] border-white bg-zinc-200 shadow-md"
+					class="h-32 w-32 overflow-hidden rounded-full border-[3px] border-white bg-zinc-200 shadow-md"
 				>
 					{#if avatarUrl}
 						<img class="h-full w-full object-cover" src={avatarUrl} alt={title || 'Avatar'} />
@@ -174,7 +232,7 @@
 						></div>
 					{:else if link.type === 'image'}
 						<div
-							class="w-full {getAnimClass(link.animation)}"
+							class="mx-auto w-3/4 {getAnimClass(link.animation)}"
 							style={`animation-delay: ${i * 0.08}s`}
 						>
 							<img src={link.url} alt={link.caption || ''} class="w-full rounded-xl" />
@@ -264,6 +322,18 @@
 		animation: siteSlideUp 0.5s ease both;
 	}
 
+	.anim-slide-down {
+		animation: siteSlideDown 1.5s ease both;
+	}
+
+	.anim-slide-left {
+		animation: siteSlideLeft 0.5s ease both;
+	}
+
+	.anim-slide-right {
+		animation: siteSlideRight 0.5s ease both;
+	}
+
 	.anim-scale {
 		animation: siteScaleIn 0.4s ease both;
 	}
@@ -278,6 +348,38 @@
 
 	.anim-zoom {
 		animation: siteZoom 0.5s ease both;
+	}
+
+	.anim-zoom-in {
+		animation: siteZoomIn 0.5s ease both;
+	}
+
+	.anim-zoom-out {
+		animation: siteZoomOut 0.5s ease both;
+	}
+
+	.anim-rotate {
+		animation: siteRotate 0.6s ease both;
+	}
+
+	.anim-pulse {
+		animation: sitePulse 1s ease both;
+	}
+
+	.anim-shake {
+		animation: siteShake 0.5s ease both;
+	}
+
+	.anim-wiggle {
+		animation: siteWiggle 0.6s ease both;
+	}
+
+	.anim-glow {
+		animation: siteGlow 0.8s ease both;
+	}
+
+	.anim-blur-in {
+		animation: siteBlurIn 0.6s ease both;
 	}
 
 	@keyframes siteFadeIn {
@@ -299,6 +401,39 @@
 		to {
 			opacity: 1;
 			transform: translateY(0);
+		}
+	}
+
+	@keyframes siteSlideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes siteSlideLeft {
+		from {
+			opacity: 0;
+			transform: translateX(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
+	@keyframes siteSlideRight {
+		from {
+			opacity: 0;
+			transform: translateX(-30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
 		}
 	}
 
@@ -349,6 +484,122 @@
 		to {
 			opacity: 1;
 			transform: scale(1);
+		}
+	}
+
+	@keyframes siteZoomIn {
+		from {
+			opacity: 0;
+			transform: scale(0.3);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	@keyframes siteZoomOut {
+		from {
+			opacity: 0;
+			transform: scale(1.5);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	@keyframes siteRotate {
+		from {
+			opacity: 0;
+			transform: rotate(-180deg) scale(0.8);
+		}
+		to {
+			opacity: 1;
+			transform: rotate(0) scale(1);
+		}
+	}
+
+	@keyframes sitePulse {
+		0% {
+			opacity: 0;
+			transform: scale(0.95);
+		}
+		50% {
+			opacity: 0.8;
+			transform: scale(1.05);
+		}
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	@keyframes siteShake {
+		0% {
+			opacity: 0;
+			transform: translateX(0);
+		}
+		25% {
+			opacity: 0.5;
+			transform: translateX(-8px);
+		}
+		50% {
+			opacity: 0.8;
+			transform: translateX(8px);
+		}
+		75% {
+			transform: translateX(-4px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
+	@keyframes siteWiggle {
+		0% {
+			opacity: 0;
+			transform: rotate(0deg);
+		}
+		25% {
+			opacity: 0.5;
+			transform: rotate(-5deg);
+		}
+		50% {
+			opacity: 0.8;
+			transform: rotate(5deg);
+		}
+		75% {
+			transform: rotate(-3deg);
+		}
+		100% {
+			opacity: 1;
+			transform: rotate(0deg);
+		}
+	}
+
+	@keyframes siteGlow {
+		from {
+			opacity: 0;
+			filter: brightness(0.5) blur(4px);
+			transform: scale(0.95);
+		}
+		to {
+			opacity: 1;
+			filter: brightness(1) blur(0);
+			transform: scale(1);
+		}
+	}
+
+	@keyframes siteBlurIn {
+		from {
+			opacity: 0;
+			filter: blur(10px);
+		}
+		to {
+			opacity: 1;
+			filter: blur(0);
 		}
 	}
 

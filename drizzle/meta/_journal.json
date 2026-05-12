@@ -43,6 +43,13 @@
       "when": 1778497121000,
       "tag": "0005_clear_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1778579782028,
+      "tag": "0006_adorable_falcon",
+      "breakpoints": true
     }
   ]
 }

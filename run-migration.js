@@ -14,7 +14,7 @@ const connection = await createConnection({
 	multipleStatements: true
 });
 
-const sql = readFileSync('./drizzle/0004_bumpy_preak.sql', 'utf-8');
+const sql = readFileSync('./drizzle/0006_adorable_falcon.sql', 'utf-8');
 
 // Split by statement-breakpoint and remove comments
 const statements = sql

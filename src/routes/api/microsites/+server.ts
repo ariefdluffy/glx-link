@@ -37,7 +37,8 @@ export const GET = async ({ cookies }) => {
 			isActive: microsites.isActive,
 			avatarUrl: microsites.avatarUrl,
 			headerBg: microsites.headerBg,
-			animation: microsites.animation
+			animation: microsites.animation,
+			clicks: microsites.clicks
 		})
 		.from(microsites)
 		.where(eq(microsites.userId, userId))

@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { microsites, micrositeLinks } from '$lib/db/schema';
 
@@ -33,6 +33,12 @@ export const load = async ({ params }) => {
 	if (!microsite || !microsite.isActive) {
 		throw error(404, 'Microsite tidak ditemukan.');
 	}
+
+	// Increment click count
+	await db
+		.update(microsites)
+		.set({ clicks: sql`${microsites.clicks} + 1` })
+		.where(eq(microsites.id, microsite.id));
 
 	const links = await db
 		.select({

@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/db';
 import { shortLinks, microsites, users } from '$lib/db/schema';
-import { eq, sum, count, desc, sql } from 'drizzle-orm';
+import { eq, sum, count, desc, sql, and } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 
 export const load = async ({ cookies }) => {
@@ -17,18 +17,33 @@ export const load = async ({ cookies }) => {
 	const linksResult = await db
 		.select({
 			totalLinks: count(shortLinks.id),
-			totalClicks: sum(shortLinks.clicks)
+			totalClicks: sql<number>`CAST(COALESCE(SUM(${shortLinks.clicks}), 0) AS UNSIGNED)`
 		})
 		.from(shortLinks)
 		.where(eq(shortLinks.userId, userId));
 
 	const micrositesResult = await db
 		.select({
-			totalMicrosites: count(microsites.id),
-			activeMicrosites: sum(sql`CASE WHEN ${microsites.isActive} = TRUE THEN 1 ELSE 0 END`)
+			totalMicrosites: count(microsites.id)
 		})
 		.from(microsites)
 		.where(eq(microsites.userId, userId));
+
+	const micrositeClicksResult = await db
+		.select({
+			totalClicks: sql<number>`CAST(COALESCE(SUM(${microsites.clicks}), 0) AS UNSIGNED)`
+		})
+		.from(microsites)
+		.where(eq(microsites.userId, userId));
+
+	const totalMicrositeClicks = Number(micrositeClicksResult[0]?.totalClicks ?? 0);
+
+	const activeMicrositesResult = await db
+		.select({
+			activeMicrosites: count(microsites.id)
+		})
+		.from(microsites)
+		.where(and(eq(microsites.userId, userId), eq(microsites.isActive, true)));
 
 	const latestLinks = await db
 		.select({
@@ -51,7 +66,8 @@ export const load = async ({ cookies }) => {
 			isActive: microsites.isActive,
 			theme: microsites.theme,
 			createdAt: microsites.createdAt,
-			bio: microsites.bio
+			bio: microsites.bio,
+			clicks: microsites.clicks
 		})
 		.from(microsites)
 		.where(eq(microsites.userId, userId))
@@ -61,7 +77,7 @@ export const load = async ({ cookies }) => {
 	const totalLinks = Number(linksResult[0]?.totalLinks ?? 0);
 	const totalClicks = Number(linksResult[0]?.totalClicks ?? 0);
 	const totalMicrosites = Number(micrositesResult[0]?.totalMicrosites ?? 0);
-	const activeMicrosites = Number(micrositesResult[0]?.activeMicrosites ?? 0);
+	const activeMicrosites = Number(activeMicrositesResult[0]?.activeMicrosites ?? 0);
 
 	const plan = userDb?.plan ?? 'free';
 	const micrositeLimit = plan === 'pro' ? 4 : 0;
@@ -72,6 +88,7 @@ export const load = async ({ cookies }) => {
 			totalClicks,
 			totalMicrosites,
 			activeMicrosites,
+			totalMicrositeClicks,
 			micrositeLimit,
 			plan,
 			userName: userDb?.name ?? 'User',

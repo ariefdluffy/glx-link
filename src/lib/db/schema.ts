@@ -47,6 +47,7 @@ export const microsites = mysqlTable('microsites', {
 	instagramUrl: varchar('instagram_url', { length: 255 }),
 	animation: varchar('animation', { length: 50 }).default('fade'),
 	isActive: boolean('is_active').default(true),
+	clicks: int('clicks').default(0),
 	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
 });
 

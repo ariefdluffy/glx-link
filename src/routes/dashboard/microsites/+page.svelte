@@ -1,48 +1,50 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Toast from '$lib/components/toast/Toast.svelte';
+	import EmptyState from '$lib/components/common/EmptyState.svelte';
+	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
+	import MicrositeCard from '$lib/components/microsites/MicrositeCard.svelte';
+	import MicrositeStats from '$lib/components/microsites/MicrositeStats.svelte';
+	import QRModal from '$lib/components/qr/QRModal.svelte';
 	import { page } from '$app/stores';
+	import { fetchMicrosites, deleteMicrosite } from '$lib/services/microsites.service';
+	import { paginateItems, getTotalPages } from '$lib/utils/pagination.util';
+	import type { MicrositeItem, MicrositeStats as Stats } from '$lib/types/microsite.types';
 
 	const plan = $page.data.plan;
-
-	type MicrositeItem = {
-		id: number;
-		slug: string;
-		title: string;
-		bio: string | null;
-		theme: string | null;
-		isActive: boolean | null;
-		avatarUrl: string | null;
-		animation: string | null;
-	};
-
 	const baseUrl = 'glx.my.id';
 
+	// State management
 	let microsites: MicrositeItem[] = $state([]);
 	let isLoading = $state(true);
 	let errorMessage = $state('');
-	let copiedSlug = $state<string | null>(null);
-	let qrSlug = $state<string | null>(null);
-	let copiedQrLink = $state(false);
 	let deletingItem: MicrositeItem | null = $state(null);
 	let deleteError = $state('');
 	let isDeleting = $state(false);
+	let qrSlug: string | null = $state(null);
 	let currentPage = $state(1);
 	let itemsPerPage = 10;
+	let autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
-	// Computed values for pagination
+	// Computed values
+	const stats: Stats = $derived({
+		total: microsites.length,
+		active: microsites.filter((s) => s.isActive).length,
+		inactive: microsites.filter((s) => !s.isActive).length,
+		totalClicks: microsites.reduce((sum, s) => sum + (s.clicks ?? 0), 0)
+	});
+
+	const totalPages = $derived(getTotalPages(microsites.length, itemsPerPage));
+	const paginatedMicrosites = $derived(paginateItems(microsites, currentPage, itemsPerPage));
+
+	// Reset to valid page if current page exceeds total
 	$effect(() => {
-		// Reset to page 1 if current page exceeds total pages
 		if (currentPage > totalPages && totalPages > 0) {
 			currentPage = totalPages;
 		}
 	});
 
-	const totalPages = $derived(Math.ceil(microsites.length / itemsPerPage));
-	const paginatedMicrosites = $derived(
-		microsites.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-	);
-
+	// Pagination handlers
 	const goToPage = (page: number) => {
 		if (page >= 1 && page <= totalPages) {
 			currentPage = page;
@@ -61,24 +63,24 @@
 		}
 	};
 
+	// Load microsites
 	const loadMicrosites = async () => {
 		isLoading = true;
 		errorMessage = '';
-		try {
-			const response = await fetch('/api/microsites');
-			const payload = await response.json();
-			if (!response.ok) {
-				errorMessage = payload?.message ?? 'Gagal memuat microsite.';
-				return;
-			}
-			microsites = payload.microsites ?? [];
-		} catch {
-			errorMessage = 'Gagal terhubung ke server.';
-		} finally {
+
+		const result = await fetchMicrosites();
+
+		if (!result.success) {
+			errorMessage = result.message ?? 'Gagal memuat microsite.';
 			isLoading = false;
+			return;
 		}
+
+		microsites = result.microsites ?? [];
+		isLoading = false;
 	};
 
+	// Delete handlers
 	const confirmDelete = (item: MicrositeItem) => {
 		deletingItem = item;
 		deleteError = '';
@@ -93,122 +95,58 @@
 		if (!deletingItem) return;
 		isDeleting = true;
 		deleteError = '';
-		try {
-			const response = await fetch(`/api/microsites/${deletingItem.id}`, { method: 'DELETE' });
-			if (!response.ok) {
-				const payload = await response.json();
-				deleteError = payload?.message ?? 'Gagal menghapus microsite.';
-				return;
-			}
-			const deletedId = deletingItem.id;
-			microsites = microsites.filter((site) => site.id !== deletedId);
-			deletingItem = null;
-		} catch {
-			deleteError = 'Gagal menghapus microsite.';
-		} finally {
+
+		const result = await deleteMicrosite(deletingItem.id);
+
+		if (!result.success) {
+			deleteError = result.message ?? 'Gagal menghapus microsite.';
 			isDeleting = false;
+			return;
 		}
+
+		const deletedId = deletingItem.id;
+		microsites = microsites.filter((site) => site.id !== deletedId);
+		deletingItem = null;
+		isDeleting = false;
 	};
 
-	const handleCopyLink = async (slug: string) => {
-		const fullUrl = `https://${baseUrl}/m/${slug}`;
-		await navigator.clipboard.writeText(fullUrl);
-		copiedSlug = slug;
-		setTimeout(() => {
-			copiedSlug = null;
-		}, 2000);
-	};
-
+	// QR handlers
 	const openQr = (slug: string) => {
 		qrSlug = slug;
 	};
 
 	const closeQr = () => {
 		qrSlug = null;
-		copiedQrLink = false;
 	};
 
-	const handleCopyQrLink = async () => {
-		if (!qrSlug) return;
-		const fullUrl = `https://${baseUrl}/m/${qrSlug}`;
-		await navigator.clipboard.writeText(fullUrl);
-		copiedQrLink = true;
-		setTimeout(() => {
-			copiedQrLink = false;
-		}, 2000);
+	// Auto-refresh stats every 10 seconds
+	const startAutoRefresh = () => {
+		autoRefreshInterval = setInterval(async () => {
+			if (!isLoading) {
+				const result = await fetchMicrosites();
+				if (result.success && result.microsites) {
+					microsites = result.microsites;
+				}
+			}
+		}, 10000); // 10 seconds
 	};
 
-	const handleDownloadQr = async () => {
-		if (!qrSlug) return;
-		try {
-			const QRCode = (await import('qrcode')).default;
-			const canvas = document.createElement('canvas');
-			const ctx = canvas.getContext('2d');
-			if (!ctx) return;
-
-			// Set canvas size (QR + padding + footer)
-			const qrSize = 400;
-			const padding = 40;
-			const footerHeight = 60;
-			canvas.width = qrSize + padding * 2;
-			canvas.height = qrSize + padding * 2 + footerHeight;
-
-			// Background with rounded corners
-			ctx.fillStyle = '#ffffff';
-			const radius = 20;
-			ctx.beginPath();
-			ctx.moveTo(radius, 0);
-			ctx.lineTo(canvas.width - radius, 0);
-			ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
-			ctx.lineTo(canvas.width, canvas.height - radius);
-			ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
-			ctx.lineTo(radius, canvas.height);
-			ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
-			ctx.lineTo(0, radius);
-			ctx.quadraticCurveTo(0, 0, radius, 0);
-			ctx.closePath();
-			ctx.fill();
-
-			// Generate QR code
-			const qrCanvas = document.createElement('canvas');
-			await QRCode.toCanvas(qrCanvas, `https://glx.my.id/m/${qrSlug}`, {
-				width: qrSize,
-				margin: 1,
-				color: { dark: '#000000', light: '#ffffff' }
-			});
-
-			// Draw QR code on main canvas
-			ctx.drawImage(qrCanvas, padding, padding, qrSize, qrSize);
-
-			// Draw footer text
-			const micrositeTitle = microsites.find((s) => s.slug === qrSlug)?.title || 'Microsite';
-			ctx.fillStyle = '#6366f1';
-			ctx.font = 'bold 18px sans-serif';
-			ctx.textAlign = 'center';
-			ctx.fillText(`glx.my.id/m/${qrSlug}`, canvas.width / 2, qrSize + padding + 30);
-
-			ctx.fillStyle = '#64748b';
-			ctx.font = '14px sans-serif';
-			ctx.fillText(micrositeTitle, canvas.width / 2, qrSize + padding + 50);
-
-			// Download
-			canvas.toBlob((blob) => {
-				if (!blob) return;
-				const url = window.URL.createObjectURL(blob);
-				const a = document.createElement('a');
-				a.href = url;
-				a.download = `qr-${qrSlug}.png`;
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-				window.URL.revokeObjectURL(url);
-			});
-		} catch (error) {
-			console.error('Failed to download QR code:', error);
+	const stopAutoRefresh = () => {
+		if (autoRefreshInterval) {
+			clearInterval(autoRefreshInterval);
+			autoRefreshInterval = null;
 		}
 	};
 
-	onMount(loadMicrosites);
+	onMount(() => {
+		loadMicrosites();
+		startAutoRefresh();
+
+		// Cleanup on unmount
+		return () => {
+			stopAutoRefresh();
+		};
+	});
 </script>
 
 <svelte:head>
@@ -221,12 +159,25 @@
 			<h1 class="font-display text-2xl font-semibold">Kelola Microsite</h1>
 			<p class="text-sm text-white/60">Atur tampilan profil bio kamu.</p>
 		</div>
-		<a
-			class="rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
-			href="/dashboard/microsites/new"
-		>
-			+ Buat Microsite
-		</a>
+		<div class="flex items-center gap-3">
+			<div
+				class="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5"
+			>
+				<span class="relative flex h-2 w-2">
+					<span
+						class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+					></span>
+					<span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+				</span>
+				<span class="text-[10px] font-medium text-emerald-400">Live</span>
+			</div>
+			<a
+				class="rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
+				href="/dashboard/microsites/new"
+			>
+				+ Buat Microsite
+			</a>
+		</div>
 	</div>
 
 	<div class="glass-panel rounded-3xl p-6">
@@ -236,7 +187,12 @@
 			<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
 		{:else if microsites.length === 0}
 			{#if plan === 'pro'}
-				<p class="text-sm text-white/60">Belum ada microsite.</p>
+				<EmptyState
+					icon="microsite"
+					title="Belum ada microsite."
+					actionText="+ Buat Microsite Pertama"
+					actionHref="/dashboard/microsites/new"
+				/>
 			{:else}
 				<div class="py-8 text-center">
 					<p class="text-sm text-white/60">
@@ -257,115 +213,18 @@
 			{/if}
 		{:else}
 			<!-- Summary Stats -->
-			<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-				<div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-					<div class="text-xs text-white/50">Total Microsite</div>
-					<div class="font-display mt-1 text-2xl font-semibold">{microsites.length}</div>
-				</div>
-				<div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-					<div class="text-xs text-white/50">Aktif</div>
-					<div class="font-display mt-1 text-2xl font-semibold text-emerald-400">
-						{microsites.filter((s) => s.isActive).length}
-					</div>
-				</div>
-				<div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-					<div class="text-xs text-white/50">Nonaktif</div>
-					<div class="font-display mt-1 text-2xl font-semibold text-white/40">
-						{microsites.filter((s) => !s.isActive).length}
-					</div>
-				</div>
-			</div>
+			<MicrositeStats {stats} />
 
 			<!-- Microsite Cards -->
 			<div class="space-y-4">
 				{#each paginatedMicrosites as site (site.id)}
-					<div
-						class="group rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-white/20 hover:bg-white/10"
-					>
-						<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-							<!-- Left Section: Avatar + Info -->
-							<div class="flex items-start gap-4">
-								<!-- Avatar -->
-								<div
-									class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5"
-								>
-									{#if site.avatarUrl}
-										<img src={site.avatarUrl} alt={site.title} class="h-full w-full object-cover" />
-									{:else}
-										<div class="text-2xl text-white/30">
-											{site.title.charAt(0).toUpperCase()}
-										</div>
-									{/if}
-								</div>
-
-								<!-- Info -->
-								<div class="min-w-0 flex-1">
-									<div class="flex items-center gap-2">
-										<h3 class="font-display truncate text-base font-semibold">{site.title}</h3>
-										<span
-											class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold {site.isActive
-												? 'bg-emerald-500/20 text-emerald-400'
-												: 'bg-white/10 text-white/40'}"
-										>
-											{site.isActive ? '● Aktif' : '○ Nonaktif'}
-										</span>
-									</div>
-									<div class="mt-1 flex items-center gap-2 text-xs text-white/50">
-										<span class="truncate">glx.my.id/m/{site.slug}</span>
-									</div>
-									{#if site.bio}
-										<p class="mt-2 line-clamp-2 text-xs text-white/60">{site.bio}</p>
-									{/if}
-									<div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-white/40">
-										{#if site.theme}
-											<span class="rounded-full bg-white/5 px-2 py-0.5">🎨 {site.theme}</span>
-										{/if}
-										{#if site.animation}
-											<span class="rounded-full bg-white/5 px-2 py-0.5">✨ {site.animation}</span>
-										{/if}
-									</div>
-								</div>
-							</div>
-
-							<!-- Right Section: Actions -->
-							<div class="flex flex-wrap items-center gap-2">
-								<button
-									class="rounded-full border border-violet-400/40 bg-violet-500/10 px-4 py-2 text-xs font-medium text-violet-300 transition hover:border-violet-400 hover:bg-violet-500/20"
-									type="button"
-									onclick={() => handleCopyLink(site.slug)}
-								>
-									{copiedSlug === site.slug ? '✓ Tersalin!' : '📋 Salin Link'}
-								</button>
-								<a
-									class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-									href={`/dashboard/microsites/${site.id}/edit`}
-								>
-									✏️ Edit
-								</a>
-								<a
-									class="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-xs font-medium text-cyan-300 transition hover:border-cyan-400 hover:bg-cyan-500/20"
-									target="_blank"
-									href={`https://${baseUrl}/m/${site.slug}`}
-								>
-									🔗 Buka
-								</a>
-								<button
-									class="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-									type="button"
-									onclick={() => openQr(site.slug)}
-								>
-									📱 QR
-								</button>
-								<button
-									class="rounded-full border border-red-400/40 bg-red-500/10 px-4 py-2 text-xs font-medium text-red-300 transition hover:border-red-400 hover:bg-red-500/20"
-									type="button"
-									onclick={() => confirmDelete(site)}
-								>
-									🗑️ Hapus
-								</button>
-							</div>
-						</div>
-					</div>
+					<MicrositeCard
+						microsite={site}
+						{baseUrl}
+						onEdit={(id) => {}}
+						onDelete={confirmDelete}
+						onQR={openQr}
+					/>
 				{/each}
 			</div>
 
@@ -390,18 +249,19 @@
 
 						<!-- Page Numbers -->
 						<div class="flex items-center gap-1">
-							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as page (page)}
-								{#if totalPages <= 7 || page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)}
+							{#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNumber (pageNumber)}
+								{#if totalPages <= 7 || pageNumber === 1 || pageNumber === totalPages || (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)}
 									<button
-										class="h-8 w-8 rounded-lg text-xs font-medium transition {page === currentPage
+										class="h-8 w-8 rounded-lg text-xs font-medium transition {pageNumber ===
+										currentPage
 											? 'bg-linear-to-r from-violet-500 to-cyan-400 text-white'
 											: 'border border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10'}"
 										type="button"
-										onclick={() => goToPage(page)}
+										onclick={() => goToPage(pageNumber)}
 									>
-										{page}
+										{pageNumber}
 									</button>
-								{:else if page === currentPage - 2 || page === currentPage + 2}
+								{:else if pageNumber === currentPage - 2 || pageNumber === currentPage + 2}
 									<span class="px-1 text-xs text-white/40">...</span>
 								{/if}
 							{/each}
@@ -424,203 +284,26 @@
 
 <!-- Delete Confirmation Modal -->
 {#if deletingItem}
-	<div
-		class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-6"
-		onclick={cancelDelete}
-		onkeydown={(e) => e.key === 'Escape' && cancelDelete()}
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
-	>
-		<div
-			class="glass-panel w-full max-w-sm rounded-3xl p-6"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-			role="document"
-		>
-			<div class="flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-red-400"
-				>
-					!
-				</div>
-				<div>
-					<div class="font-display text-lg font-semibold">Hapus Microsite</div>
-					<p class="text-xs text-white/60">Tindakan ini tidak bisa dibatalkan.</p>
-				</div>
-			</div>
-			<div
-				class="mt-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80"
-			>
-				{deletingItem.title}
-			</div>
-			{#if deleteError}
-				<div class="mt-3">
-					<Toast message={deleteError} type="error" onClose={() => (deleteError = '')} />
-				</div>
-			{/if}
-			<div class="mt-4 flex justify-end gap-3">
-				<button
-					class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
-					type="button"
-					onclick={cancelDelete}
-					disabled={isDeleting}>Batal</button
-				>
-				<button
-					class="rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-red-500/25 transition hover:-translate-y-0.5 hover:shadow-red-500/40 disabled:opacity-50"
-					type="button"
-					onclick={handleDelete}
-					disabled={isDeleting}>{isDeleting ? 'Menghapus...' : 'Hapus'}</button
-				>
-			</div>
-		</div>
-	</div>
+	<ConfirmDialog
+		isOpen={true}
+		title="Hapus Microsite"
+		description="Tindakan ini tidak bisa dibatalkan."
+		itemLabel={deletingItem.title}
+		{isDeleting}
+		error={deleteError}
+		onConfirm={handleDelete}
+		onCancel={cancelDelete}
+	/>
 {/if}
 
+<!-- QR Modal -->
 {#if qrSlug}
-	<div
-		class="fixed inset-0 z-30 flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm"
-		onclick={closeQr}
-		onkeydown={(e) => e.key === 'Escape' && closeQr()}
-		role="button"
-		tabindex="0"
-	>
-		<div
-			class="glass-panel w-full max-w-md rounded-3xl p-6 shadow-2xl"
-			onclick={(e) => e.stopPropagation()}
-			onkeydown={(e) => e.stopPropagation()}
-			role="dialog"
-			aria-modal="true"
-		>
-			<div class="mb-5 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400"
-				>
-					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-						></path>
-					</svg>
-				</div>
-				<div class="flex-1">
-					<h2 class="font-display text-lg font-semibold">QR Code Microsite</h2>
-					<p class="text-xs text-white/60">Scan untuk akses cepat</p>
-				</div>
-				<button
-					class="rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
-					type="button"
-					onclick={closeQr}
-					aria-label="Tutup"
-				>
-					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						></path>
-					</svg>
-				</button>
-			</div>
-
-			<!-- QR Code Display -->
-			<div class="mb-5 flex justify-center">
-				<div class="rounded-2xl bg-white p-4 shadow-xl">
-					<img
-						src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent('https://glx.my.id/m/' + qrSlug)}`}
-						alt="QR Code"
-						class="h-55 w-55"
-					/>
-				</div>
-			</div>
-
-			<!-- Link Info -->
-			<div class="mb-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-				<div class="mb-2 flex items-center gap-2">
-					<svg
-						class="h-4 w-4 text-violet-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-						></path>
-					</svg>
-					<span class="flex-1 font-mono text-sm font-semibold text-white">glx.my.id/m/{qrSlug}</span
-					>
-					<button
-						class="rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
-						type="button"
-						onclick={handleCopyQrLink}
-						aria-label="Copy link"
-					>
-						{#if copiedQrLink}
-							<svg
-								class="h-4 w-4 text-green-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 13l4 4L19 7"
-								></path>
-							</svg>
-						{:else}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-								></path>
-							</svg>
-						{/if}
-					</button>
-				</div>
-				<div class="text-xs break-all text-white/60">
-					{microsites.find((s) => s.slug === qrSlug)?.title || 'Microsite'}
-				</div>
-			</div>
-
-			<!-- Actions -->
-			<div class="flex gap-3">
-				<button
-					class="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-medium text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-					type="button"
-					onclick={handleDownloadQr}
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-						></path>
-					</svg>
-					Download
-				</button>
-				<button
-					class="flex flex-1 items-center justify-center gap-2 rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
-					type="button"
-					onclick={closeQr}
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"
-						></path>
-					</svg>
-					Selesai
-				</button>
-			</div>
-		</div>
-	</div>
+	<QRModal
+		isOpen={true}
+		slug={qrSlug}
+		title={microsites.find((s) => s.slug === qrSlug)?.title || 'Microsite'}
+		{baseUrl}
+		prefix="m/"
+		onClose={closeQr}
+	/>
 {/if}

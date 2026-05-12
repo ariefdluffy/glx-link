@@ -1,5 +1,32 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
+
 	let { data } = $props();
+	let autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
+
+	// Auto-refresh stats every 10 seconds
+	const startAutoRefresh = () => {
+		autoRefreshInterval = setInterval(() => {
+			invalidateAll();
+		}, 10000); // 10 seconds
+	};
+
+	const stopAutoRefresh = () => {
+		if (autoRefreshInterval) {
+			clearInterval(autoRefreshInterval);
+			autoRefreshInterval = null;
+		}
+	};
+
+	onMount(() => {
+		startAutoRefresh();
+
+		// Cleanup on unmount
+		return () => {
+			stopAutoRefresh();
+		};
+	});
 </script>
 
 <svelte:head>
@@ -7,6 +34,25 @@
 </svelte:head>
 
 <div class="space-y-6">
+	<!-- Live Indicator -->
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 class="font-display text-2xl font-semibold">Dashboard</h1>
+			<p class="text-sm text-white/60">Pantau performa link dan microsite Anda secara real-time</p>
+		</div>
+		<div
+			class="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5"
+		>
+			<span class="relative flex h-2 w-2">
+				<span
+					class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+				></span>
+				<span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+			</span>
+			<span class="text-[10px] font-medium text-emerald-400">Live • Auto-refresh 10s</span>
+		</div>
+	</div>
+
 	<!-- Stats Grid -->
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 		<div class="glass-panel rounded-3xl p-5">
@@ -15,22 +61,22 @@
 			<div class="mt-3 text-xs text-white/45">Shortlink yang aktif</div>
 		</div>
 		<div class="glass-panel rounded-3xl p-5">
-			<div class="text-xs text-white/50">Total Klik</div>
+			<div class="text-xs text-white/50">Klik Shortlink</div>
 			<div class="font-display mt-2 text-2xl">{data.stats.totalClicks}</div>
-			<div class="mt-3 text-xs text-white/45">Semua shortlink</div>
+			<div class="mt-3 text-xs text-white/45">Total klik semua link</div>
 		</div>
 		<div class="glass-panel rounded-3xl p-5">
-			<div class="text-xs text-white/50">Microsite Aktif</div>
+			<div class="text-xs text-white/50">Klik Microsite</div>
 			<div class="font-display mt-2 text-2xl">
 				{#if data.stats.plan === 'pro'}
-					{data.stats.activeMicrosites} / {data.stats.totalMicrosites}
+					{data.stats.totalMicrositeClicks}
 				{:else}
 					-
 				{/if}
 			</div>
 			<div class="mt-3 text-xs text-white/45">
 				{#if data.stats.plan === 'pro'}
-					Slot: {data.stats.totalMicrosites}/{data.stats.micrositeLimit}
+					Total kunjungan microsite
 				{:else}
 					<span
 						class="rounded bg-linear-to-r from-violet-500 to-cyan-400 px-1.5 py-0.5 text-[10px] font-semibold text-white"
@@ -112,99 +158,79 @@
 					<div
 						class="group relative overflow-hidden rounded-2xl border border-white/10 bg-linear-to-br from-white/5 to-white/2 p-4 transition-all duration-300 hover:border-white/20 hover:from-white/10 hover:to-white/5"
 					>
-						<div class="flex items-start justify-between gap-4">
+						<div class="flex items-start gap-4">
+							<!-- Icon -->
+							<div class="shrink-0">
+								<div
+									class="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-violet-500/30 to-cyan-500/30 text-2xl"
+								>
+									🔗
+								</div>
+							</div>
+
+							<!-- Content -->
 							<div class="min-w-0 flex-1">
 								<!-- Short URL -->
-								<div class="mb-2 flex items-center gap-2">
-									<div
-										class="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500/20 to-cyan-500/20 text-sm"
-									>
-										🔗
+								<div class="font-display mb-1 truncate text-base font-semibold text-white">
+									glx.my.id/{link.slug}
+								</div>
+
+								<!-- Destination URL -->
+								<div class="mb-3 flex items-center gap-2">
+									<span class="text-xs">→</span>
+									<span class="truncate text-xs text-white/60">
+										{link.destination}
+									</span>
+								</div>
+
+								<!-- Meta Info -->
+								<div class="flex flex-wrap items-center gap-3 text-[10px] text-white/40">
+									<div class="flex items-center gap-1">
+										<span>👁️</span>
+										<span class="font-semibold text-emerald-400">{link.clicks ?? 0}</span>
+										<span>klik</span>
 									</div>
-									<div class="min-w-0 flex-1">
-										<div class="truncate font-mono text-sm font-medium text-white/90">
-											glx.my.id/{link.slug}
-										</div>
-										<div class="mt-0.5 text-[10px] text-white/40">
+									<div class="h-3 w-px bg-white/10"></div>
+									<div class="flex items-center gap-1">
+										<span>📅</span>
+										<span>
 											{link.createdAt
 												? new Date(link.createdAt).toLocaleDateString('id-ID', {
 														day: 'numeric',
 														month: 'short',
-														year: 'numeric',
-														hour: '2-digit',
-														minute: '2-digit'
+														year: 'numeric'
 													})
 												: '-'}
-										</div>
-									</div>
-								</div>
-
-								<!-- Destination URL -->
-								<div class="mb-3 ml-10">
-									<div class="mb-1 text-[10px] text-white/40">Tujuan:</div>
-									<div
-										class="truncate rounded-lg bg-white/5 px-2 py-1 font-mono text-xs text-white/60"
-									>
-										{link.destination}
-									</div>
-								</div>
-
-								<!-- Stats Bar -->
-								<div class="ml-10 flex items-center gap-4">
-									<div class="flex items-center gap-1.5">
-										<!-- <span class="text-lg">👆</span> -->
-										<span class="text-xs text-white/50">Klik:</span>
-										<span class="font-display text-sm font-semibold text-emerald-400">
-											{link.clicks ?? 0}
 										</span>
 									</div>
-									<!-- <div class="h-3 w-px bg-white/10"></div> -->
-									<!-- <div class="flex items-center gap-1.5">
-										<span class="text-xs text-white/50">ID:</span>
-										<span class="font-mono text-xs text-white/40">#{link.id}</span>
-									</div> -->
 								</div>
-							</div>
 
-							<!-- Action Buttons -->
-							<div class="flex flex-col gap-2">
-								<button
-									class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition-all hover:border-white/30 hover:bg-white/10"
-									onclick={() => {
-										navigator.clipboard.writeText(`https://glx.my.id/${link.slug}`);
-									}}
-								>
-									📋 Salin
-								</button>
-								<a
-									class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-center text-xs text-white/70 transition-all hover:border-white/30 hover:bg-white/10"
-									href="https://glx.my.id/{link.slug}"
-									target="_blank"
-								>
-									🔗 Buka
-								</a>
+								<!-- Action Buttons -->
+								<div class="mt-3 flex items-center gap-2">
+									<a
+										class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition-all hover:border-white/30 hover:bg-white/10"
+										href={`/dashboard/links?search=${link.slug}`}
+									>
+										✏️ Edit
+									</a>
+									<a
+										class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition-all hover:border-white/30 hover:bg-white/10"
+										href="https://glx.my.id/{link.slug}"
+										target="_blank"
+									>
+										👁️ Lihat
+									</a>
+									<button
+										class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition-all hover:border-white/30 hover:bg-white/10"
+										onclick={() => {
+											navigator.clipboard.writeText(`https://glx.my.id/${link.slug}`);
+										}}
+									>
+										📋 Salin
+									</button>
+								</div>
 							</div>
 						</div>
-
-						<!-- Performance Indicator -->
-						{#if (link.clicks ?? 0) > 0}
-							<div class="mt-3 ml-10">
-								<div class="flex items-center gap-2">
-									<div class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/5">
-										<div
-											class="h-full rounded-full bg-linear-to-r from-emerald-500 to-cyan-500"
-											style="width: {Math.min(
-												((link.clicks ?? 0) /
-													Math.max(...data.latestLinks.map((l) => l.clicks ?? 0))) *
-													100,
-												100
-											)}%"
-										></div>
-									</div>
-									<span class="text-[10px] whitespace-nowrap text-white/40">Performa</span>
-								</div>
-							</div>
-						{/if}
 					</div>
 				{/each}
 			{/if}
@@ -215,7 +241,7 @@
 	<div class="glass-panel rounded-3xl p-6">
 		<div class="flex flex-wrap items-center justify-between gap-4">
 			<div>
-				<div class="font-display text-lg font-semibold">🌐 Microsite Terbaru</div>
+				<div class="font-display text-lg font-semibold">Microsite Terbaru</div>
 				<div class="text-xs text-white/50">Kelola dan pantau microsite Anda.</div>
 			</div>
 			<a
@@ -312,6 +338,12 @@
 
 								<!-- Meta Info -->
 								<div class="flex flex-wrap items-center gap-3 text-[10px] text-white/40">
+									<div class="flex items-center gap-1">
+										<span>👁️</span>
+										<span class="font-semibold text-emerald-400">{ms.clicks ?? 0}</span>
+										<span>klik</span>
+									</div>
+									<div class="h-3 w-px bg-white/10"></div>
 									<div class="flex items-center gap-1">
 										<span>🎨</span>
 										<span>Tema: {ms.theme ?? 'default'}</span>

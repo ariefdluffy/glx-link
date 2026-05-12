@@ -1,14 +1,22 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import MicrositePreview from '$lib/components/MicrositePreview.svelte';
-	import SocialIconRow from '$lib/components/SocialIconRow.svelte';
 	import Toast from '$lib/components/toast/Toast.svelte';
+	import StepIndicator from '$lib/components/microsite-form/StepIndicator.svelte';
+	import Step1_BasicInfo from '$lib/components/microsite-form/Step1_BasicInfo.svelte';
+	import Step2_Appearance from '$lib/components/microsite-form/Step2_Appearance.svelte';
+	import Step3_Links from '$lib/components/microsite-form/Step3_Links.svelte';
+	import Step4_Review from '$lib/components/microsite-form/Step4_Review.svelte';
 
 	const plan = $page.data.plan;
 
-	const themes = ['default', 'gradient', 'minimal', 'neon'];
-	const animations = ['fade', 'slide-up', 'scale', 'bounce', 'flip', 'zoom', 'none'];
+	// Multi-step state
+	let currentStep = $state(1);
+	const totalSteps = 4;
 
+	// Form state
 	let title = $state('');
 	let slug = $state('');
 	let bio = $state('');
@@ -17,6 +25,10 @@
 	let avatarUrl = $state('');
 	let headerBg = $state('');
 	let linkTextColor = $state('');
+	let facebookUrl = $state('');
+	let instagramUrl = $state('');
+	let youtubeUrl = $state('');
+	let websiteUrl = $state('');
 	let isActive = $state(true);
 	let errorMessage = $state('');
 	let isLoading = $state(false);
@@ -27,14 +39,7 @@
 	let dragOverIndex: number | null = $state(null);
 	let links = $state([{ label: '', url: '', icon: '', type: 'link', caption: '', animation: '' }]);
 
-	type SocialPlatform = 'facebook' | 'website' | 'youtube' | 'instagram';
-	const socialInputMeta: Record<SocialPlatform, { label: string; placeholder: string }> = {
-		facebook: { label: 'Facebook', placeholder: 'Facebook URL' },
-		website: { label: 'Website', placeholder: 'Website URL' },
-		youtube: { label: 'YouTube', placeholder: 'YouTube URL' },
-		instagram: { label: 'Instagram', placeholder: 'Instagram URL' }
-	};
-
+	// Upload handlers
 	const handleAvatarUpload = async (e: Event) => {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -57,6 +62,7 @@
 		if (data.url) headerBg = `url(${data.url})`;
 	};
 
+	// Drag and drop handlers
 	const handleDragStart = (index: number) => {
 		draggedIndex = index;
 	};
@@ -94,6 +100,7 @@
 		links = newLinks;
 	};
 
+	// QR Code handlers
 	const openQr = () => {
 		if (slug.trim()) {
 			qrUrl = `https://glx.my.id/m/${slug.trim()}`;
@@ -181,6 +188,7 @@
 		}
 	};
 
+	// Link management
 	const addLink = (
 		type: 'link' | 'divider' | 'image' | 'text' = 'link',
 		preset?: { label?: string; icon?: string; url?: string }
@@ -198,35 +206,9 @@
 		];
 	};
 
-	const addTextLabel = () => {
-		addLink('text', { label: 'Label tanpa link' });
-	};
-
-	const getSocialValue = (platform: SocialPlatform) => {
-		const found = links.find((item) => item.type === 'social' && item.icon === platform);
-		return found?.url ?? '';
-	};
-
-	const setSocialValue = (platform: SocialPlatform, url: string) => {
-		const idx = links.findIndex((item) => item.type === 'social' && item.icon === platform);
-		if (idx === -1) {
-			links = [
-				...links,
-				{
-					label: socialInputMeta[platform].label,
-					url,
-					icon: platform,
-					type: 'social',
-					caption: '',
-					animation: ''
-				}
-			];
-			return;
-		}
-		links[idx].url = url;
-		links[idx].label = socialInputMeta[platform].label;
-		links[idx].icon = platform;
-		links[idx].type = 'social';
+	// Wrapper for Step3_Links compatibility
+	const handleAddLink = (type: string) => {
+		addLink(type as 'link' | 'divider' | 'image' | 'text');
 	};
 
 	const removeLink = (index: number) => {
@@ -244,6 +226,51 @@
 		if (data.url) links[index].url = data.url;
 	};
 
+	// Step validation
+	const validateStep = (step: number): boolean => {
+		errorMessage = '';
+
+		if (step === 1) {
+			if (title.trim().length < 2) {
+				errorMessage = 'Judul minimal 2 karakter.';
+				return false;
+			}
+			if (slug.trim().length < 3) {
+				errorMessage = 'Slug minimal 3 karakter.';
+				return false;
+			}
+		}
+
+		return true;
+	};
+
+	// Navigation handlers
+	const nextStep = () => {
+		if (!validateStep(currentStep)) {
+			return;
+		}
+
+		if (currentStep < totalSteps) {
+			currentStep++;
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+	};
+
+	const prevStep = () => {
+		if (currentStep > 1) {
+			currentStep--;
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+	};
+
+	const goToStep = (step: number) => {
+		if (step <= currentStep) {
+			currentStep = step;
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+	};
+
+	// Submit handler
 	const handleSubmit = async () => {
 		errorMessage = '';
 		if (title.trim().length < 2) {
@@ -254,6 +281,44 @@
 			errorMessage = 'Slug minimal 3 karakter.';
 			return;
 		}
+
+		const socialLinks = [];
+		if (facebookUrl)
+			socialLinks.push({
+				type: 'social',
+				label: 'Facebook',
+				url: facebookUrl,
+				icon: 'facebook',
+				caption: '',
+				animation: ''
+			});
+		if (instagramUrl)
+			socialLinks.push({
+				type: 'social',
+				label: 'Instagram',
+				url: instagramUrl,
+				icon: 'instagram',
+				caption: '',
+				animation: ''
+			});
+		if (youtubeUrl)
+			socialLinks.push({
+				type: 'social',
+				label: 'YouTube',
+				url: youtubeUrl,
+				icon: 'youtube',
+				caption: '',
+				animation: ''
+			});
+		if (websiteUrl)
+			socialLinks.push({
+				type: 'social',
+				label: 'Website',
+				url: websiteUrl,
+				icon: 'website',
+				caption: '',
+				animation: ''
+			});
 
 		isLoading = true;
 		try {
@@ -268,9 +333,8 @@
 					animation,
 					avatarUrl: avatarUrl.trim() || null,
 					headerBg: headerBg.trim() || null,
-
 					isActive,
-					links: links.map((l) => ({
+					links: [...links, ...socialLinks].map((l) => ({
 						type: l.type || 'link',
 						label: l.label || '',
 						url: l.url || '',
@@ -315,379 +379,126 @@
 			<p class="mt-2 text-xs text-white/40">
 				Upgrade untuk membuat halaman profil bio dengan 4 tema dan animasi.
 			</p>
-			<a
-				href="/dashboard/billing"
+			<button
+				type="button"
+				onclick={() => goto(resolve('/dashboard/billing'))}
 				class="mt-4 inline-block rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5"
-				>Upgrade Sekarang</a
+				>Upgrade Sekarang</button
 			>
 		</div>
 	</div>
 {:else}
-	<div class="mx-auto w-full max-w-6xl px-6 pb-16">
+	<div class="mx-auto w-full max-w-7xl px-6 pb-16">
 		<div class="py-6">
 			<h1 class="font-display text-2xl font-semibold">Buat Microsite Baru</h1>
-			<p class="text-sm text-white/60">Lengkapi profil, lihat pratinjau langsung di samping.</p>
+			<p class="text-sm text-white/60">Ikuti langkah-langkah untuk membuat microsite Anda.</p>
 		</div>
 
+		<!-- Step Indicator -->
+		<div class="mb-8">
+			<StepIndicator {currentStep} {totalSteps} onStepClick={goToStep} />
+		</div>
+
+		<!-- Main Content Grid -->
 		<div class="grid gap-8 lg:grid-cols-[1fr_420px]">
-			<!-- Form -->
-			<div class="glass-panel rounded-3xl p-6 md:p-8">
-				<div class="space-y-4">
-					<label class="text-xs text-white/60" for="title">Judul</label>
-					<input
-						id="title"
-						type="text"
-						bind:value={title}
-						placeholder="Nama brand atau personal"
-						class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-white/40"
-					/>
+			<!-- Left: Form Panel -->
+			<div class="space-y-6">
+				<div class="glass-panel rounded-3xl p-6 md:p-8">
+					<!-- Step Content -->
+					{#if currentStep === 1}
+						<Step1_BasicInfo
+							bind:title
+							bind:slug
+							bind:bio
+							{plan}
+							onGenerateQR={openQr}
+							bind:facebookUrl
+							bind:instagramUrl
+							bind:youtubeUrl
+							bind:websiteUrl
+						/>
+					{:else if currentStep === 2}
+						<Step2_Appearance
+							bind:avatarUrl
+							bind:headerBg
+							bind:linkTextColor
+							bind:theme
+							bind:animation
+							onAvatarUpload={handleAvatarUpload}
+							onHeaderUpload={handleHeaderUpload}
+						/>
+					{:else if currentStep === 3}
+						<Step3_Links
+							bind:links
+							onAddLink={handleAddLink}
+							onRemoveLink={removeLink}
+							onMoveLink={moveLink}
+							onDragStart={handleDragStart}
+							onDragOver={handleDragOver}
+							onDrop={handleDrop}
+							onDragEnd={handleDragEnd}
+							onLinkImageUpload={handleLinkImageUpload}
+							{dragOverIndex}
+						/>
+					{:else if currentStep === 4}
+						<Step4_Review
+							{title}
+							{slug}
+							{theme}
+							{animation}
+							{avatarUrl}
+							{links}
+							{facebookUrl}
+							{instagramUrl}
+							{youtubeUrl}
+							{websiteUrl}
+							bind:isActive
+							onGenerateQR={openQr}
+						/>
+					{/if}
 
-					<div class="flex items-end gap-3">
-						<div class="flex-1">
-							<label class="text-xs text-white/60" for="slug">Slug</label>
-							<input
-								id="slug"
-								type="text"
-								bind:value={slug}
-								placeholder="misal: naya"
-								class="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-white/40"
-								disabled={plan !== 'pro'}
-							/>
-						</div>
+					<!-- Navigation Buttons -->
+					<div class="mt-8 flex items-center justify-between gap-4">
 						<button
 							type="button"
-							class="mb-0.5 rounded-2xl border border-white/15 px-4 py-3 text-xs text-white/70 transition hover:border-violet-400/50 hover:bg-violet-500/10"
-							onclick={openQr}
-							title="Tampilkan QR Code">QR</button
+							class="rounded-2xl border border-white/15 px-6 py-3 text-sm font-medium text-white/70 transition hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+							onclick={prevStep}
+							disabled={currentStep === 1}
 						>
-					</div>
+							← Kembali
+						</button>
 
-					<label class="text-xs text-white/60" for="bio">Bio</label>
-					<textarea
-						id="bio"
-						rows="3"
-						bind:value={bio}
-						placeholder="Ceritakan singkat tentang kamu"
-						class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-white/40"
-					></textarea>
-
-					<label class="text-xs text-white/60">Foto Avatar</label>
-					<div class="mt-2 flex items-center gap-4">
-						{#if avatarUrl}
-							<img
-								src={avatarUrl}
-								class="h-16 w-16 rounded-full border border-white/20 object-cover"
-								alt="Avatar"
-							/>
+						{#if currentStep < totalSteps}
+							<button
+								type="button"
+								class="rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
+								onclick={nextStep}
+							>
+								Lanjut →
+							</button>
 						{:else}
-							<div
-								class="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-white/20 text-xs text-white/40"
-							>
-								Foto
-							</div>
-						{/if}
-						<button
-							type="button"
-							class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 hover:border-white/40"
-							onclick={() => document.getElementById('avatar-input')?.click()}>Upload</button
-						>
-						<input
-							id="avatar-input"
-							type="file"
-							accept="image/*"
-							class="hidden"
-							onchange={handleAvatarUpload}
-						/>
-						{#if avatarUrl}
-							<button type="button" class="text-xs text-red-400" onclick={() => (avatarUrl = '')}
-								>Hapus</button
-							>
-						{/if}
-					</div>
-
-					<label class="text-xs text-white/60">Background Header</label>
-					<div class="mt-2 flex items-center gap-4">
-						{#if headerBg}
-							<div
-								class="h-16 w-24 rounded-xl border border-white/20"
-								style="background: {headerBg}; background-size: cover; background-position: center;"
-							></div>
-						{/if}
-						<button
-							type="button"
-							class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 hover:border-white/40"
-							onclick={() => document.getElementById('header-input')?.click()}
-							>Upload Background</button
-						>
-						<input
-							id="header-input"
-							type="file"
-							accept="image/*"
-							class="hidden"
-							onchange={handleHeaderUpload}
-						/>
-						{#if headerBg}
-							<button type="button" class="text-xs text-red-400" onclick={() => (headerBg = '')}
-								>Hapus</button
-							>
-						{/if}
-					</div>
-					<p class="mt-1 text-[10px] text-white/40">
-						Resolusi ideal: 375x200px (smartphone). Bisa juga pakai CSS gradient.
-					</p>
-
-					<label class="text-xs text-white/60" for="linkTextColor">Warna Teks Daftar Link</label>
-					<div class="mt-2 flex items-center gap-3">
-						<input
-							id="linkTextColor"
-							type="color"
-							bind:value={linkTextColor}
-							class="h-10 w-14 cursor-pointer rounded-xl border border-white/20 bg-white/5 p-1"
-						/>
-						<input
-							type="text"
-							bind:value={linkTextColor}
-							placeholder="#111827"
-							class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white"
-						/>
-						<button
-							type="button"
-							class="rounded-full border border-white/15 px-3 py-1 text-[11px] text-white/70"
-							onclick={() => (linkTextColor = '')}
-						>
-							Reset
-						</button>
-					</div>
-
-					<div class="mb-3 flex items-center justify-between">
-						<label class="text-xs font-semibold text-white/60">Daftar Link</label>
-						<button
-							class="rounded-full border border-white/15 px-3 py-1 text-xs text-white/70 transition hover:border-white/40"
-							type="button"
-							onclick={() => addLink('link')}
-						>
-							+ Tambah Link
-						</button>
-					</div>
-					<div class="mb-3 flex flex-wrap gap-2">
-						<button
-							type="button"
-							class="rounded-full border border-violet-400/40 bg-violet-500/15 px-3 py-1 text-[11px] text-violet-200 transition hover:bg-violet-500/25"
-							onclick={addTextLabel}
-						>
-							+ Tambah Text/Label
-						</button>
-					</div>
-					<div class="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-						<SocialIconRow
-							editable={true}
-							facebookUrl={getSocialValue('facebook')}
-							websiteUrl={getSocialValue('website')}
-							youtubeUrl={getSocialValue('youtube')}
-							instagramUrl={getSocialValue('instagram')}
-							onUpdate={(platform, value) => setSocialValue(platform, value)}
-						/>
-					</div>
-					<div class="max-h-[280px] space-y-2 overflow-y-auto pr-1">
-						{#each links as link, index (index)}
-							<div
-								class="space-y-2 rounded-2xl border bg-white/5 p-3 transition-all duration-150 {dragOverIndex ===
-								index
-									? 'border-violet-500/50'
-									: 'border-white/10'}"
-								draggable="true"
-								ondragstart={() => handleDragStart(index)}
-								ondragover={(e) => handleDragOver(e, index)}
-								ondrop={() => handleDrop(index)}
-								ondragend={handleDragEnd}
-							>
-								<div class="flex items-center justify-between gap-2">
-									<div class="flex items-center gap-1">
-										<button
-											type="button"
-											class="cursor-grab text-xs text-white/40 hover:text-white/70 active:cursor-grabbing"
-											title="Seret untuk urutkan">⠿</button
-										>
-										<span class="text-[10px] text-white/30">#{index + 1}</span>
-									</div>
-									<div class="flex items-center gap-1">
-										<button
-											type="button"
-											class="rounded px-1.5 py-0.5 text-[10px] text-white/40 hover:text-white/70 disabled:opacity-20"
-											disabled={index === 0}
-											onclick={() => moveLink(index, -1)}>▲</button
-										>
-										<button
-											type="button"
-											class="rounded px-1.5 py-0.5 text-[10px] text-white/40 hover:text-white/70 disabled:opacity-20"
-											disabled={index === links.length - 1}
-											onclick={() => moveLink(index, 1)}>▼</button
-										>
-									</div>
-								</div>
-								<!-- Type selector -->
-								<div class="flex gap-2">
-									{#each ['link', 'text', 'divider', 'image'] as t (t)}
-										<button
-											class="rounded-lg px-2 py-1 text-[10px] {(link.type || 'link') === t
-												? 'border border-violet-400 bg-violet-500/30 text-white'
-												: 'border border-white/10 text-white/50'}"
-											type="button"
-											onclick={() => (links[index].type = t)}>{t}</button
-										>
-									{/each}
-								</div>
-
-								{#if link.type === 'link'}
-									<!-- Label + Icon row -->
-									<div class="grid grid-cols-2 gap-2">
-										<input
-											placeholder="Label"
-											bind:value={link.label}
-											class="rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
-										/>
-										<input
-											placeholder="Icon (emoji)"
-											bind:value={link.icon}
-											class="rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
-										/>
-									</div>
-									<!-- URL row full-width prominent -->
-									<input
-										placeholder="URL"
-										bind:value={link.url}
-										class="w-full rounded-xl border border-cyan-400/40 bg-cyan-500/5 px-3 py-2.5 text-xs text-white placeholder-cyan-200/50 transition outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(34,211,238,0.15)]"
-									/>
-								{:else if link.type === 'text'}
-									<div class="space-y-2">
-										<input
-											placeholder="Teks Label"
-											bind:value={link.label}
-											class="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
-										/>
-										<p class="text-[10px] text-white/40">Ditampilkan sebagai teks tanpa URL.</p>
-									</div>
-								{:else if link.type === 'image'}
-									<div class="space-y-2">
-										<div class="flex items-center gap-2">
-											{#if link.url}
-												<img
-													src={link.url}
-													class="h-10 w-10 shrink-0 rounded-lg border border-white/10 object-cover"
-													alt=""
-												/>
-											{/if}
-											<button
-												type="button"
-												class="rounded-lg border border-white/15 px-3 py-1.5 text-[10px] text-white/70 hover:border-white/40"
-												onclick={() => document.getElementById('link-img-' + index)?.click()}
-											>
-												{link.url ? 'Ganti' : 'Upload Gambar'}
-											</button>
-											<input
-												id="link-img-{index}"
-												type="file"
-												accept="image/*"
-												class="hidden"
-												onchange={(e) => handleLinkImageUpload(index, e)}
-											/>
-											{#if link.url}
-												<button
-													type="button"
-													class="text-[10px] text-red-400"
-													onclick={() => (links[index].url = '')}>Hapus</button
-												>
-											{/if}
-										</div>
-										<input
-											placeholder="Caption (opsional)"
-											bind:value={link.caption}
-											class="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
-										/>
-									</div>
-								{:else if link.type === 'divider'}
-									<div class="py-2 text-center text-xs text-white/40">Garis pemisah</div>
-								{/if}
-
-								<!-- Animation picker -->
-								<div class="flex flex-wrap gap-1">
-									{#each ['', 'fade', 'slide-up', 'scale', 'bounce', 'flip', 'zoom'] as anim (anim)}
-										<button
-											class="rounded px-1.5 py-0.5 text-[10px] {(link.animation || '') === anim
-												? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
-												: 'text-white/40 hover:text-white/60'}"
-											type="button"
-											onclick={() => (links[index].animation = anim || '')}
-											>{anim || 'default'}</button
-										>
-									{/each}
-								</div>
-
-								<!-- Delete button -->
-								<button
-									class="flex w-full items-center justify-center gap-1 rounded-xl bg-red-500/15 px-3 py-2 text-xs font-medium text-red-300 transition hover:bg-red-500/30 hover:text-red-200"
-									type="button"
-									onclick={() => removeLink(index)}
-								>
-									🗑 Hapus
-								</button>
-							</div>
-						{/each}
-					</div>
-
-					<label class="text-xs text-white/60">Tema</label>
-					<div class="grid gap-3 md:grid-cols-4">
-						{#each themes as item (item)}
 							<button
-								class={`rounded-2xl border px-3 py-2 text-xs transition ${theme === item ? 'border-violet-400 bg-violet-500/20 text-white' : 'border-white/10 text-white/60 hover:border-white/30'}`}
 								type="button"
-								onclick={() => (theme = item)}
+								class="rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+								onclick={handleSubmit}
+								disabled={isLoading}
 							>
-								{item}
+								{isLoading ? 'Memproses...' : '✓ Buat Microsite'}
 							</button>
-						{/each}
+						{/if}
 					</div>
 
-					<label class="text-xs text-white/60">Animasi Teks & Card</label>
-					<div class="grid gap-2 md:grid-cols-4">
-						{#each animations as item (item)}
-							<button
-								class={`rounded-2xl border px-3 py-2 text-xs transition ${animation === item ? 'border-cyan-400 bg-cyan-500/20 text-white' : 'border-white/10 text-white/60 hover:border-white/30'}`}
-								type="button"
-								onclick={() => (animation = item)}
-							>
-								{item === 'none' ? 'Tanpa Animasi' : item}
-							</button>
-						{/each}
-					</div>
-
-					<label class="text-xs text-white/60">Status</label>
-					<div class="flex items-center gap-3 text-xs text-white/70">
-						<input type="checkbox" bind:checked={isActive} /> Aktifkan microsite
-					</div>
-
-					<div class="mt-4">
-						<button
-							class="w-full rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
-							onclick={handleSubmit}
-							disabled={isLoading}
-							type="button"
-						>
-							{isLoading ? 'Memproses...' : 'Buat Microsite'}
-						</button>
-
+					<!-- Error Message -->
+					{#if errorMessage}
 						<div class="mt-4">
-							{#if errorMessage}
-								<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
-							{/if}
+							<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
 						</div>
-					</div>
+					{/if}
 				</div>
 			</div>
 
-			<!-- Right: Live Preview Only -->
-			<div class="flex flex-col gap-6 lg:sticky lg:top-6">
-				<!-- Live Preview -->
+			<!-- Right: Preview Sidebar (Sticky) -->
+			<div class="lg:sticky lg:top-6 lg:h-fit">
 				<div class="glass-panel rounded-3xl p-4">
 					<div class="mb-3 text-center text-xs text-white/50">Pratinjau Langsung</div>
 					<div class="flex items-center justify-center">
@@ -699,31 +510,46 @@
 							{avatarUrl}
 							{headerBg}
 							{linkTextColor}
+							{facebookUrl}
+							{websiteUrl}
+							{youtubeUrl}
+							{instagramUrl}
 							{animation}
 							{links}
 						/>
 					</div>
 				</div>
-				<p class="text-center text-[10px] text-white/40">
-					glx.my.id/{slug || 'slug'} &middot; Tema {theme} &middot; Animasi {animation}
+				<p class="mt-4 text-center text-[10px] text-white/40">
+					glx.my.id/m/{slug || 'slug'} &middot; Tema {theme} &middot; Animasi {animation}
 				</p>
 			</div>
 		</div>
 	</div>
 
+	<!-- QR Code Modal -->
 	{#if showQr}
 		<div
 			class="fixed inset-0 z-30 flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm"
-			onclick={() => (showQr = false)}
-			onkeydown={(e) => e.key === 'Escape' && (showQr = false)}
 			role="button"
 			tabindex="0"
+			onclick={() => (showQr = false)}
+			onkeydown={(e) => {
+				if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+					showQr = false;
+				}
+			}}
 		>
 			<div
 				class="glass-panel w-full max-w-md rounded-3xl p-6 shadow-2xl"
-				onclick={(e) => e.stopPropagation()}
 				role="dialog"
 				aria-modal="true"
+				tabindex="0"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={(e) => {
+					if (e.key === 'Escape') {
+						e.stopPropagation();
+					}
+				}}
 			>
 				<div class="mb-5 flex items-center gap-3">
 					<div
@@ -771,7 +597,7 @@
 						</div>
 					{:else}
 						<div
-							class="flex h-[220px] w-[220px] items-center justify-center rounded-2xl bg-white/5 text-xs text-white/40"
+							class="flex h-55 w-55 items-center justify-center rounded-2xl bg-white/5 text-xs text-white/40"
 						>
 							Isi slug terlebih dahulu
 						</div>

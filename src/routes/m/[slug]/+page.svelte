@@ -145,15 +145,15 @@
 	<meta name="theme-color" content="#ffffff" />
 </svelte:head>
 
-<div class={`min-h-screen ${pageBgClass}`}>
-	<div class="mx-auto w-full max-w-[480px] px-4 py-8 sm:py-10 md:py-12">
+<div class={`min-h-dvh ${pageBgClass}`}>
+	<div class="mx-auto w-full max-w-[480px] px-4 py-6 sm:py-8">
 		<div class={cardClass}>
-			<div class="h-[150px] w-full bg-zinc-100 sm:h-[170px] md:h-[180px]" style={bannerStyle}></div>
+			<div class="h-[150px] w-full bg-zinc-100 sm:h-[180px] md:h-[200px]" style={bannerStyle}></div>
 
-			<div class="px-6 pb-6">
+			<div class="px-5 pb-5">
 				<div class="-mt-10 flex flex-col items-center">
 					<div
-						class="h-20 w-20 overflow-hidden rounded-full border-[3px] border-white bg-zinc-200 shadow-md"
+						class="h-26 w-26 overflow-hidden rounded-full border-[3px] border-white bg-zinc-200 shadow-md"
 					>
 						{#if data.microsite.avatarUrl}
 							<img
@@ -170,18 +170,18 @@
 						{/if}
 					</div>
 
-					<h1 class={`mt-4 text-center text-[18px] leading-7 font-bold ${titleClass} ${animClass}`}>
+					<h1 class={`mt-3 text-center text-[22px] leading-6 font-bold ${titleClass} ${animClass}`}>
 						{data.microsite.title}
 					</h1>
 
 					{#if data.microsite.bio}
-						<p class={`mt-1 text-center text-[14px] ${bioClass} ${animClass}`}>
+						<p class={`mt-1 text-center text-[14px] leading-5 ${bioClass} ${animClass}`}>
 							{data.microsite.bio}
 						</p>
 					{/if}
 				</div>
 
-				<div class="mt-6 w-full space-y-2">
+				<div class="mt-5 w-full space-y-4">
 					{#each data.links as link, i (link.id)}
 						{#if link.type === 'divider'}
 							<div
@@ -193,7 +193,7 @@
 								class="w-full {getAnimClass(link.animation)}"
 								style={`animation-delay: ${i * 0.15}s`}
 							>
-								<img src={link.url} alt={link.caption || ''} class="w-full rounded-xl" />
+								<img src={link.url} alt={link.caption || ''} class="mx-auto w-3/4 rounded-xl" />
 								{#if link.caption}
 									<p class="mt-1.5 text-center text-xs text-zinc-500">{link.caption}</p>
 								{/if}
@@ -231,7 +231,7 @@
 								href={link.url}
 								target="_blank"
 								rel="noreferrer"
-								class={`flex w-full items-center justify-between rounded-xl border px-4 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${linkItemClass} ${getAnimClass(
+								class={`flex w-full items-center justify-between rounded-xl border px-4 py-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${linkItemClass} ${getAnimClass(
 									link.animation
 								)}`}
 								style={`animation-delay: ${i * 0.08}s; font-size: ${link.fontSize || 14}px;`}
@@ -258,7 +258,7 @@
 
 				{#if data.links.length === 0}
 					<div
-						class={`mt-6 w-full rounded-xl border border-dashed py-6 text-center text-xs ${emptyClass}`}
+						class={`mt-5 w-full rounded-xl border border-dashed py-5 text-center text-xs ${emptyClass}`}
 					>
 						Belum ada link.
 					</div>
@@ -266,7 +266,7 @@
 			</div>
 
 			{#if data.microsite.facebookUrl || data.microsite.websiteUrl || data.microsite.youtubeUrl || data.microsite.instagramUrl}
-				<div class="mt-6">
+				<div class="mt-5 pb-1">
 					<SocialIconRow
 						editable={false}
 						facebookUrl={data.microsite.facebookUrl || ''}
@@ -287,6 +287,15 @@
 	.anim-slide-up {
 		animation: siteSlideUp 0.5s ease both;
 	}
+	.anim-slide-down {
+		animation: siteSlideDown 0.5s ease both;
+	}
+	.anim-slide-left {
+		animation: siteSlideLeft 0.5s ease both;
+	}
+	.anim-slide-right {
+		animation: siteSlideRight 0.5s ease both;
+	}
 	.anim-scale {
 		animation: siteScaleIn 0.4s ease both;
 	}
@@ -298,6 +307,30 @@
 	}
 	.anim-zoom {
 		animation: siteZoom 0.5s ease both;
+	}
+	.anim-zoom-in {
+		animation: siteZoomIn 0.5s ease both;
+	}
+	.anim-zoom-out {
+		animation: siteZoomOut 0.5s ease both;
+	}
+	.anim-rotate {
+		animation: siteRotate 0.6s ease both;
+	}
+	.anim-pulse {
+		animation: sitePulse 0.6s ease both;
+	}
+	.anim-shake {
+		animation: siteShake 0.5s ease both;
+	}
+	.anim-wiggle {
+		animation: siteWiggle 0.6s ease both;
+	}
+	.anim-glow {
+		animation: siteGlow 0.8s ease both;
+	}
+	.anim-blur-in {
+		animation: siteBlurIn 0.6s ease both;
 	}
 
 	@keyframes siteFadeIn {
@@ -318,6 +351,36 @@
 		to {
 			opacity: 1;
 			transform: translateY(0);
+		}
+	}
+	@keyframes siteSlideDown {
+		from {
+			opacity: 0;
+			transform: translateY(-30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes siteSlideLeft {
+		from {
+			opacity: 0;
+			transform: translateX(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+	@keyframes siteSlideRight {
+		from {
+			opacity: 0;
+			transform: translateX(-30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
 		}
 	}
 	@keyframes siteScaleIn {
@@ -364,6 +427,114 @@
 		to {
 			opacity: 1;
 			transform: scale(1);
+		}
+	}
+	@keyframes siteZoomIn {
+		from {
+			opacity: 0;
+			transform: scale(0.3);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+	@keyframes siteZoomOut {
+		from {
+			opacity: 0;
+			transform: scale(1.5);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+	@keyframes siteRotate {
+		from {
+			opacity: 0;
+			transform: rotate(-180deg) scale(0.8);
+		}
+		to {
+			opacity: 1;
+			transform: rotate(0) scale(1);
+		}
+	}
+	@keyframes sitePulse {
+		0% {
+			opacity: 0;
+			transform: scale(0.95);
+		}
+		50% {
+			opacity: 0.8;
+			transform: scale(1.05);
+		}
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+	@keyframes siteShake {
+		0% {
+			opacity: 0;
+			transform: translateX(0);
+		}
+		25% {
+			opacity: 0.5;
+			transform: translateX(-8px);
+		}
+		50% {
+			opacity: 0.8;
+			transform: translateX(8px);
+		}
+		75% {
+			transform: translateX(-4px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+	@keyframes siteWiggle {
+		0% {
+			opacity: 0;
+			transform: rotate(0deg);
+		}
+		25% {
+			opacity: 0.5;
+			transform: rotate(-5deg);
+		}
+		50% {
+			opacity: 0.8;
+			transform: rotate(5deg);
+		}
+		75% {
+			transform: rotate(-3deg);
+		}
+		100% {
+			opacity: 1;
+			transform: rotate(0deg);
+		}
+	}
+	@keyframes siteGlow {
+		from {
+			opacity: 0;
+			filter: brightness(0.5) blur(4px);
+			transform: scale(0.95);
+		}
+		to {
+			opacity: 1;
+			filter: brightness(1) blur(0);
+			transform: scale(1);
+		}
+	}
+	@keyframes siteBlurIn {
+		from {
+			opacity: 0;
+			filter: blur(10px);
+		}
+		to {
+			opacity: 1;
+			filter: blur(0);
 		}
 	}
 
