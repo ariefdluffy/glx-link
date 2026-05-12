@@ -31,3 +31,5 @@ pm2-*.log
 backups/
 *.sql
 *.sql.gz
+
+nul
