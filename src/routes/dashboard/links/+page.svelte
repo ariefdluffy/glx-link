@@ -26,6 +26,7 @@
 	let editError = $state('');
 	let isSaving = $state(false);
 	let qrLink: LinkItem | null = $state(null);
+	let copiedQrLink = $state(false);
 	let deletingItem: LinkItem | null = $state(null);
 	let deleteError = $state('');
 	let isDeleting = $state(false);
@@ -79,6 +80,91 @@
 
 	const closeQr = () => {
 		qrLink = null;
+		copiedQrLink = false;
+	};
+
+	const handleCopyQrLink = async () => {
+		if (!qrLink) return;
+		const fullUrl = `https://glx.my.id/${qrLink.slug}`;
+		await navigator.clipboard.writeText(fullUrl);
+		copiedQrLink = true;
+		setTimeout(() => {
+			copiedQrLink = false;
+		}, 2000);
+	};
+
+	const handleDownloadQr = async () => {
+		if (!qrLink) return;
+		try {
+			const QRCode = (await import('qrcode')).default;
+			const canvas = document.createElement('canvas');
+			const ctx = canvas.getContext('2d');
+			if (!ctx) return;
+
+			// Set canvas size (QR + padding + footer)
+			const qrSize = 400;
+			const padding = 40;
+			const footerHeight = 60;
+			canvas.width = qrSize + padding * 2;
+			canvas.height = qrSize + padding * 2 + footerHeight;
+
+			// Background with rounded corners
+			ctx.fillStyle = '#ffffff';
+			const radius = 20;
+			ctx.beginPath();
+			ctx.moveTo(radius, 0);
+			ctx.lineTo(canvas.width - radius, 0);
+			ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+			ctx.lineTo(canvas.width, canvas.height - radius);
+			ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+			ctx.lineTo(radius, canvas.height);
+			ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+			ctx.lineTo(0, radius);
+			ctx.quadraticCurveTo(0, 0, radius, 0);
+			ctx.closePath();
+			ctx.fill();
+
+			// Generate QR code
+			const qrCanvas = document.createElement('canvas');
+			await QRCode.toCanvas(qrCanvas, `https://glx.my.id/${qrLink.slug}`, {
+				width: qrSize,
+				margin: 1,
+				color: { dark: '#000000', light: '#ffffff' }
+			});
+
+			// Draw QR code on main canvas
+			ctx.drawImage(qrCanvas, padding, padding, qrSize, qrSize);
+
+			// Draw footer text
+			ctx.fillStyle = '#6366f1';
+			ctx.font = 'bold 18px sans-serif';
+			ctx.textAlign = 'center';
+			ctx.fillText(`glx.my.id/${qrLink.slug}`, canvas.width / 2, qrSize + padding + 30);
+
+			ctx.fillStyle = '#64748b';
+			ctx.font = '14px sans-serif';
+			// Truncate long destination URLs
+			const destination =
+				qrLink.destination.length > 50
+					? qrLink.destination.substring(0, 47) + '...'
+					: qrLink.destination;
+			ctx.fillText(destination, canvas.width / 2, qrSize + padding + 50);
+
+			// Download
+			canvas.toBlob((blob) => {
+				if (!blob) return;
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `qr-${qrLink.slug}.png`;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				window.URL.revokeObjectURL(url);
+			});
+		} catch (error) {
+			console.error('Failed to download QR code:', error);
+		}
 	};
 
 	const confirmDelete = (link: LinkItem) => {
@@ -726,7 +812,7 @@
 						</svg>
 					</div>
 					<div class="flex-1">
-						<h2 class="font-display text-lg font-semibold">QR Code</h2>
+						<h2 class="font-display text-lg font-semibold">QR Code Shortlink</h2>
 						<p class="text-xs text-white/60">Scan untuk akses cepat</p>
 					</div>
 					<button
@@ -773,19 +859,50 @@
 								d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
 							></path>
 						</svg>
-						<span class="font-mono text-sm font-semibold text-white">glx.my.id/{qrLink.slug}</span>
+						<span class="flex-1 font-mono text-sm font-semibold text-white"
+							>glx.my.id/{qrLink.slug}</span
+						>
+						<button
+							class="rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
+							type="button"
+							onclick={handleCopyQrLink}
+							aria-label="Copy link"
+						>
+							{#if copiedQrLink}
+								<svg
+									class="h-4 w-4 text-green-400"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 13l4 4L19 7"
+									></path>
+								</svg>
+							{:else}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+									></path>
+								</svg>
+							{/if}
+						</button>
 					</div>
 					<div class="text-xs break-all text-white/60">{qrLink.destination}</div>
 				</div>
 
 				<!-- Actions -->
 				<div class="flex gap-3">
-					<a
+					<button
 						class="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-medium text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-						href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent('https://glx.my.id/' + qrLink.slug)}`}
-						download={`qr-${qrLink.slug}.png`}
-						target="_blank"
-						rel="noopener noreferrer"
+						type="button"
+						onclick={handleDownloadQr}
 					>
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
@@ -796,7 +913,7 @@
 							></path>
 						</svg>
 						Download
-					</a>
+					</button>
 					<button
 						class="flex flex-1 items-center justify-center gap-2 rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
 						type="button"

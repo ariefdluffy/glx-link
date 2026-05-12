@@ -4,7 +4,7 @@ module.exports = {
 			name: 'glx-link',
 			script: 'build/index.js',
 			instances: 'max', // Gunakan semua CPU cores yang tersedia
-			exec_mode: 'cluster',
+			exec_mode: 'fork',
 			env: '.env',
 			// Logging
 			error_file: './logs/pm2-error.log',
