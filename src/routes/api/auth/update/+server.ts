@@ -1,0 +1,53 @@
+import { json } from '@sveltejs/kit';
+import { eq } from 'drizzle-orm';
+import { db } from '$lib/db';
+import { users } from '$lib/db/schema';
+import { getSessionUserId } from '$lib/auth/session';
+
+const isValidEmail = (value: string) => /.+@.+\..+/.test(value);
+
+export const PATCH = async ({ request, cookies }) => {
+	const userId = getSessionUserId(cookies);
+	if (!userId) {
+		return json({ message: 'Unauthorized' }, { status: 401 });
+	}
+
+	const payload = await request.json().catch(() => null);
+	if (!payload) {
+		return json({ message: 'Data tidak valid.' }, { status: 400 });
+	}
+
+	const updates: Record<string, string> = {};
+
+	if (typeof payload.name === 'string') {
+		const name = payload.name.trim();
+		if (name.length < 2) {
+			return json({ message: 'Nama minimal 2 karakter.' }, { status: 400 });
+		}
+		updates.name = name;
+	}
+
+	if (typeof payload.email === 'string') {
+		const email = payload.email.trim().toLowerCase();
+		if (!isValidEmail(email)) {
+			return json({ message: 'Email tidak valid.' }, { status: 400 });
+		}
+		const existing = await db
+			.select({ id: users.id })
+			.from(users)
+			.where(eq(users.email, email))
+			.limit(1);
+		if (existing.length > 0 && existing[0].id !== userId) {
+			return json({ message: 'Email sudah terdaftar.' }, { status: 409 });
+		}
+		updates.email = email;
+	}
+
+	if (Object.keys(updates).length === 0) {
+		return json({ message: 'Tidak ada data yang diubah.' }, { status: 400 });
+	}
+
+	await db.update(users).set(updates).where(eq(users.id, userId));
+
+	return json({ ok: true });
+};

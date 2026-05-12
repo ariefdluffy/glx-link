@@ -1,0 +1,79 @@
+@import 'tailwindcss';
+
+:root {
+	color-scheme: dark;
+	--color-brand: #7c3aed;
+	--color-accent: #06b6d4;
+	--color-bg: #0f0f12;
+	--color-surface: #18181f;
+	--color-border: #2d2d3a;
+	--color-text: #f4f4f5;
+	--color-muted: #8b8b94;
+	--color-success: #22c55e;
+	--color-danger: #ef4444;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: 'Inter', system-ui, -apple-system, sans-serif;
+	color: var(--color-text);
+	background:
+		radial-gradient(1200px 600px at 15% -20%, rgba(124, 58, 237, 0.25), transparent 60%),
+		radial-gradient(900px 500px at 90% 10%, rgba(6, 182, 212, 0.22), transparent 55%),
+		linear-gradient(180deg, #0c0c10 0%, #101018 60%, #0c0c10 100%);
+	min-height: 100vh;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.font-display {
+	font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+}
+
+.font-mono {
+	font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.glass-panel {
+	background: rgba(24, 24, 31, 0.7);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+	backdrop-filter: blur(14px);
+}
+
+.fade-up {
+	animation: fade-up 0.8s ease forwards;
+	opacity: 0;
+}
+
+.floaty {
+	animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+	from {
+		opacity: 0;
+		transform: translateY(18px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes floaty {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
+}

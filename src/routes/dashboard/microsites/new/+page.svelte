@@ -1,0 +1,765 @@
+<script lang="ts">
+	import { page } from '$app/stores';
+	import MicrositePreview from '$lib/components/MicrositePreview.svelte';
+	import SocialIconRow from '$lib/components/SocialIconRow.svelte';
+	import Toast from '$lib/components/toast/Toast.svelte';
+
+	const plan = $page.data.plan;
+
+	const themes = ['default', 'gradient', 'minimal', 'neon'];
+	const animations = ['fade', 'slide-up', 'scale', 'bounce', 'flip', 'zoom', 'none'];
+
+	let title = $state('');
+	let slug = $state('');
+	let bio = $state('');
+	let theme = $state('default');
+	let animation = $state('fade');
+	let avatarUrl = $state('');
+	let headerBg = $state('');
+	let linkTextColor = $state('');
+	let isActive = $state(true);
+	let errorMessage = $state('');
+	let isLoading = $state(false);
+	let qrUrl = $state('');
+	let showQr = $state(false);
+	let draggedIndex: number | null = $state(null);
+	let dragOverIndex: number | null = $state(null);
+	let links = $state([{ label: '', url: '', icon: '', type: 'link', caption: '', animation: '' }]);
+
+	type SocialPlatform = 'facebook' | 'website' | 'youtube' | 'instagram';
+	const socialInputMeta: Record<SocialPlatform, { label: string; placeholder: string }> = {
+		facebook: { label: 'Facebook', placeholder: 'Facebook URL' },
+		website: { label: 'Website', placeholder: 'Website URL' },
+		youtube: { label: 'YouTube', placeholder: 'YouTube URL' },
+		instagram: { label: 'Instagram', placeholder: 'Instagram URL' }
+	};
+
+	const handleAvatarUpload = async (e: Event) => {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		const formData = new FormData();
+		formData.append('file', file);
+		const res = await fetch('/api/upload', { method: 'POST', body: formData });
+		const data = await res.json();
+		if (data.url) avatarUrl = data.url;
+	};
+
+	const handleHeaderUpload = async (e: Event) => {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		const formData = new FormData();
+		formData.append('file', file);
+		const res = await fetch('/api/upload', { method: 'POST', body: formData });
+		const data = await res.json();
+		if (data.url) headerBg = `url(${data.url})`;
+	};
+
+	const handleDragStart = (index: number) => {
+		draggedIndex = index;
+	};
+
+	const handleDragOver = (e: DragEvent, index: number) => {
+		e.preventDefault();
+		dragOverIndex = index;
+	};
+
+	const handleDrop = (index: number) => {
+		if (draggedIndex === null || draggedIndex === index) {
+			draggedIndex = null;
+			dragOverIndex = null;
+			return;
+		}
+		const newLinks = [...links];
+		const [removed] = newLinks.splice(draggedIndex, 1);
+		newLinks.splice(index, 0, removed);
+		links = newLinks;
+		draggedIndex = null;
+		dragOverIndex = null;
+	};
+
+	const handleDragEnd = () => {
+		draggedIndex = null;
+		dragOverIndex = null;
+	};
+
+	const moveLink = (index: number, direction: -1 | 1) => {
+		const newIndex = index + direction;
+		if (newIndex < 0 || newIndex >= links.length) return;
+		const newLinks = [...links];
+		const [removed] = newLinks.splice(index, 1);
+		newLinks.splice(newIndex, 0, removed);
+		links = newLinks;
+	};
+
+	const openQr = () => {
+		if (slug.trim()) {
+			qrUrl = `https://glx.my.id/m/${slug.trim()}`;
+		} else {
+			qrUrl = '';
+		}
+		showQr = true;
+	};
+
+	const addLink = (
+		type: 'link' | 'divider' | 'image' | 'text' = 'link',
+		preset?: { label?: string; icon?: string; url?: string }
+	) => {
+		links = [
+			...links,
+			{
+				label: preset?.label ?? '',
+				url: preset?.url ?? '',
+				icon: preset?.icon ?? '',
+				type,
+				caption: '',
+				animation: ''
+			}
+		];
+	};
+
+	const addTextLabel = () => {
+		addLink('text', { label: 'Label tanpa link' });
+	};
+
+	const getSocialValue = (platform: SocialPlatform) => {
+		const found = links.find((item) => item.type === 'social' && item.icon === platform);
+		return found?.url ?? '';
+	};
+
+	const setSocialValue = (platform: SocialPlatform, url: string) => {
+		const idx = links.findIndex((item) => item.type === 'social' && item.icon === platform);
+		if (idx === -1) {
+			links = [
+				...links,
+				{
+					label: socialInputMeta[platform].label,
+					url,
+					icon: platform,
+					type: 'social',
+					caption: '',
+					animation: ''
+				}
+			];
+			return;
+		}
+		links[idx].url = url;
+		links[idx].label = socialInputMeta[platform].label;
+		links[idx].icon = platform;
+		links[idx].type = 'social';
+	};
+
+	const removeLink = (index: number) => {
+		links = links.filter((_, idx) => idx !== index);
+	};
+
+	const handleLinkImageUpload = async (index: number, e: Event) => {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		const formData = new FormData();
+		formData.append('file', file);
+		const res = await fetch('/api/upload', { method: 'POST', body: formData });
+		const data = await res.json();
+		if (data.url) links[index].url = data.url;
+	};
+
+	const handleSubmit = async () => {
+		errorMessage = '';
+		if (title.trim().length < 2) {
+			errorMessage = 'Judul minimal 2 karakter.';
+			return;
+		}
+		if (slug.trim().length < 3) {
+			errorMessage = 'Slug minimal 3 karakter.';
+			return;
+		}
+
+		isLoading = true;
+		try {
+			const response = await fetch('/api/microsites', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					title: title.trim(),
+					slug: slug.trim(),
+					bio: bio.trim() || null,
+					theme,
+					animation,
+					avatarUrl: avatarUrl.trim() || null,
+					headerBg: headerBg.trim() || null,
+
+					isActive,
+					links: links.map((l) => ({
+						type: l.type || 'link',
+						label: l.label || '',
+						url: l.url || '',
+						icon: l.icon || '',
+						caption: l.caption || '',
+						animation: l.animation || ''
+					}))
+				})
+			});
+			const payload = await response.json();
+			if (!response.ok) {
+				errorMessage = payload?.message ?? 'Gagal membuat microsite.';
+				return;
+			}
+			window.location.href = '/dashboard/microsites';
+		} catch {
+			errorMessage = 'Gagal terhubung ke server.';
+		} finally {
+			isLoading = false;
+		}
+	};
+</script>
+
+<svelte:head>
+	<title>Buat Microsite</title>
+</svelte:head>
+
+{#if plan !== 'pro'}
+	<div class="mx-auto w-full max-w-6xl px-6 pb-16">
+		<div class="py-6">
+			<h1 class="font-display text-2xl font-semibold">Buat Microsite Baru</h1>
+			<p class="text-sm text-white/60">Lengkapi profil, lihat pratinjau langsung di samping.</p>
+		</div>
+
+		<div class="glass-panel rounded-3xl p-6 text-center">
+			<p class="text-sm text-white/60">
+				Microsite adalah fitur <span
+					class="rounded bg-linear-to-r from-violet-500 to-cyan-400 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+					>Pro</span
+				>
+			</p>
+			<p class="mt-2 text-xs text-white/40">
+				Upgrade untuk membuat halaman profil bio dengan 4 tema dan animasi.
+			</p>
+			<a
+				href="/dashboard/billing"
+				class="mt-4 inline-block rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5"
+				>Upgrade Sekarang</a
+			>
+		</div>
+	</div>
+{:else}
+	<div class="mx-auto w-full max-w-6xl px-6 pb-16">
+		<div class="py-6">
+			<h1 class="font-display text-2xl font-semibold">Buat Microsite Baru</h1>
+			<p class="text-sm text-white/60">Lengkapi profil, lihat pratinjau langsung di samping.</p>
+		</div>
+
+		<div class="grid gap-8 lg:grid-cols-[1fr_420px]">
+			<!-- Form -->
+			<div class="glass-panel rounded-3xl p-6 md:p-8">
+				<div class="space-y-4">
+					<label class="text-xs text-white/60" for="title">Judul</label>
+					<input
+						id="title"
+						type="text"
+						bind:value={title}
+						placeholder="Nama brand atau personal"
+						class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-white/40"
+					/>
+
+					<div class="flex items-end gap-3">
+						<div class="flex-1">
+							<label class="text-xs text-white/60" for="slug">Slug</label>
+							<input
+								id="slug"
+								type="text"
+								bind:value={slug}
+								placeholder="misal: naya"
+								class="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-white/40"
+								disabled={plan !== 'pro'}
+							/>
+						</div>
+						<button
+							type="button"
+							class="mb-0.5 rounded-2xl border border-white/15 px-4 py-3 text-xs text-white/70 transition hover:border-violet-400/50 hover:bg-violet-500/10"
+							onclick={openQr}
+							title="Tampilkan QR Code">QR</button
+						>
+					</div>
+
+					<label class="text-xs text-white/60" for="bio">Bio</label>
+					<textarea
+						id="bio"
+						rows="3"
+						bind:value={bio}
+						placeholder="Ceritakan singkat tentang kamu"
+						class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-white/40"
+					></textarea>
+
+					<label class="text-xs text-white/60">Foto Avatar</label>
+					<div class="mt-2 flex items-center gap-4">
+						{#if avatarUrl}
+							<img
+								src={avatarUrl}
+								class="h-16 w-16 rounded-full border border-white/20 object-cover"
+								alt="Avatar"
+							/>
+						{:else}
+							<div
+								class="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-white/20 text-xs text-white/40"
+							>
+								Foto
+							</div>
+						{/if}
+						<button
+							type="button"
+							class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 hover:border-white/40"
+							onclick={() => document.getElementById('avatar-input')?.click()}>Upload</button
+						>
+						<input
+							id="avatar-input"
+							type="file"
+							accept="image/*"
+							class="hidden"
+							onchange={handleAvatarUpload}
+						/>
+						{#if avatarUrl}
+							<button type="button" class="text-xs text-red-400" onclick={() => (avatarUrl = '')}
+								>Hapus</button
+							>
+						{/if}
+					</div>
+
+					<label class="text-xs text-white/60">Background Header</label>
+					<div class="mt-2 flex items-center gap-4">
+						{#if headerBg}
+							<div
+								class="h-16 w-24 rounded-xl border border-white/20"
+								style="background: {headerBg}; background-size: cover; background-position: center;"
+							></div>
+						{/if}
+						<button
+							type="button"
+							class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 hover:border-white/40"
+							onclick={() => document.getElementById('header-input')?.click()}
+							>Upload Background</button
+						>
+						<input
+							id="header-input"
+							type="file"
+							accept="image/*"
+							class="hidden"
+							onchange={handleHeaderUpload}
+						/>
+						{#if headerBg}
+							<button type="button" class="text-xs text-red-400" onclick={() => (headerBg = '')}
+								>Hapus</button
+							>
+						{/if}
+					</div>
+					<p class="mt-1 text-[10px] text-white/40">
+						Resolusi ideal: 375x200px (smartphone). Bisa juga pakai CSS gradient.
+					</p>
+
+					<label class="text-xs text-white/60" for="linkTextColor">Warna Teks Daftar Link</label>
+					<div class="mt-2 flex items-center gap-3">
+						<input
+							id="linkTextColor"
+							type="color"
+							bind:value={linkTextColor}
+							class="h-10 w-14 cursor-pointer rounded-xl border border-white/20 bg-white/5 p-1"
+						/>
+						<input
+							type="text"
+							bind:value={linkTextColor}
+							placeholder="#111827"
+							class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white"
+						/>
+						<button
+							type="button"
+							class="rounded-full border border-white/15 px-3 py-1 text-[11px] text-white/70"
+							onclick={() => (linkTextColor = '')}
+						>
+							Reset
+						</button>
+					</div>
+
+					<div class="mb-3 flex items-center justify-between">
+						<label class="text-xs font-semibold text-white/60">Daftar Link</label>
+						<button
+							class="rounded-full border border-white/15 px-3 py-1 text-xs text-white/70 transition hover:border-white/40"
+							type="button"
+							onclick={() => addLink('link')}
+						>
+							+ Tambah Link
+						</button>
+					</div>
+					<div class="mb-3 flex flex-wrap gap-2">
+						<button
+							type="button"
+							class="rounded-full border border-violet-400/40 bg-violet-500/15 px-3 py-1 text-[11px] text-violet-200 transition hover:bg-violet-500/25"
+							onclick={addTextLabel}
+						>
+							+ Tambah Text/Label
+						</button>
+					</div>
+					<div class="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+						<SocialIconRow
+							editable={true}
+							facebookUrl={getSocialValue('facebook')}
+							websiteUrl={getSocialValue('website')}
+							youtubeUrl={getSocialValue('youtube')}
+							instagramUrl={getSocialValue('instagram')}
+							onUpdate={(platform, value) => setSocialValue(platform, value)}
+						/>
+					</div>
+					<div class="max-h-[280px] space-y-2 overflow-y-auto pr-1">
+						{#each links as link, index (index)}
+							<div
+								class="space-y-2 rounded-2xl border bg-white/5 p-3 transition-all duration-150 {dragOverIndex ===
+								index
+									? 'border-violet-500/50'
+									: 'border-white/10'}"
+								draggable="true"
+								ondragstart={() => handleDragStart(index)}
+								ondragover={(e) => handleDragOver(e, index)}
+								ondrop={() => handleDrop(index)}
+								ondragend={handleDragEnd}
+							>
+								<div class="flex items-center justify-between gap-2">
+									<div class="flex items-center gap-1">
+										<button
+											type="button"
+											class="cursor-grab text-xs text-white/40 hover:text-white/70 active:cursor-grabbing"
+											title="Seret untuk urutkan">⠿</button
+										>
+										<span class="text-[10px] text-white/30">#{index + 1}</span>
+									</div>
+									<div class="flex items-center gap-1">
+										<button
+											type="button"
+											class="rounded px-1.5 py-0.5 text-[10px] text-white/40 hover:text-white/70 disabled:opacity-20"
+											disabled={index === 0}
+											onclick={() => moveLink(index, -1)}>▲</button
+										>
+										<button
+											type="button"
+											class="rounded px-1.5 py-0.5 text-[10px] text-white/40 hover:text-white/70 disabled:opacity-20"
+											disabled={index === links.length - 1}
+											onclick={() => moveLink(index, 1)}>▼</button
+										>
+									</div>
+								</div>
+								<!-- Type selector -->
+								<div class="flex gap-2">
+									{#each ['link', 'text', 'divider', 'image'] as t (t)}
+										<button
+											class="rounded-lg px-2 py-1 text-[10px] {(link.type || 'link') === t
+												? 'border border-violet-400 bg-violet-500/30 text-white'
+												: 'border border-white/10 text-white/50'}"
+											type="button"
+											onclick={() => (links[index].type = t)}>{t}</button
+										>
+									{/each}
+								</div>
+
+								{#if link.type === 'link'}
+									<!-- Label + Icon row -->
+									<div class="grid grid-cols-2 gap-2">
+										<input
+											placeholder="Label"
+											bind:value={link.label}
+											class="rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
+										/>
+										<input
+											placeholder="Icon (emoji)"
+											bind:value={link.icon}
+											class="rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
+										/>
+									</div>
+									<!-- URL row full-width prominent -->
+									<input
+										placeholder="URL"
+										bind:value={link.url}
+										class="w-full rounded-xl border border-cyan-400/40 bg-cyan-500/5 px-3 py-2.5 text-xs text-white placeholder-cyan-200/50 transition outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(34,211,238,0.15)]"
+									/>
+								{:else if link.type === 'text'}
+									<div class="space-y-2">
+										<input
+											placeholder="Teks Label"
+											bind:value={link.label}
+											class="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
+										/>
+										<p class="text-[10px] text-white/40">Ditampilkan sebagai teks tanpa URL.</p>
+									</div>
+								{:else if link.type === 'image'}
+									<div class="space-y-2">
+										<div class="flex items-center gap-2">
+											{#if link.url}
+												<img
+													src={link.url}
+													class="h-10 w-10 shrink-0 rounded-lg border border-white/10 object-cover"
+													alt=""
+												/>
+											{/if}
+											<button
+												type="button"
+												class="rounded-lg border border-white/15 px-3 py-1.5 text-[10px] text-white/70 hover:border-white/40"
+												onclick={() => document.getElementById('link-img-' + index)?.click()}
+											>
+												{link.url ? 'Ganti' : 'Upload Gambar'}
+											</button>
+											<input
+												id="link-img-{index}"
+												type="file"
+												accept="image/*"
+												class="hidden"
+												onchange={(e) => handleLinkImageUpload(index, e)}
+											/>
+											{#if link.url}
+												<button
+													type="button"
+													class="text-[10px] text-red-400"
+													onclick={() => (links[index].url = '')}>Hapus</button
+												>
+											{/if}
+										</div>
+										<input
+											placeholder="Caption (opsional)"
+											bind:value={link.caption}
+											class="w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 text-xs text-white"
+										/>
+									</div>
+								{:else if link.type === 'divider'}
+									<div class="py-2 text-center text-xs text-white/40">Garis pemisah</div>
+								{/if}
+
+								<!-- Animation picker -->
+								<div class="flex flex-wrap gap-1">
+									{#each ['', 'fade', 'slide-up', 'scale', 'bounce', 'flip', 'zoom'] as anim (anim)}
+										<button
+											class="rounded px-1.5 py-0.5 text-[10px] {(link.animation || '') === anim
+												? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+												: 'text-white/40 hover:text-white/60'}"
+											type="button"
+											onclick={() => (links[index].animation = anim || '')}
+											>{anim || 'default'}</button
+										>
+									{/each}
+								</div>
+
+								<!-- Delete button -->
+								<button
+									class="flex w-full items-center justify-center gap-1 rounded-xl bg-red-500/15 px-3 py-2 text-xs font-medium text-red-300 transition hover:bg-red-500/30 hover:text-red-200"
+									type="button"
+									onclick={() => removeLink(index)}
+								>
+									🗑 Hapus
+								</button>
+							</div>
+						{/each}
+					</div>
+
+					<label class="text-xs text-white/60">Tema</label>
+					<div class="grid gap-3 md:grid-cols-4">
+						{#each themes as item (item)}
+							<button
+								class={`rounded-2xl border px-3 py-2 text-xs transition ${theme === item ? 'border-violet-400 bg-violet-500/20 text-white' : 'border-white/10 text-white/60 hover:border-white/30'}`}
+								type="button"
+								onclick={() => (theme = item)}
+							>
+								{item}
+							</button>
+						{/each}
+					</div>
+
+					<label class="text-xs text-white/60">Animasi Teks & Card</label>
+					<div class="grid gap-2 md:grid-cols-4">
+						{#each animations as item (item)}
+							<button
+								class={`rounded-2xl border px-3 py-2 text-xs transition ${animation === item ? 'border-cyan-400 bg-cyan-500/20 text-white' : 'border-white/10 text-white/60 hover:border-white/30'}`}
+								type="button"
+								onclick={() => (animation = item)}
+							>
+								{item === 'none' ? 'Tanpa Animasi' : item}
+							</button>
+						{/each}
+					</div>
+
+					<label class="text-xs text-white/60">Status</label>
+					<div class="flex items-center gap-3 text-xs text-white/70">
+						<input type="checkbox" bind:checked={isActive} /> Aktifkan microsite
+					</div>
+
+					<div class="mt-4">
+						<button
+							class="w-full rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+							onclick={handleSubmit}
+							disabled={isLoading}
+							type="button"
+						>
+							{isLoading ? 'Memproses...' : 'Buat Microsite'}
+						</button>
+
+						<div class="mt-4">
+							{#if errorMessage}
+								<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Right: Live Preview Only -->
+			<div class="flex flex-col gap-6 lg:sticky lg:top-6">
+				<!-- Live Preview -->
+				<div class="glass-panel rounded-3xl p-4">
+					<div class="mb-3 text-center text-xs text-white/50">Pratinjau Langsung</div>
+					<div class="flex items-center justify-center">
+						<MicrositePreview
+							{title}
+							{slug}
+							{bio}
+							{theme}
+							{avatarUrl}
+							{headerBg}
+							{linkTextColor}
+							{animation}
+							{links}
+						/>
+					</div>
+				</div>
+				<p class="text-center text-[10px] text-white/40">
+					glx.my.id/{slug || 'slug'} &middot; Tema {theme} &middot; Animasi {animation}
+				</p>
+			</div>
+		</div>
+	</div>
+
+	{#if showQr}
+		<div
+			class="fixed inset-0 z-30 flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm"
+			onclick={() => (showQr = false)}
+			onkeydown={(e) => e.key === 'Escape' && (showQr = false)}
+			role="button"
+			tabindex="0"
+		>
+			<div
+				class="glass-panel w-full max-w-md rounded-3xl p-6 shadow-2xl"
+				onclick={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+			>
+				<div class="mb-5 flex items-center gap-3">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400"
+					>
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+							></path>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<h2 class="font-display text-lg font-semibold">QR Code Microsite</h2>
+						<p class="text-xs text-white/60">Scan untuk akses cepat</p>
+					</div>
+					<button
+						class="rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+						type="button"
+						onclick={() => (showQr = false)}
+						aria-label="Tutup"
+					>
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M6 18L18 6M6 6l12 12"
+							></path>
+						</svg>
+					</button>
+				</div>
+
+				<!-- QR Code Display -->
+				<div class="mb-5 flex justify-center">
+					{#if qrUrl}
+						<div class="rounded-2xl bg-white p-4 shadow-xl">
+							<img
+								src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrUrl)}`}
+								alt="QR Code"
+								class="h-55 w-55"
+							/>
+						</div>
+					{:else}
+						<div
+							class="flex h-[220px] w-[220px] items-center justify-center rounded-2xl bg-white/5 text-xs text-white/40"
+						>
+							Isi slug terlebih dahulu
+						</div>
+					{/if}
+				</div>
+
+				<!-- Link Info -->
+				{#if qrUrl}
+					<div class="mb-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+						<div class="mb-2 flex items-center gap-2">
+							<svg
+								class="h-4 w-4 text-violet-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+								></path>
+							</svg>
+							<span class="font-mono text-sm font-semibold text-white">glx.my.id/m/{slug}</span>
+						</div>
+						<div class="text-xs break-all text-white/60">{title || 'Microsite Baru'}</div>
+					</div>
+				{/if}
+
+				<!-- Actions -->
+				<div class="flex gap-3">
+					{#if qrUrl}
+						<a
+							class="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-medium text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+							href={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}`}
+							download={`qr-${slug}.png`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+								></path>
+							</svg>
+							Download
+						</a>
+					{/if}
+					<button
+						class="flex flex-1 items-center justify-center gap-2 rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
+						type="button"
+						onclick={() => (showQr = false)}
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M5 13l4 4L19 7"
+							></path>
+						</svg>
+						Selesai
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+{/if}
