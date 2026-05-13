@@ -10,7 +10,7 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Use different upload directory for dev vs production
 // In production, use a persistent directory outside the build folder
-const UPLOAD_DIR = dev ? 'static/uploads' : process.env.UPLOAD_DIR || '/var/www/glx-link/uploads';
+const UPLOAD_DIR = dev ? 'static/uploads' : process.env.UPLOAD_DIR || '/glx-link/uploads';
 
 export const POST = async ({ request, cookies }) => {
 	const userId = getSessionUserId(cookies);
