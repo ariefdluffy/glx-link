@@ -1,17 +1,29 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { SESSION_SECRET } from '$env/static/private';
 import { dev } from '$app/environment';
-import type { Cookies } from '@sveltejs/kit';
+import { db } from '$lib/db';
+import { userSessions } from '$lib/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
+import type { Cookies, RequestEvent } from '@sveltejs/kit';
 
 const COOKIE_NAME = 'glx_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 const sign = (value: string) => createHmac('sha256', SESSION_SECRET).update(value).digest('hex');
 
-export const createSession = (cookies: Cookies, userId: number) => {
+const getTokenFromCookie = (cookies: Cookies) => {
+	const raw = cookies.get(COOKIE_NAME);
+	if (!raw) return null;
+	const parts = raw.split('.');
+	if (parts.length !== 3) return null;
+	return `${parts[0]}.${parts[1]}`;
+};
+
+export const createSession = async (cookies: Cookies, userId: number, event?: RequestEvent) => {
 	const issuedAt = Date.now();
 	const payload = `${userId}.${issuedAt}`;
 	const signature = sign(payload);
+
 	cookies.set(COOKIE_NAME, `${payload}.${signature}`, {
 		path: '/',
 		httpOnly: true,
@@ -19,6 +31,21 @@ export const createSession = (cookies: Cookies, userId: number) => {
 		secure: !dev,
 		maxAge: SESSION_TTL_MS / 1000
 	});
+
+	// Record session in database
+	try {
+		const ip = event?.getClientAddress?.() ?? 'unknown';
+		const userAgent = event?.request?.headers?.get?.('user-agent') ?? 'unknown';
+
+		await db.insert(userSessions).values({
+			userId,
+			token: payload,
+			ip,
+			userAgent
+		});
+	} catch (e) {
+		console.error('Failed to record session:', e);
+	}
 };
 
 export const clearSession = (cookies: Cookies) => {
@@ -39,4 +66,49 @@ export const getSessionUserId = (cookies: Cookies) => {
 	if (!Number.isFinite(issued)) return null;
 	if (Date.now() - issued > SESSION_TTL_MS) return null;
 	return Number(userId);
+};
+
+export const getCurrentSessionToken = (cookies: Cookies) => {
+	return getTokenFromCookie(cookies);
+};
+
+export const getSessionsByUserId = async (userId: number, currentToken: string | null) => {
+	try {
+		const sessions = await db
+			.select({
+				id: userSessions.id,
+				token: userSessions.token,
+				ip: userSessions.ip,
+				userAgent: userSessions.userAgent,
+				createdAt: userSessions.createdAt,
+				lastActiveAt: userSessions.lastActiveAt
+			})
+			.from(userSessions)
+			.where(eq(userSessions.userId, userId))
+			.orderBy(desc(userSessions.lastActiveAt))
+			.limit(20);
+
+		return sessions.map((s) => ({
+			id: s.id,
+			ip: s.ip ?? 'unknown',
+			userAgent: s.userAgent ?? 'unknown',
+			createdAt: s.createdAt,
+			lastActiveAt: s.lastActiveAt,
+			isCurrent: s.token === currentToken
+		}));
+	} catch (e) {
+		console.error('Failed to get sessions:', e);
+		return [];
+	}
+};
+
+export const deleteSession = async (sessionId: number, userId: number) => {
+	try {
+		await db
+			.delete(userSessions)
+			.where(and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId)));
+	} catch (e) {
+		console.error('Failed to delete session:', e);
+		throw new Error('Gagal mencabut sesi');
+	}
 };

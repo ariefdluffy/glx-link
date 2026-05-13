@@ -93,7 +93,7 @@ export const POST = async ({ request, cookies, getClientAddress }) => {
 		.where(eq(users.email, email))
 		.limit(1);
 	if (created?.id) {
-		createSession(cookies, created.id);
+		await createSession(cookies, created.id, { request, getClientAddress });
 	}
 
 	return json({ ok: true });

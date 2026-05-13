@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { users } from '$lib/db/schema';
-import { getSessionUserId } from '$lib/auth/session';
+import { getSessionUserId, getCurrentSessionToken, getSessionsByUserId } from '$lib/auth/session';
 
 export const load = async ({ cookies }) => {
 	const userId = getSessionUserId(cookies);
@@ -23,6 +23,10 @@ export const load = async ({ cookies }) => {
 
 	if (!user) throw redirect(302, '/login');
 
+	// Load real sessions from database
+	const currentToken = getCurrentSessionToken(cookies);
+	const sessions = await getSessionsByUserId(userId, currentToken);
+
 	return {
 		user: {
 			id: user.id,
@@ -31,6 +35,7 @@ export const load = async ({ cookies }) => {
 			plan: user.plan ?? 'free',
 			planExpiresAt: user.planExpiresAt,
 			createdAt: user.createdAt
-		}
+		},
+		sessions
 	};
 };

@@ -66,6 +66,6 @@ export const POST = async ({ request, cookies, getClientAddress }) => {
 		return json({ message: 'Email atau password salah.' }, { status: 401 });
 	}
 
-	createSession(cookies, user.id);
+	await createSession(cookies, user.id, { request, getClientAddress });
 	return json({ ok: true });
 };

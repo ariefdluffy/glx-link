@@ -294,42 +294,48 @@
 	{#if !isProActive()}
 		<div id="upgrade" class="glass-panel mt-6 rounded-3xl p-6">
 			<h2 class="font-display text-lg font-semibold">Upgrade ke Pro</h2>
-			<p class="mt-2 text-sm text-white/60">Pilih metode pembayaran untuk mengaktifkan akun Pro.</p>
+			<p class="mt-2 text-sm text-white/60">Hubungi kami via WhatsApp untuk aktivasi akun Pro.</p>
 
-			<div class="mt-6 space-y-4">
-				<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+			<!-- Payment Method Cards -->
+			<div class="mt-6 grid gap-4 md:grid-cols-2">
+				<!-- Transfer Bank / WhatsApp -->
+				<a
+					href="https://wa.me/6285250887277?text=Halo%20saya%20ingin%20upgrade%20akun%20GLX%20Pro"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="group rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:-translate-y-0.5 hover:border-green-500/40 hover:bg-green-500/5"
+				>
 					<div class="flex items-center justify-between">
 						<div>
-							<div class="font-display text-sm font-semibold">Transfer Bank</div>
-							<div class="mt-1 text-xs text-white/50">Manual verification 1x24 jam</div>
+							<div class="font-display text-sm font-semibold text-white group-hover:text-green-400">
+								Transfer Bank
+							</div>
+							<div class="mt-1 text-xs text-white/50">Hubungi via WhatsApp (1x24 jam)</div>
 						</div>
-						<button
-							class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
-							type="button"
+						<span
+							class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition group-hover:border-green-500/50 group-hover:bg-green-500/20 group-hover:text-green-400"
 						>
-							Pilih
-						</button>
+							Hubungi
+						</span>
 					</div>
-				</div>
+				</a>
 
-				<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+				<!-- Midtrans (Disabled) -->
+				<div class="rounded-2xl border border-white/5 bg-white/[0.02] p-4 opacity-50">
 					<div class="flex items-center justify-between">
 						<div>
-							<div class="font-display text-sm font-semibold">Midtrans</div>
-							<div class="mt-1 text-xs text-white/50">Pembayaran instan via VA, e-wallet, QRIS</div>
+							<div class="font-display text-sm font-semibold text-white/40">Midtrans</div>
+							<div class="mt-1 text-xs text-white/30">Pembayaran instan - Segera hadir</div>
 						</div>
-						<button
-							class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
-							type="button"
-						>
-							Pilih
-						</button>
+						<span class="rounded-full border border-white/10 px-4 py-2 text-xs text-white/30">
+							Nonaktif
+						</span>
 					</div>
 				</div>
 			</div>
 
 			<div class="mt-4 text-xs text-white/50">
-				Setelah pembayaran berhasil, akun Pro akan aktif dalam beberapa menit.
+				Setelah pembayaran diverifikasi, akun Pro akan aktif dalam 1x24 jam.
 			</div>
 		</div>
 	{/if}

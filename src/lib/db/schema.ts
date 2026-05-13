@@ -81,3 +81,13 @@ export const subscriptions = mysqlTable('subscriptions', {
 	cancelledAt: datetime('cancelled_at'),
 	notes: text('notes')
 });
+
+export const userSessions = mysqlTable('user_sessions', {
+	id: int('id').autoincrement().primaryKey(),
+	userId: int('user_id').notNull(),
+	token: varchar('token', { length: 255 }).notNull(),
+	ip: varchar('ip', { length: 45 }),
+	userAgent: text('user_agent'),
+	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`),
+	lastActiveAt: datetime('last_active_at').default(sql`CURRENT_TIMESTAMP`)
+});
