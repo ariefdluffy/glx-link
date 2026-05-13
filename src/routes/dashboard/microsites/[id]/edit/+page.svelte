@@ -352,7 +352,7 @@
 	<title>Edit Microsite - GLX</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-6xl px-6 pb-16">
+<div class="mx-auto w-full max-w-6xl px-1 pb-16">
 	<!-- Header -->
 	<div class="py-6">
 		<div class="mb-1 flex items-start justify-between gap-3">
@@ -378,7 +378,7 @@
 
 	<div class="grid gap-8 lg:grid-cols-[1fr_420px]">
 		<!-- Left Column: Main Editor -->
-		<div class="glass-panel overflow-hidden rounded-3xl p-6 md:p-8">
+		<div class="glass-panel overflow-hidden rounded-3xl p-4 md:p-8">
 			<div class="space-y-4">
 				<div class="mb-1 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div>
