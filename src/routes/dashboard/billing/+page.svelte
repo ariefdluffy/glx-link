@@ -206,7 +206,7 @@
 	<title>Billing - GLX</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-4xl px-6 pb-16">
+<div class="mx-auto w-full space-y-6 px-6 pb-16">
 	<div class="py-6">
 		<h1 class="font-display text-2xl font-semibold">Langganan & Billing</h1>
 		<p class="text-sm text-white/60">Kelola paket dan riwayat pembayaran kamu.</p>
@@ -359,269 +359,291 @@
 		</div>
 	{/if}
 
-	<!-- Active Subscription Details -->
-	{#if data.activeSubscription}
-		<div class="glass-panel mt-6 rounded-3xl p-6">
-			<h2 class="font-display text-lg font-semibold">Langganan Aktif</h2>
-			<div class="mt-4 space-y-3">
+	<!-- Grid: Langganan Aktif + Riwayat -->
+	<div class="mt-6 {data.activeSubscription ? 'grid gap-6 md:grid-cols-2' : ''}">
+		{#if data.activeSubscription}
+			<div class="glass-panel relative overflow-hidden rounded-3xl p-6">
+				<!-- Decorative gradient blur -->
 				<div
-					class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-				>
-					<span class="text-sm text-white/60">Paket</span>
-					<span class="font-display text-sm font-semibold text-white">
-						{data.activeSubscription.plan.toUpperCase()}
-					</span>
-				</div>
-				<div
-					class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-				>
-					<span class="text-sm text-white/60">Harga</span>
-					<span class="text-sm text-white">{formatPrice(data.activeSubscription.price)}</span>
-				</div>
-				<div
-					class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-				>
-					<span class="text-sm text-white/60">Berakhir</span>
-					<span class="text-sm text-white">{formatDate(data.activeSubscription.expiresAt)}</span>
-				</div>
-				<div
-					class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-				>
-					<span class="text-sm text-white/60">Metode Pembayaran</span>
-					<span class="text-sm text-white">
-						{getPaymentMethodLabel(data.activeSubscription.paymentMethod)}
-					</span>
-				</div>
-				<div
-					class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-				>
-					<span class="text-sm text-white/60">Auto-Renew</span>
-					<form method="POST" action="?/toggleAutoRenew" use:enhance>
+					class="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-gradient-to-br from-amber-500/15 to-yellow-500/5 blur-3xl"
+				></div>
+
+				<div class="relative z-10">
+					<!-- Header with status -->
+					<div class="mb-5 flex items-center justify-between">
+						<h2 class="font-display text-lg font-semibold">Langganan Aktif</h2>
+						<span
+							class="flex items-center gap-1.5 rounded-full bg-green-500/15 px-3 py-1 text-xs text-green-400"
+						>
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+							Aktif
+						</span>
+					</div>
+
+					<!-- Plan centerpiece -->
+					<div class="py-4 text-center">
+						<div
+							class="font-display bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-4xl font-bold text-transparent"
+						>
+							PRO
+						</div>
+						<div class="mt-1 text-lg font-semibold text-white">
+							{formatPrice(data.activeSubscription.price)}
+						</div>
+						<div class="text-xs text-white/40">per bulan</div>
+					</div>
+
+					<!-- Info mini grid -->
+					<div class="mt-5 grid grid-cols-2 gap-3">
+						<div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+							<div class="text-[10px] tracking-wider text-white/40 uppercase">Berakhir</div>
+							<div class="mt-1 text-sm font-medium text-white">
+								{formatDate(data.activeSubscription.expiresAt)}
+							</div>
+						</div>
+						<div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+							<div class="text-[10px] tracking-wider text-white/40 uppercase">Metode Bayar</div>
+							<div class="mt-1 text-sm font-medium text-white">
+								{getPaymentMethodLabel(data.activeSubscription.paymentMethod)}
+							</div>
+						</div>
+					</div>
+
+					<!-- Auto-Renew toggle -->
+					<div
+						class="mt-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+					>
+						<div>
+							<div class="text-sm text-white/80">Auto-Renew</div>
+							<div class="text-xs text-white/40">Perpanjang otomatis tiap bulan</div>
+						</div>
+						<form method="POST" action="?/toggleAutoRenew" use:enhance>
+							<input type="hidden" name="subscriptionId" value={data.activeSubscription.id} />
+							<input type="hidden" name="autoRenew" value={!data.activeSubscription.autoRenew} />
+							<button
+								type="submit"
+								class="relative inline-flex h-6 w-11 items-center rounded-full transition {data
+									.activeSubscription.autoRenew
+									? 'bg-emerald-500'
+									: 'bg-white/20'}"
+								disabled={togglingAutoRenew === data.activeSubscription.id}
+							>
+								<span
+									class="inline-block h-4 w-4 transform rounded-full bg-white transition {data
+										.activeSubscription.autoRenew
+										? 'translate-x-6'
+										: 'translate-x-1'}"
+								></span>
+							</button>
+						</form>
+					</div>
+
+					<!-- Cancel -->
+					<form method="POST" action="?/cancel" use:enhance class="mt-4">
 						<input type="hidden" name="subscriptionId" value={data.activeSubscription.id} />
-						<input type="hidden" name="autoRenew" value={!data.activeSubscription.autoRenew} />
 						<button
 							type="submit"
-							class="rounded-full px-3 py-1 text-xs transition {data.activeSubscription.autoRenew
-								? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-								: 'bg-white/10 text-white/60 hover:bg-white/20'}"
-							disabled={togglingAutoRenew === data.activeSubscription.id}
+							class="w-full rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm text-red-400 transition hover:bg-red-500/15"
+							disabled={cancellingId === data.activeSubscription.id}
+							onclick={(e) => {
+								if (!confirm('Yakin ingin membatalkan langganan?')) e.preventDefault();
+							}}
 						>
-							{#if togglingAutoRenew === data.activeSubscription.id}
-								Memproses...
-							{:else if data.activeSubscription.autoRenew}
-								Aktif
-							{:else}
-								Nonaktif
-							{/if}
+							{cancellingId === data.activeSubscription.id
+								? 'Membatalkan...'
+								: 'Batalkan Langganan'}
 						</button>
 					</form>
 				</div>
 			</div>
+		{/if}
 
-			<!-- Cancel Subscription -->
-			<form method="POST" action="?/cancel" use:enhance class="mt-4">
-				<input type="hidden" name="subscriptionId" value={data.activeSubscription.id} />
-				<button
-					type="submit"
-					class="w-full rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400 transition hover:bg-red-500/20"
-					disabled={cancellingId === data.activeSubscription.id}
-					onclick={(e) => {
-						if (!confirm('Yakin ingin membatalkan langganan?')) {
-							e.preventDefault();
-						}
-					}}
-				>
-					{cancellingId === data.activeSubscription.id ? 'Membatalkan...' : 'Batalkan Langganan'}
-				</button>
-			</form>
-		</div>
-	{/if}
-
-	<!-- Subscription History -->
-	<div class="glass-panel mt-6 rounded-3xl p-6">
-		<div class="flex flex-wrap items-center justify-between gap-4">
-			<h2 class="font-display text-lg font-semibold">Riwayat Langganan</h2>
-			<div class="flex gap-2">
-				<button
-					type="button"
-					class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
-					onclick={() => (showFilters = !showFilters)}
-				>
-					{showFilters ? 'Sembunyikan' : 'Filter'}
-				</button>
-				{#if data.subscriptions.length > 0}
+		<!-- Subscription History -->
+		<div class="glass-panel rounded-3xl p-6">
+			<div class="flex flex-wrap items-center justify-between gap-4">
+				<h2 class="font-display text-lg font-semibold">Riwayat Langganan</h2>
+				<div class="flex gap-2">
 					<button
 						type="button"
 						class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
-						onclick={exportToCSV}
+						onclick={() => (showFilters = !showFilters)}
 					>
-						Export CSV
+						{showFilters ? 'Sembunyikan' : 'Filter'}
 					</button>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Filters -->
-		{#if showFilters}
-			<div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-				<div class="grid gap-4 md:grid-cols-3">
-					<div>
-						<label for="filterStatus" class="mb-1 block text-xs text-white/60">Status</label>
-						<select
-							id="filterStatus"
-							bind:value={filterStatus}
-							class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
-						>
-							<option value="">Semua Status</option>
-							<option value="active">Aktif</option>
-							<option value="expired">Kedaluwarsa</option>
-							<option value="cancelled">Dibatalkan</option>
-						</select>
-					</div>
-					<div>
-						<label for="filterStartDate" class="mb-1 block text-xs text-white/60">
-							Tanggal Mulai
-						</label>
-						<input
-							id="filterStartDate"
-							type="date"
-							bind:value={filterStartDate}
-							class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
-						/>
-					</div>
-					<div>
-						<label for="filterEndDate" class="mb-1 block text-xs text-white/60">
-							Tanggal Akhir
-						</label>
-						<input
-							id="filterEndDate"
-							type="date"
-							bind:value={filterEndDate}
-							class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
-						/>
-					</div>
-				</div>
-				<div class="mt-4 flex gap-2">
-					<button
-						type="button"
-						class="rounded-full bg-white/10 px-4 py-2 text-xs text-white transition hover:bg-white/20"
-						onclick={applyFilters}
-					>
-						Terapkan Filter
-					</button>
-					<button
-						type="button"
-						class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
-						onclick={resetFilters}
-					>
-						Reset
-					</button>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Success/Error Messages -->
-		{#if form?.success}
-			<div
-				class="mt-4 rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400"
-			>
-				{form.message}
-			</div>
-		{:else if form?.error}
-			<div
-				class="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
-			>
-				{form.error}
-			</div>
-		{/if}
-
-		{#if data.subscriptions.length === 0}
-			<div class="mt-4 text-center text-sm text-white/50">
-				{#if data.filters.status || data.filters.startDate || data.filters.endDate}
-					Tidak ada riwayat langganan yang sesuai dengan filter.
-				{:else}
-					Belum ada riwayat langganan.
-				{/if}
-			</div>
-		{:else}
-			<div class="mt-4 space-y-3">
-				{#each data.subscriptions as sub (sub.id)}
-					<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-						<div class="flex flex-wrap items-start justify-between gap-3">
-							<div class="flex-1">
-								<div class="flex items-center gap-2">
-									<span class="font-display text-sm font-semibold text-white">
-										{sub.plan.toUpperCase()}
-									</span>
-									<span
-										class="rounded-full border px-2 py-0.5 text-xs {getStatusBadge(sub.status)}"
-									>
-										{getStatusLabel(sub.status)}
-									</span>
-									{#if sub.autoRenew}
-										<span class="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
-											Auto-Renew
-										</span>
-									{/if}
-								</div>
-								<div class="mt-2 space-y-1 text-xs text-white/60">
-									<div>Harga: {formatPrice(sub.price)}</div>
-									<div>Periode: {formatDate(sub.startedAt)} - {formatDate(sub.expiresAt)}</div>
-									<div>Metode: {getPaymentMethodLabel(sub.paymentMethod)}</div>
-									{#if sub.paymentRef}
-										<div class="text-white/40">Ref: {sub.paymentRef}</div>
-									{/if}
-									{#if sub.cancelledAt}
-										<div class="text-red-400">Dibatalkan: {formatDateTime(sub.cancelledAt)}</div>
-									{/if}
-								</div>
-							</div>
-							<div class="text-right text-xs text-white/40">
-								#{sub.id}
-							</div>
-						</div>
-						{#if sub.notes}
-							<div
-								class="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60"
-							>
-								<div class="mb-1 font-semibold text-white/80">Catatan:</div>
-								{sub.notes}
-							</div>
-						{/if}
-					</div>
-				{/each}
-			</div>
-
-			<!-- Pagination -->
-			{#if data.pagination.totalPages > 1}
-				<div class="mt-6 flex items-center justify-between">
-					<div class="text-xs text-white/50">
-						Menampilkan {data.subscriptions.length} dari {data.pagination.totalCount} langganan
-					</div>
-					<div class="flex gap-2">
+					{#if data.subscriptions.length > 0}
 						<button
 							type="button"
-							class="rounded-full border border-white/20 px-3 py-1 text-xs text-white/70 transition hover:border-white/40 disabled:opacity-50"
-							disabled={data.pagination.page <= 1}
-							onclick={() => changePage(data.pagination.page - 1)}
+							class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
+							onclick={exportToCSV}
 						>
-							Sebelumnya
+							Export CSV
 						</button>
-						<span class="flex items-center px-3 text-xs text-white/60">
-							Halaman {data.pagination.page} dari {data.pagination.totalPages}
-						</span>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Filters -->
+			{#if showFilters}
+				<div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+					<div class="grid gap-4 md:grid-cols-3">
+						<div>
+							<label for="filterStatus" class="mb-1 block text-xs text-white/60">Status</label>
+							<select
+								id="filterStatus"
+								bind:value={filterStatus}
+								class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+							>
+								<option value="">Semua Status</option>
+								<option value="active">Aktif</option>
+								<option value="expired">Kedaluwarsa</option>
+								<option value="cancelled">Dibatalkan</option>
+							</select>
+						</div>
+						<div>
+							<label for="filterStartDate" class="mb-1 block text-xs text-white/60">
+								Tanggal Mulai
+							</label>
+							<input
+								id="filterStartDate"
+								type="date"
+								bind:value={filterStartDate}
+								class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+							/>
+						</div>
+						<div>
+							<label for="filterEndDate" class="mb-1 block text-xs text-white/60">
+								Tanggal Akhir
+							</label>
+							<input
+								id="filterEndDate"
+								type="date"
+								bind:value={filterEndDate}
+								class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+							/>
+						</div>
+					</div>
+					<div class="mt-4 flex gap-2">
 						<button
 							type="button"
-							class="rounded-full border border-white/20 px-3 py-1 text-xs text-white/70 transition hover:border-white/40 disabled:opacity-50"
-							disabled={data.pagination.page >= data.pagination.totalPages}
-							onclick={() => changePage(data.pagination.page + 1)}
+							class="rounded-full bg-white/10 px-4 py-2 text-xs text-white transition hover:bg-white/20"
+							onclick={applyFilters}
 						>
-							Selanjutnya
+							Terapkan Filter
+						</button>
+						<button
+							type="button"
+							class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
+							onclick={resetFilters}
+						>
+							Reset
 						</button>
 					</div>
 				</div>
 			{/if}
-		{/if}
+
+			<!-- Success/Error Messages -->
+			{#if form?.success}
+				<div
+					class="mt-4 rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400"
+				>
+					{form.message}
+				</div>
+			{:else if form?.error}
+				<div
+					class="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+				>
+					{form.error}
+				</div>
+			{/if}
+
+			{#if data.subscriptions.length === 0}
+				<div class="mt-4 text-center text-sm text-white/50">
+					{#if data.filters.status || data.filters.startDate || data.filters.endDate}
+						Tidak ada riwayat langganan yang sesuai dengan filter.
+					{:else}
+						Belum ada riwayat langganan.
+					{/if}
+				</div>
+			{:else}
+				<div class="mt-4 space-y-3">
+					{#each data.subscriptions as sub (sub.id)}
+						<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+							<div class="flex flex-wrap items-start justify-between gap-3">
+								<div class="flex-1">
+									<div class="flex items-center gap-2">
+										<span class="font-display text-sm font-semibold text-white">
+											{sub.plan.toUpperCase()}
+										</span>
+										<span
+											class="rounded-full border px-2 py-0.5 text-xs {getStatusBadge(sub.status)}"
+										>
+											{getStatusLabel(sub.status)}
+										</span>
+										{#if sub.autoRenew}
+											<span class="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400">
+												Auto-Renew
+											</span>
+										{/if}
+									</div>
+									<div class="mt-2 space-y-1 text-xs text-white/60">
+										<div>Harga: {formatPrice(sub.price)}</div>
+										<div>Periode: {formatDate(sub.startedAt)} - {formatDate(sub.expiresAt)}</div>
+										<div>Metode: {getPaymentMethodLabel(sub.paymentMethod)}</div>
+										{#if sub.paymentRef}
+											<div class="text-white/40">Ref: {sub.paymentRef}</div>
+										{/if}
+										{#if sub.cancelledAt}
+											<div class="text-red-400">Dibatalkan: {formatDateTime(sub.cancelledAt)}</div>
+										{/if}
+									</div>
+								</div>
+								<div class="text-right text-xs text-white/40">
+									#{sub.id}
+								</div>
+							</div>
+							{#if sub.notes}
+								<div
+									class="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60"
+								>
+									<div class="mb-1 font-semibold text-white/80">Catatan:</div>
+									{sub.notes}
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+
+				<!-- Pagination -->
+				{#if data.pagination.totalPages > 1}
+					<div class="mt-6 flex items-center justify-between">
+						<div class="text-xs text-white/50">
+							Menampilkan {data.subscriptions.length} dari {data.pagination.totalCount} langganan
+						</div>
+						<div class="flex gap-2">
+							<button
+								type="button"
+								class="rounded-full border border-white/20 px-3 py-1 text-xs text-white/70 transition hover:border-white/40 disabled:opacity-50"
+								disabled={data.pagination.page <= 1}
+								onclick={() => changePage(data.pagination.page - 1)}
+							>
+								Sebelumnya
+							</button>
+							<span class="flex items-center px-3 text-xs text-white/60">
+								Halaman {data.pagination.page} dari {data.pagination.totalPages}
+							</span>
+							<button
+								type="button"
+								class="rounded-full border border-white/20 px-3 py-1 text-xs text-white/70 transition hover:border-white/40 disabled:opacity-50"
+								disabled={data.pagination.page >= data.pagination.totalPages}
+								onclick={() => changePage(data.pagination.page + 1)}
+							>
+								Selanjutnya
+							</button>
+						</div>
+					</div>
+				{/if}
+			{/if}
+		</div>
 	</div>
 
 	<!-- Account Info -->

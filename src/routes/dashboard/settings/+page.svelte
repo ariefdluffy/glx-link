@@ -233,7 +233,7 @@
 	<title>Pengaturan Akun - GLX</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-4xl px-6 pb-16">
+<div class="mx-auto w-full space-y-6 px-6 pb-16">
 	<!-- Page Header -->
 	<div class="py-6">
 		<h1 class="font-display text-2xl font-semibold">Pengaturan Akun</h1>

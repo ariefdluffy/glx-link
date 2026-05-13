@@ -1,8 +1,10 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db';
 import { users, shortLinks, microsites, subscriptions } from '$lib/db/schema';
-import { eq, count, sum, desc } from 'drizzle-orm';
+import { eq, count, sum, desc, like, or } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
+import { createSubscription } from '$lib/subscription-utils';
+import type { Actions } from './$types';
 
 export const load = async ({ cookies, url }) => {
 	const userId = getSessionUserId(cookies);
@@ -28,20 +30,49 @@ export const load = async ({ cookies, url }) => {
 	const msPage = Math.max(1, parseInt(url.searchParams.get('msPage') || '1'));
 	const perPage = 10;
 
-	// Latest users with pagination
-	const latestUsers = await db
+	// Search query for users
+	const searchQuery = url.searchParams.get('search') || '';
+
+	// Latest users with pagination (and search if provided)
+	const latestUsers = searchQuery
+		? await db
+				.select({
+					id: users.id,
+					name: users.name,
+					email: users.email,
+					role: users.role,
+					plan: users.plan,
+					createdAt: users.createdAt
+				})
+				.from(users)
+				.where(or(like(users.name, `%${searchQuery}%`), like(users.email, `%${searchQuery}%`)))
+				.orderBy(desc(users.createdAt))
+				.limit(perPage)
+				.offset((userPage - 1) * perPage)
+		: await db
+				.select({
+					id: users.id,
+					name: users.name,
+					email: users.email,
+					role: users.role,
+					plan: users.plan,
+					createdAt: users.createdAt
+				})
+				.from(users)
+				.orderBy(desc(users.createdAt))
+				.limit(perPage)
+				.offset((userPage - 1) * perPage);
+
+	// All users for admin dropdown (for creating subscription)
+	const allUsers = await db
 		.select({
 			id: users.id,
 			name: users.name,
 			email: users.email,
-			role: users.role,
-			plan: users.plan,
-			createdAt: users.createdAt
+			plan: users.plan
 		})
 		.from(users)
-		.orderBy(desc(users.createdAt))
-		.limit(perPage)
-		.offset((userPage - 1) * perPage);
+		.orderBy(users.name);
 
 	// All microsites with pagination
 	const allMs = await db
@@ -58,9 +89,19 @@ export const load = async ({ cookies, url }) => {
 		.limit(perPage)
 		.offset((msPage - 1) * perPage);
 
-	// Total counts for pagination
-	const totalUsers = Number(userRows[0]?.c ?? 0);
-	const totalMicrosites = Number(msRows[0]?.c ?? 0);
+	let totalUsers;
+	let totalMicrosites;
+
+	if (searchQuery) {
+		const [countResult] = await db
+			.select({ c: count() })
+			.from(users)
+			.where(or(like(users.name, `%${searchQuery}%`), like(users.email, `%${searchQuery}%`)));
+		totalUsers = Number(countResult?.c ?? 0);
+	} else {
+		totalUsers = Number(userRows[0]?.c ?? 0);
+	}
+	totalMicrosites = Number(msRows[0]?.c ?? 0);
 
 	return {
 		stats: {
@@ -71,6 +112,8 @@ export const load = async ({ cookies, url }) => {
 			totalClicks: Number(clickRows[0]?.s ?? 0)
 		},
 		latestUsers,
+		allUsers,
+		searchQuery,
 		allMs,
 		pagination: {
 			users: {
@@ -85,4 +128,82 @@ export const load = async ({ cookies, url }) => {
 			}
 		}
 	};
+};
+
+export const actions: Actions = {
+	createSubscription: async ({ cookies, request }) => {
+		const userId = getSessionUserId(cookies);
+		if (!userId) throw redirect(302, '/login');
+
+		// Verify admin
+		const [admin] = await db
+			.select({ role: users.role })
+			.from(users)
+			.where(eq(users.id, userId))
+			.limit(1);
+
+		if (!admin || admin.role !== 'admin') {
+			return fail(403, { error: 'Only admin can create subscriptions' });
+		}
+
+		const formData = await request.formData();
+		const targetUserId = parseInt(formData.get('userId') as string);
+		const plan = formData.get('plan') as string;
+		const price = parseInt(formData.get('price') as string);
+		const durationDays = parseInt(formData.get('durationDays') as string);
+		const paymentMethod = (formData.get('paymentMethod') as string) || 'manual';
+		const paymentRef = (formData.get('paymentRef') as string) || undefined;
+		const autoRenew = formData.get('autoRenew') === 'true';
+		const notes = (formData.get('notes') as string) || undefined;
+
+		// Validation
+		if (!targetUserId || isNaN(targetUserId)) {
+			return fail(400, { error: 'User tidak valid' });
+		}
+		if (plan !== 'pro') {
+			return fail(400, { error: 'Plan harus pro' });
+		}
+		if (!price || isNaN(price) || price < 0) {
+			return fail(400, { error: 'Harga tidak valid' });
+		}
+		if (!durationDays || isNaN(durationDays) || durationDays < 1) {
+			return fail(400, { error: 'Durasi tidak valid' });
+		}
+
+		// Verify target user exists
+		const [targetUser] = await db
+			.select({ id: users.id })
+			.from(users)
+			.where(eq(users.id, targetUserId))
+			.limit(1);
+
+		if (!targetUser) {
+			return fail(404, { error: 'User tidak ditemukan' });
+		}
+
+		try {
+			const result = await createSubscription({
+				userId: targetUserId,
+				plan: 'pro',
+				price,
+				durationDays,
+				paymentRef,
+				paymentMethod: paymentMethod as 'bank_transfer' | 'midtrans' | 'manual',
+				autoRenew,
+				notes
+			});
+
+			return {
+				success: true,
+				message: `Langganan Pro berhasil dibuat untuk ${durationDays} hari (Rp${price.toLocaleString('id-ID')})`,
+				subscriptionId: result?.id
+			};
+		} catch (error) {
+			console.error('Error creating subscription:', error);
+			return fail(500, {
+				error:
+					'Gagal membuat langganan: ' + (error instanceof Error ? error.message : 'Unknown error')
+			});
+		}
+	}
 };

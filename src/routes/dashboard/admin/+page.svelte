@@ -1,8 +1,16 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { enhance } from '$app/forms';
 
-	let { data } = $props();
+	type AdminFormResult = {
+		success?: boolean;
+		message?: string;
+		error?: string;
+		subscriptionId?: number;
+	};
+
+	let { data, form }: { data: any; form?: AdminFormResult } = $props();
 
 	let currentUrl = $derived($page.url);
 
@@ -274,6 +282,154 @@
 				</div>
 			</div>
 		</div>
+	</div>
+
+	<!-- Tambah Langganan - Admin Panel -->
+	<div class="glass-panel rounded-3xl p-6">
+		<div class="mb-5 flex items-center justify-between">
+			<div>
+				<h2 class="font-display text-xl font-semibold">Tambah Langganan</h2>
+				<p class="mt-1 text-xs text-white/50">Buat langganan Pro untuk user secara manual</p>
+			</div>
+		</div>
+
+		{#if form?.success}
+			<div
+				class="mb-4 rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-400"
+			>
+				{form.message}
+			</div>
+		{/if}
+		{#if form?.error}
+			<div class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+				{form.error}
+			</div>
+		{/if}
+
+		<form method="POST" action="?/createSubscription" use:enhance>
+			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+				<!-- User Selection -->
+				<div>
+					<label for="userId" class="mb-1 block text-xs text-white/60">User *</label>
+					<select
+						id="userId"
+						name="userId"
+						required
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+					>
+						<option value="" disabled class="bg-gray-900">Pilih user...</option>
+						{#each data.allUsers as u (u.id)}
+							<option value={u.id} class="bg-gray-900">
+								{u.name} ({u.email}) {#if u.plan === 'pro'}— Pro{/if}
+							</option>
+						{/each}
+					</select>
+				</div>
+
+				<!-- Plan (fixed to Pro) -->
+				<div>
+					<label for="plan" class="mb-1 block text-xs text-white/60">Plan</label>
+					<select
+						id="plan"
+						name="plan"
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+					>
+						<option value="pro" class="bg-gray-900">Pro</option>
+					</select>
+				</div>
+
+				<!-- Price -->
+				<div>
+					<label for="price" class="mb-1 block text-xs text-white/60">Harga (Rp) *</label>
+					<input
+						id="price"
+						name="price"
+						type="number"
+						min="0"
+						value="29000"
+						required
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+					/>
+				</div>
+
+				<!-- Duration -->
+				<div>
+					<label for="durationDays" class="mb-1 block text-xs text-white/60">Durasi (hari) *</label>
+					<input
+						id="durationDays"
+						name="durationDays"
+						type="number"
+						min="1"
+						value="30"
+						required
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+					/>
+				</div>
+
+				<!-- Payment Method -->
+				<div>
+					<label for="paymentMethod" class="mb-1 block text-xs text-white/60">Metode Bayar</label>
+					<select
+						id="paymentMethod"
+						name="paymentMethod"
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+					>
+						<option value="manual" class="bg-gray-900">Manual (Admin)</option>
+						<option value="bank_transfer" class="bg-gray-900">Transfer Bank</option>
+						<option value="midtrans" class="bg-gray-900">Midtrans</option>
+					</select>
+				</div>
+
+				<!-- Payment Ref -->
+				<div>
+					<label for="paymentRef" class="mb-1 block text-xs text-white/60">Ref. Pembayaran</label>
+					<input
+						id="paymentRef"
+						name="paymentRef"
+						type="text"
+						placeholder="INV-xxx"
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+					/>
+				</div>
+
+				<!-- Auto Renew -->
+				<div>
+					<label for="autoRenew" class="mb-1 block text-xs text-white/60">Auto-Renew</label>
+					<select
+						id="autoRenew"
+						name="autoRenew"
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+					>
+						<option value="false" class="bg-gray-900">Tidak</option>
+						<option value="true" class="bg-gray-900">Ya</option>
+					</select>
+				</div>
+			</div>
+
+			<!-- Notes -->
+			<div class="mt-4">
+				<label for="notes" class="mb-1 block text-xs text-white/60">Catatan</label>
+				<textarea
+					id="notes"
+					name="notes"
+					rows="2"
+					placeholder="Alasan pembuatan, dll..."
+					class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition outline-none focus:border-white/30"
+				></textarea>
+			</div>
+
+			<div class="mt-4 flex items-center gap-3">
+				<button
+					type="submit"
+					class="rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-2 text-sm font-medium text-white transition hover:from-emerald-400 hover:to-emerald-500"
+				>
+					Buat Langganan
+				</button>
+				<span class="text-xs text-white/40"
+					>User akan langsung aktif Pro. Riwayat masuk ke tabel subscriptions.</span
+				>
+			</div>
+		</form>
 	</div>
 
 	<!-- Latest Users Section -->

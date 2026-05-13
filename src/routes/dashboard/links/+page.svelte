@@ -157,7 +157,7 @@
 	<title>Dashboard - Shortlink</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-6xl px-6 pb-16">
+<div class="mx-auto w-full space-y-6 px-6 pb-16">
 	<div class="flex flex-wrap items-center justify-between gap-4 py-6">
 		<div>
 			<h1 class="font-display text-2xl font-semibold">Kelola Shortlink</h1>

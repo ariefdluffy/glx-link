@@ -20,7 +20,8 @@
 	let errorMessage = $state('');
 	let isCopied = $state(false);
 	let isLoading = $state(false);
-	let copyTimer: ReturnType<typeof setTimeout> | undefined;
+	let copyTimer: ReturnType<typeof setTimeout> | null = null;
+	let mobileMenuOpen = $state(false);
 
 	const isValidUrl = (value: string) => {
 		try {
@@ -110,15 +111,19 @@
 				</div>
 				<div class="font-display text-lg font-semibold tracking-wide">GLX</div>
 			</div>
+
+			<!-- Desktop Menu -->
 			<div class="hidden items-center gap-6 text-sm md:flex">
-				{#if data.isLoggedIn && data.role === 'admin'}
+				{#if data.isLoggedIn}
 					<a class="text-white/70 hover:text-white" href="/dashboard">Dashboard</a>
-					<button
-						class="cursor-not-allowed rounded-full border border-white/15 px-5 py-2 text-white/40"
-						disabled
-					>
-						Daftar
-					</button>
+					{#if data.role === 'admin'}
+						<button
+							class="cursor-not-allowed rounded-full border border-white/15 px-5 py-2 text-white/40"
+							disabled
+						>
+							Daftar
+						</button>
+					{/if}
 				{:else}
 					<a class="text-white/70 hover:text-white" href="/login">Login</a>
 					<a
@@ -129,7 +134,69 @@
 					</a>
 				{/if}
 			</div>
+
+			<!-- Mobile Menu Button -->
+			<button
+				class="flex items-center justify-center rounded-lg p-2 text-white/70 hover:bg-white/10 hover:text-white md:hidden"
+				onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+				aria-label="Toggle menu"
+			>
+				{#if mobileMenuOpen}
+					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				{:else}
+					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M4 6h16M4 12h16M4 18h16"
+						/>
+					</svg>
+				{/if}
+			</button>
 		</nav>
+
+		<!-- Mobile Menu -->
+		{#if mobileMenuOpen}
+			<div class="mx-auto max-w-6xl px-6 pb-4 md:hidden">
+				<div class="glass-panel rounded-2xl p-4">
+					<div class="flex flex-col gap-3 text-sm">
+						{#if data.isLoggedIn}
+							<a
+								class="rounded-lg px-4 py-2 text-white/70 hover:bg-white/10 hover:text-white"
+								href="/dashboard">Dashboard</a
+							>
+							{#if data.role === 'admin'}
+								<button
+									class="cursor-not-allowed rounded-lg border border-white/15 px-4 py-2 text-white/40"
+									disabled
+								>
+									Daftar
+								</button>
+							{/if}
+						{:else}
+							<a
+								class="rounded-lg px-4 py-2 text-white/70 hover:bg-white/10 hover:text-white"
+								href="/login">Login</a
+							>
+							<a
+								class="rounded-lg border border-white/15 px-4 py-2 text-center text-white/90 hover:border-white/40"
+								href="/register"
+							>
+								Daftar
+							</a>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
 		{#if logoutMessage}
 			<div class="mx-auto max-w-prose px-6 pt-2">
 				<Toast
