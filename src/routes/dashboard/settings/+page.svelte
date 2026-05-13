@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Toast from '$lib/components/toast/Toast.svelte';
+	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 
 	interface Session {
 		id: number;
@@ -31,6 +32,12 @@
 	// Session
 	let sessions = $state<Session[]>([]);
 	let revokingId = $state<number | null>(null);
+	let confirmDeleteSession = $state<{ isOpen: boolean; sessionId: number | null }>({
+		isOpen: false,
+		sessionId: null
+	});
+	let toastMessage = $state<string | null>(null);
+	let toastType = $state<'success' | 'error'>('error');
 
 	$effect(() => {
 		sessions = data.sessions;
@@ -102,18 +109,30 @@
 		return `${browser} - ${os}`;
 	};
 
-	const handleRevokeSession = async (sessionId: number) => {
-		revokingId = sessionId;
+	const handleRevokeSession = (sessionId: number) => {
+		confirmDeleteSession = { isOpen: true, sessionId };
+	};
+
+	const confirmSessionRevoke = async () => {
+		if (!confirmDeleteSession.sessionId) return;
+		revokingId = confirmDeleteSession.sessionId;
 		try {
-			const response = await fetch(`/api/auth/sessions/${sessionId}`, { method: 'DELETE' });
+			const response = await fetch(`/api/auth/sessions/${confirmDeleteSession.sessionId}`, {
+				method: 'DELETE'
+			});
 			const result = await response.json();
 			if (response.ok && result.success) {
-				sessions = sessions.filter((s) => s.id !== sessionId);
+				sessions = sessions.filter((s) => s.id !== confirmDeleteSession.sessionId);
+				confirmDeleteSession = { isOpen: false, sessionId: null };
+				toastMessage = 'Sesi berhasil dicabut';
+				toastType = 'success';
 			} else {
-				alert(result.error ?? 'Gagal mencabut sesi');
+				toastMessage = result.error ?? 'Gagal mencabut sesi';
+				toastType = 'error';
 			}
 		} catch {
-			alert('Gagal terhubung ke server');
+			toastMessage = 'Gagal terhubung ke server';
+			toastType = 'error';
 		} finally {
 			revokingId = null;
 		}
@@ -817,6 +836,33 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Confirm Delete Session Dialog -->
+	<ConfirmDialog
+		isOpen={confirmDeleteSession.isOpen}
+		title="Cabut Sesi"
+		description="Apakah kamu yakin ingin mencabut sesi ini? Sesi yang dicabut tidak dapat dipulihkan."
+		itemLabel={confirmDeleteSession.sessionId
+			? (sessions.find((s) => s.id === confirmDeleteSession.sessionId)?.userAgent ?? '')
+			: ''}
+		confirmText="Cabut Sesi"
+		cancelText="Batal"
+		isLoading={revokingId === confirmDeleteSession.sessionId}
+		onConfirm={confirmSessionRevoke}
+		onCancel={() => {
+			confirmDeleteSession = { isOpen: false, sessionId: null };
+		}}
+	/>
+
+	{#if toastMessage}
+		<Toast
+			message={toastMessage}
+			type={toastType}
+			onClose={() => {
+				toastMessage = null;
+			}}
+		/>
+	{/if}
 
 	<!-- Danger Zone -->
 	<div class="glass-panel mt-6 rounded-3xl border-2 border-red-500/20 bg-red-500/3 p-6">
