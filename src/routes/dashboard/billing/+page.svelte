@@ -238,12 +238,27 @@
 		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
 				<div class="text-xs text-white/50">Paket Saat Ini</div>
-				<div class="font-display mt-1 text-2xl font-semibold">
-					{data.user.plan === 'pro' ? 'Pro' : 'Free'}
+				<div class="relative inline-flex items-center gap-2">
+					{#if data.user.plan === 'pro'}
+						<span
+							class="font-display mt-1 bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-2xl font-semibold text-transparent"
+							>Pro</span
+						>
+						<span
+							class="rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-lg shadow-amber-500/25"
+							>PRO</span
+						>
+					{:else}
+						<span class="font-display mt-1 text-2xl font-semibold text-white">Free</span>
+					{/if}
 				</div>
 				{#if isProActive()}
-					<div class="mt-2 text-sm text-white/60">
-						Aktif hingga {formatDate(data.user.planExpiresAt)} ({daysRemaining()} hari tersisa)
+					<div class="mt-2 flex items-center gap-2">
+						<span class="flex h-2 w-2 rounded-full bg-green-500"></span>
+						<span class="text-sm text-green-400">Langganan Aktif</span>
+					</div>
+					<div class="mt-1 text-xs text-white/60">
+						Berakhir {formatDate(data.user.planExpiresAt)} ({daysRemaining()} hari tersisa)
 					</div>
 				{:else if data.user.plan === 'pro'}
 					<div class="mt-2 text-sm text-amber-400">Langganan sudah kedaluwarsa</div>
@@ -253,10 +268,14 @@
 			</div>
 			{#if !isProActive()}
 				<a
-					class="rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
+					class="rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
 					href="#upgrade"
 				>
-					Upgrade ke Pro
+					{#if data.user.plan === 'pro'}
+						Perbarui Langganan
+					{:else}
+						Upgrade ke Pro
+					{/if}
 				</a>
 			{/if}
 		</div>

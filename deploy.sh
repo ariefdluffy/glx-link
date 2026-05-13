@@ -16,7 +16,17 @@ NC='\033[0m' # No Color
 # Configuration
 APP_NAME="glx-link"
 APP_DIR="/var/www/glx-link"
+UPLOADS_DIR="/var/www/glx-link/uploads"
 REPO_URL="your-git-repo-url" # Update this with your git repository URL
+
+echo -e "${YELLOW}📁 Step 0: Ensuring uploads directory exists...${NC}"
+if [ ! -d "$UPLOADS_DIR" ]; then
+    mkdir -p "$UPLOADS_DIR"
+    chmod 755 "$UPLOADS_DIR"
+    echo -e "${GREEN}✅ Created uploads directory${NC}"
+else
+    echo -e "${GREEN}✅ Uploads directory already exists${NC}"
+fi
 
 echo -e "${YELLOW}📦 Step 1: Pulling latest code from repository...${NC}"
 cd $APP_DIR

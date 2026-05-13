@@ -3,10 +3,14 @@ import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getSessionUserId } from '$lib/auth/session';
 import crypto from 'crypto';
+import { dev } from '$app/environment';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const UPLOAD_DIR = 'static/uploads';
+
+// Use different upload directory for dev vs production
+// In production, use a persistent directory outside the build folder
+const UPLOAD_DIR = dev ? 'static/uploads' : process.env.UPLOAD_DIR || '/var/www/glx-link/uploads';
 
 export const POST = async ({ request, cookies }) => {
 	const userId = getSessionUserId(cookies);
@@ -38,7 +42,9 @@ export const POST = async ({ request, cookies }) => {
 	const parts = file.type.split('/');
 	const ext = parts.length > 1 ? parts[1] : 'jpg';
 	const filename = `${crypto.randomUUID()}.${ext}`;
-	const dir = join(process.cwd(), UPLOAD_DIR);
+
+	// In dev, use relative path. In production, use absolute path
+	const dir = dev ? join(process.cwd(), UPLOAD_DIR) : UPLOAD_DIR;
 
 	if (!existsSync(dir)) {
 		mkdirSync(dir, { recursive: true });

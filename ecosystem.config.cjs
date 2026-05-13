@@ -5,7 +5,10 @@ module.exports = {
 			script: 'build/index.js',
 			instances: 'max', // Gunakan semua CPU cores yang tersedia
 			exec_mode: 'fork',
-			env: '.env',
+			env: {
+				NODE_ENV: 'production',
+				UPLOAD_DIR: '/var/www/glx-link/uploads'
+			},
 			// Logging
 			error_file: './logs/pm2-error.log',
 			out_file: './logs/pm2-out.log',
