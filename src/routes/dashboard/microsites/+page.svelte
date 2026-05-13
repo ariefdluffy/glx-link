@@ -153,7 +153,7 @@
 	<title>Dashboard - Microsite</title>
 </svelte:head>
 
-<div class="mx-auto w-full max-w-6xl px-6 pb-16">
+<div class="mx-auto w-full max-w-6xl px-1 pb-16">
 	<div class="flex flex-wrap items-center justify-between gap-4 py-6">
 		<div>
 			<h1 class="font-display text-2xl font-semibold">Kelola Microsite</h1>
@@ -180,7 +180,7 @@
 		</div>
 	</div>
 
-	<div class="glass-panel rounded-3xl p-6">
+	<div class="glass-panel rounded-3xl p-4">
 		{#if isLoading}
 			<p class="text-sm text-white/60">Memuat data...</p>
 		{:else if errorMessage}
