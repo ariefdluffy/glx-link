@@ -34,8 +34,15 @@ export const createSession = async (cookies: Cookies, userId: number, event?: Re
 
 	// Record session in database
 	try {
-		const ip = event?.getClientAddress?.() ?? 'unknown';
-		const userAgent = event?.request?.headers?.get?.('user-agent') ?? 'unknown';
+		// Get real client IP - check proxy headers first
+		const headers = event?.request?.headers;
+		let ip: string =
+			headers?.get?.('cf-connecting-ip') ?? // Cloudflare
+			headers?.get?.('x-real-ip') ?? // Nginx
+			headers?.get?.('x-forwarded-for')?.split(',')[0]?.trim() ?? // Standard proxy header
+			event?.getClientAddress?.() ??
+			'unknown';
+		const userAgent = headers?.get?.('user-agent') ?? 'unknown';
 
 		await db.insert(userSessions).values({
 			userId,
