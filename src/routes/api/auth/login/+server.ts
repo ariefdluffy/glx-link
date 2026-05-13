@@ -30,7 +30,8 @@ const verifyTurnstile = async (token: string, ip: string): Promise<boolean> => {
 	}
 };
 
-export const POST = async ({ request, cookies, getClientAddress }) => {
+export const POST = async (event) => {
+	const { request, cookies, getClientAddress } = event;
 	const payload = await request.json().catch(() => null);
 	if (!payload) {
 		return json({ message: 'Data tidak valid.' }, { status: 400 });
@@ -66,6 +67,6 @@ export const POST = async ({ request, cookies, getClientAddress }) => {
 		return json({ message: 'Email atau password salah.' }, { status: 401 });
 	}
 
-	await createSession(cookies, user.id, { request, getClientAddress });
+	await createSession(cookies, user.id, event);
 	return json({ ok: true });
 };

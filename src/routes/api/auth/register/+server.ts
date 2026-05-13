@@ -33,7 +33,8 @@ const verifyTurnstile = async (token: string, ip: string): Promise<boolean> => {
 	}
 };
 
-export const POST = async ({ request, cookies, getClientAddress }) => {
+export const POST = async (event) => {
+	const { request, cookies, getClientAddress } = event;
 	const payload = await request.json().catch(() => null);
 	if (!payload) {
 		return json({ message: 'Data tidak valid.' }, { status: 400 });
@@ -93,7 +94,7 @@ export const POST = async ({ request, cookies, getClientAddress }) => {
 		.where(eq(users.email, email))
 		.limit(1);
 	if (created?.id) {
-		await createSession(cookies, created.id, { request, getClientAddress });
+		await createSession(cookies, created.id, event);
 	}
 
 	return json({ ok: true });

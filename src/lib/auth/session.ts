@@ -3,7 +3,7 @@ import { SESSION_SECRET } from '$env/static/private';
 import { dev } from '$app/environment';
 import { db } from '$lib/db';
 import { userSessions } from '$lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import type { Cookies, RequestEvent } from '@sveltejs/kit';
 
 const COOKIE_NAME = 'glx_session';
@@ -23,14 +23,6 @@ export const createSession = async (cookies: Cookies, userId: number, event?: Re
 	const issuedAt = Date.now();
 	const payload = `${userId}.${issuedAt}`;
 	const signature = sign(payload);
-
-	cookies.set(COOKIE_NAME, `${payload}.${signature}`, {
-		path: '/',
-		httpOnly: true,
-		sameSite: 'strict',
-		secure: !dev,
-		maxAge: SESSION_TTL_MS / 1000
-	});
 
 	// Record session in database
 	try {
@@ -52,15 +44,48 @@ export const createSession = async (cookies: Cookies, userId: number, event?: Re
 		}
 		const userAgent = headers?.get?.('user-agent') ?? 'unknown';
 
-		await db.insert(userSessions).values({
-			userId,
-			token: payload,
-			ip,
-			userAgent
-		});
+		// Check if session with same IP and User Agent exists
+		const existingSession = await db
+			.select()
+			.from(userSessions)
+			.where(
+				and(
+					eq(userSessions.userId, userId),
+					eq(userSessions.ip, ip),
+					eq(userSessions.userAgent, userAgent)
+				)
+			)
+			.limit(1);
+
+		if (existingSession.length > 0) {
+			// Update existing session
+			await db
+				.update(userSessions)
+				.set({
+					token: payload,
+					lastActiveAt: sql`CURRENT_TIMESTAMP`
+				})
+				.where(eq(userSessions.id, existingSession[0].id));
+		} else {
+			// Create new session
+			await db.insert(userSessions).values({
+				userId,
+				token: payload,
+				ip,
+				userAgent
+			});
+		}
 	} catch (e) {
 		console.error('Failed to record session:', e);
 	}
+
+	cookies.set(COOKIE_NAME, `${payload}.${signature}`, {
+		path: '/',
+		httpOnly: true,
+		sameSite: 'strict',
+		secure: !dev,
+		maxAge: SESSION_TTL_MS / 1000
+	});
 };
 
 export const clearSession = (cookies: Cookies) => {
