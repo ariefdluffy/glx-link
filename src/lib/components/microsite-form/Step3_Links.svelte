@@ -139,7 +139,7 @@
 						class="mx-auto mb-3 h-12 w-12 text-white/20"
 						fill="none"
 						stroke="currentColor"
-						viewBox="0 0 24 24"
+						viewBox="0 0 28 28"
 					>
 						<path
 							stroke-linecap="round"

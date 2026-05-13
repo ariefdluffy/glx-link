@@ -116,7 +116,7 @@
 			<input
 				id="avatar-input"
 				type="file"
-				accept="image/*"
+				accept="image/jpeg,image/png,image/jpg"
 				class="hidden"
 				onchange={onAvatarUpload}
 			/>
@@ -155,7 +155,7 @@
 			<input
 				id="header-input"
 				type="file"
-				accept="image/*"
+				accept="image/jpeg,image/png,image/jpg"
 				class="hidden"
 				onchange={onHeaderUpload}
 			/>

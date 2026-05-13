@@ -5,7 +5,7 @@ import { getSessionUserId } from '$lib/auth/session';
 import crypto from 'crypto';
 import { dev } from '$app/environment';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Use different upload directory for dev vs production

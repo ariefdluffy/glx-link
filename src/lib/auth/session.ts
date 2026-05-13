@@ -7,7 +7,7 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import type { Cookies, RequestEvent } from '@sveltejs/kit';
 
 const COOKIE_NAME = 'glx_session';
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24;
 
 const sign = (value: string) => createHmac('sha256', SESSION_SECRET).update(value).digest('hex');
 

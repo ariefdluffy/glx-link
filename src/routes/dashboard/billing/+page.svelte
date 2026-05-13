@@ -206,7 +206,7 @@
 	<title>Billing - GLX</title>
 </svelte:head>
 
-<div class="mx-auto w-full space-y-6 px-6 pb-16">
+<div class="mx-auto w-full space-y-6 px-1 pb-16">
 	<div class="py-6">
 		<h1 class="font-display text-2xl font-semibold">Langganan & Billing</h1>
 		<p class="text-sm text-white/60">Kelola paket dan riwayat pembayaran kamu.</p>
@@ -234,7 +234,7 @@
 	{/if}
 
 	<!-- Current Plan -->
-	<div class="glass-panel rounded-3xl p-6">
+	<div class="glass-panel rounded-3xl p-4">
 		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
 				<div class="text-xs text-white/50">Paket Saat Ini</div>
@@ -311,7 +311,7 @@
 
 	<!-- Upgrade Section -->
 	{#if !isProActive()}
-		<div id="upgrade" class="glass-panel mt-6 rounded-3xl p-6">
+		<div id="upgrade" class="glass-panel mt-6 rounded-3xl p-4">
 			<h2 class="font-display text-lg font-semibold">Upgrade ke Pro</h2>
 			<p class="mt-2 text-sm text-white/60">Hubungi kami via WhatsApp untuk aktivasi akun Pro.</p>
 
@@ -362,7 +362,7 @@
 	<!-- Grid: Langganan Aktif + Riwayat -->
 	<div class="mt-6 {data.activeSubscription ? 'grid gap-6 md:grid-cols-2' : ''}">
 		{#if data.activeSubscription}
-			<div class="glass-panel relative overflow-hidden rounded-3xl p-6">
+			<div class="glass-panel relative overflow-hidden rounded-3xl p-4">
 				<!-- Decorative gradient blur -->
 				<div
 					class="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-gradient-to-br from-amber-500/15 to-yellow-500/5 blur-3xl"
@@ -459,7 +459,7 @@
 		{/if}
 
 		<!-- Subscription History -->
-		<div class="glass-panel rounded-3xl p-6">
+		<div class="glass-panel rounded-3xl p-4">
 			<div class="flex flex-wrap items-center justify-between gap-4">
 				<h2 class="font-display text-lg font-semibold">Riwayat Langganan</h2>
 				<div class="flex gap-2">

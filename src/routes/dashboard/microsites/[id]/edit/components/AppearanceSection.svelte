@@ -156,7 +156,7 @@
 			<input
 				id="appearance-avatar-input"
 				type="file"
-				accept="image/*"
+				accept="image/jpeg,image/png,image/jpg"
 				class="hidden"
 				onchange={onavatarupload}
 			/>
@@ -194,7 +194,7 @@
 			<input
 				id="appearance-header-input"
 				type="file"
-				accept="image/*"
+				accept="image/jpeg,image/png,image/jpg"
 				class="hidden"
 				onchange={onheaderupload}
 			/>

@@ -388,7 +388,7 @@
 		</div>
 	</div>
 {:else}
-	<div class="mx-auto w-full max-w-7xl px-6 pb-16">
+	<div class="mx-auto w-full max-w-7xl px-1 pb-16">
 		<div class="py-6">
 			<h1 class="font-display text-2xl font-semibold">Buat Microsite Baru</h1>
 			<p class="text-sm text-white/60">Ikuti langkah-langkah untuk membuat microsite Anda.</p>
@@ -400,10 +400,10 @@
 		</div>
 
 		<!-- Main Content Grid -->
-		<div class="grid gap-8 lg:grid-cols-[1fr_420px]">
+		<div class="grid gap-6 lg:grid-cols-[1fr_420px] lg:gap-8">
 			<!-- Left: Form Panel -->
 			<div class="space-y-6">
-				<div class="glass-panel rounded-3xl p-6 md:p-8">
+				<div class="glass-panel rounded-3xl px-4 py-6 md:px-8 md:py-8">
 					<!-- Step Content -->
 					{#if currentStep === 1}
 						<Step1_BasicInfo
@@ -458,10 +458,12 @@
 					{/if}
 
 					<!-- Navigation Buttons -->
-					<div class="mt-8 flex items-center justify-between gap-4">
+					<div
+						class="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+					>
 						<button
 							type="button"
-							class="rounded-2xl border border-white/15 px-6 py-3 text-sm font-medium text-white/70 transition hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+							class="rounded-2xl border border-white/15 px-5 py-3 text-sm font-medium text-white/70 transition hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40 sm:px-6"
 							onclick={prevStep}
 							disabled={currentStep === 1}
 						>
@@ -471,7 +473,7 @@
 						{#if currentStep < totalSteps}
 							<button
 								type="button"
-								class="rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
+								class="rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40 sm:px-6"
 								onclick={nextStep}
 							>
 								Lanjut →
@@ -479,7 +481,7 @@
 						{:else}
 							<button
 								type="button"
-								class="rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+								class="rounded-2xl bg-linear-to-r from-violet-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60 sm:px-6"
 								onclick={handleSubmit}
 								disabled={isLoading}
 							>
@@ -499,8 +501,10 @@
 
 			<!-- Right: Preview Sidebar (Sticky) -->
 			<div class="lg:sticky lg:top-6 lg:h-fit">
-				<div class="glass-panel rounded-3xl p-4">
-					<div class="mb-3 text-center text-xs text-white/50">Pratinjau Langsung</div>
+				<div class="glass-panel overflow-hidden rounded-3xl p-3 sm:p-4">
+					<div class="mb-2 text-center text-[10px] text-white/50 sm:mb-3 sm:text-xs">
+						Pratinjau Langsung
+					</div>
 					<div class="flex items-center justify-center">
 						<MicrositePreview
 							{title}
@@ -519,7 +523,7 @@
 						/>
 					</div>
 				</div>
-				<p class="mt-4 text-center text-[10px] text-white/40">
+				<p class="mt-3 text-center text-[9px] text-white/40 sm:mt-4 sm:text-[10px]">
 					glx.my.id/m/{slug || 'slug'} &middot; Tema {theme} &middot; Animasi {animation}
 				</p>
 			</div>

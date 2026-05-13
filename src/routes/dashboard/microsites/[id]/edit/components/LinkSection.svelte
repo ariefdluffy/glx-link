@@ -492,7 +492,7 @@
 										<input
 											id="link-img-{index}"
 											type="file"
-											accept="image/*"
+											accept="image/jpeg,image/png,image/jpg"
 											class="hidden"
 											onchange={(e) => onlinkimageupload(index, e)}
 										/>

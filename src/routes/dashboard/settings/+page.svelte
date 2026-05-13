@@ -233,7 +233,7 @@
 	<title>Pengaturan Akun - GLX</title>
 </svelte:head>
 
-<div class="mx-auto w-full space-y-6 px-6 pb-16">
+<div class="mx-auto w-full space-y-6 px-1 pb-16">
 	<!-- Page Header -->
 	<div class="py-6">
 		<h1 class="font-display text-2xl font-semibold">Pengaturan Akun</h1>
@@ -241,7 +241,7 @@
 	</div>
 
 	<!-- Profile Overview Card -->
-	<div class="glass-panel rounded-3xl p-6">
+	<div class="glass-panel rounded-3xl p-4">
 		<div class="flex flex-wrap items-center gap-6">
 			<!-- Avatar -->
 			<div
@@ -276,7 +276,7 @@
 	<!-- Grid Layout for Settings Cards -->
 	<div class="mt-6 grid gap-6 lg:grid-cols-2">
 		<!-- Kiri: Informasi Profil -->
-		<div class="glass-panel rounded-3xl p-6">
+		<div class="glass-panel rounded-3xl p-4">
 			<div class="flex items-center gap-3">
 				<div
 					class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20 text-violet-400"
@@ -448,7 +448,7 @@
 		</div>
 
 		<!-- Kanan: Keamanan & Password -->
-		<div class="glass-panel rounded-3xl p-6">
+		<div class="glass-panel rounded-3xl p-4">
 			<div class="flex items-center gap-3">
 				<div
 					class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/20 text-rose-400"
@@ -763,7 +763,7 @@
 	</div>
 
 	<!-- Sesi Aktif Card -->
-	<div class="glass-panel mt-6 rounded-3xl p-6">
+	<div class="glass-panel mt-6 rounded-3xl p-4">
 		<div class="flex items-center gap-3">
 			<div
 				class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/20 text-cyan-400"
@@ -865,7 +865,7 @@
 	{/if}
 
 	<!-- Danger Zone -->
-	<div class="glass-panel mt-6 rounded-3xl border-2 border-red-500/20 bg-red-500/3 p-6">
+	<div class="glass-panel mt-6 rounded-3xl border-2 border-red-500/20 bg-red-500/3 p-4">
 		<div class="flex items-center gap-3">
 			<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/20 text-red-400">
 				<svg

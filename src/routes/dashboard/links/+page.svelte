@@ -157,7 +157,7 @@
 	<title>Dashboard - Shortlink</title>
 </svelte:head>
 
-<div class="mx-auto w-full space-y-6 px-6 pb-16">
+<div class="mx-auto w-full space-y-6 px-1 pb-16">
 	<div class="flex flex-wrap items-center justify-between gap-4 py-6">
 		<div>
 			<h1 class="font-display text-2xl font-semibold">Kelola Shortlink</h1>
@@ -192,7 +192,7 @@
 		showReset={!!data.search}
 	/>
 
-	<div class="glass-panel rounded-3xl p-6">
+	<div class="glass-panel rounded-3xl p-4">
 		{#if errorMessage}
 			<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
 		{:else if data.links.length === 0}
