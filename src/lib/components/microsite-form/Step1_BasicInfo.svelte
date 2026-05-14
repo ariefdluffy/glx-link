@@ -38,14 +38,14 @@
 			<label class="text-xs font-medium text-white/60" for="title">
 				Judul Microsite <span class="text-red-400">*</span>
 			</label>
-			<span class="text-[10px] text-white/40">{title.length}/100</span>
+			<span class="text-[10px] text-white/40">{title.length}/80</span>
 		</div>
 		<input
 			id="title"
 			type="text"
 			bind:value={title}
 			onblur={generateSlug}
-			maxlength="100"
+			maxlength="80"
 			placeholder="Contoh: Naya's Links, Toko Kue Mama, Portfolio Saya"
 			class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-violet-400/50 focus:ring-2 focus:ring-violet-500/20"
 		/>
@@ -76,7 +76,7 @@
 				id="slug"
 				type="text"
 				bind:value={slug}
-				maxlength="50"
+				maxlength="35"
 				placeholder="naya-links"
 				pattern="[a-z0-9-]+"
 				class="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-violet-400/50 focus:ring-2 focus:ring-violet-500/20"

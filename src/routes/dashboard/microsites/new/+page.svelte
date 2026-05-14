@@ -507,7 +507,7 @@
 			</div>
 
 			<!-- Right: Preview Sidebar (Sticky) -->
-			<div class="lg:sticky lg:top-6 lg:h-fit lg:w-fit">
+			<div class="lg:sticky lg:top-6 lg:h-fit">
 				<div class="glass-panel max-w-full overflow-hidden rounded-3xl p-5 md:p-8">
 					<div class="mb-2 text-center text-[10px] text-white/50 sm:mb-3 sm:text-xs">
 						Pratinjau Langsung
