@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { and, eq, ne } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { shortLinks } from '$lib/db/schema';
+import { shortLinks, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 
 const isValidUrl = (value: string) => {
@@ -80,10 +80,27 @@ export const PATCH = async ({ params, request, cookies }) => {
 	}
 
 	await db.update(shortLinks).set(updates).where(eq(shortLinks.id, id));
+
+	// Audit log
+	try {
+		const description = Object.entries(updates)
+			.map(([k, v]) => `${k}: ${v}`)
+			.join(', ');
+		await db.insert(auditLogs).values({
+			userId,
+			action: 'link_updated',
+			description: `Update shortlink #${id}: ${description}`,
+			ip: 'api',
+			userAgent: 'api'
+		});
+	} catch (e) {
+		console.error('Failed to record audit log:', e);
+	}
+
 	return json({ ok: true });
 };
 
-export const DELETE = async ({ params, cookies }) => {
+export const DELETE = async ({ params, cookies, request }) => {
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -95,5 +112,19 @@ export const DELETE = async ({ params, cookies }) => {
 	}
 
 	await db.delete(shortLinks).where(and(eq(shortLinks.id, id), eq(shortLinks.userId, userId)));
+
+	// Audit log
+	try {
+		await db.insert(auditLogs).values({
+			userId,
+			action: 'link_deleted',
+			description: `Hapus shortlink #${id}`,
+			ip: 'api',
+			userAgent: 'api'
+		});
+	} catch (e) {
+		console.error('Failed to record audit log:', e);
+	}
+
 	return json({ ok: true });
 };

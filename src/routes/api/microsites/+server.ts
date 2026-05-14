@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { microsites, micrositeLinks, users } from '$lib/db/schema';
+import { microsites, micrositeLinks, users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 
 const sanitizeSlug = (value: string) =>
@@ -161,6 +161,19 @@ export const POST = async ({ request, cookies }) => {
 		if (linkRows.length > 0) {
 			await db.insert(micrositeLinks).values(linkRows);
 		}
+	}
+
+	// Audit log
+	try {
+		await db.insert(auditLogs).values({
+			userId,
+			action: 'microsite_created',
+			description: `Membuat microsite: ${title} (/${slug})`,
+			ip: 'api',
+			userAgent: 'api'
+		});
+	} catch (e) {
+		console.error('Failed to record audit log:', e);
 	}
 
 	return json({ ok: true, id: micrositeId });

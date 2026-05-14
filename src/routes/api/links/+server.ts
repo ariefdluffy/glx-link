@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { desc, eq, and, gte } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { shortLinks, users } from '$lib/db/schema';
+import { shortLinks, users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 
 const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -163,6 +163,19 @@ export const POST = async ({ request, cookies }) => {
 		isCustom: Boolean(requestedSlug),
 		clicks: 0
 	});
+
+	// Audit log
+	try {
+		await db.insert(auditLogs).values({
+			userId: userId || undefined,
+			action: 'link_created',
+			description: `Membuat shortlink: ${slug} → ${destination}`,
+			ip: 'api',
+			userAgent: 'api'
+		});
+	} catch (e) {
+		console.error('Failed to record audit log:', e);
+	}
 
 	return json({ slug });
 };

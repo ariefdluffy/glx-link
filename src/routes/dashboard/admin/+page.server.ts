@@ -1,7 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db';
-import { users, shortLinks, microsites, subscriptions } from '$lib/db/schema';
-import { eq, count, sum, desc, like, or } from 'drizzle-orm';
+import { users, shortLinks, microsites, subscriptions, auditLogs } from '$lib/db/schema';
+import { eq, count, sum, desc, like, or, sql } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 import { createSubscription } from '$lib/subscription-utils';
 import type { Actions } from './$types';
@@ -24,6 +24,15 @@ export const load = async ({ cookies, url }) => {
 	const msRows = await db.select({ c: count() }).from(microsites);
 	const subRows = await db.select({ c: count() }).from(subscriptions);
 	const clickRows = await db.select({ s: sum(shortLinks.clicks) }).from(shortLinks);
+	const logRows = await db.select({ c: count() }).from(auditLogs);
+	const actionsRows = await db
+		.select({ action: auditLogs.action })
+		.from(auditLogs)
+		.groupBy(auditLogs.action);
+	const logs24hRows = await db
+		.select({ c: count() })
+		.from(auditLogs)
+		.where(sql`${auditLogs.createdAt} >= NOW() - INTERVAL 24 HOUR`);
 
 	// Pagination
 	const userPage = Math.max(1, parseInt(url.searchParams.get('userPage') || '1'));
@@ -109,7 +118,10 @@ export const load = async ({ cookies, url }) => {
 			links: Number(linkRows[0]?.c ?? 0),
 			microsites: totalMicrosites,
 			subscriptions: Number(subRows[0]?.c ?? 0),
-			totalClicks: Number(clickRows[0]?.s ?? 0)
+			totalClicks: Number(clickRows[0]?.s ?? 0),
+			totalLogs: Number(logRows[0]?.c ?? 0),
+			uniqueActions: actionsRows.length,
+			logs24h: Number(logs24hRows[0]?.c ?? 0)
 		},
 		latestUsers,
 		allUsers,
@@ -192,6 +204,19 @@ export const actions: Actions = {
 				autoRenew,
 				notes
 			});
+
+			// Audit log
+			try {
+				await db.insert(auditLogs).values({
+					userId,
+					action: 'subscription_created',
+					description: `Admin buat langganan Pro untuk user #${targetUserId}: ${durationDays} hari, Rp${price.toLocaleString('id-ID')}, ref: ${paymentRef || '-'}`,
+					ip: 'admin',
+					userAgent: 'admin'
+				});
+			} catch (e) {
+				console.error('Failed to record audit log:', e);
+			}
 
 			return {
 				success: true,

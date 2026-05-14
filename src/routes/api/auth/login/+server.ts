@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { users } from '$lib/db/schema';
+import { users, auditLogs } from '$lib/db/schema';
 import { verifyPassword } from '$lib/auth/password';
 import { createSession } from '$lib/auth/session';
 import { env } from '$env/dynamic/private';
@@ -56,7 +56,19 @@ export const POST = async (event) => {
 	if (!isValidTurnstile) {
 		return json({ message: 'Verifikasi Turnstile gagal.' }, { status: 400 });
 	}
-	const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+	const rows = await db
+		.select({
+			id: users.id,
+			email: users.email,
+			password: users.password,
+			name: users.name,
+			role: users.role,
+			plan: users.plan,
+			emailVerified: users.emailVerified
+		})
+		.from(users)
+		.where(eq(users.email, email))
+		.limit(1);
 	const user = rows[0];
 	if (!user) {
 		return json({ message: 'Email atau password salah.' }, { status: 401 });
@@ -67,6 +79,32 @@ export const POST = async (event) => {
 		return json({ message: 'Email atau password salah.' }, { status: 401 });
 	}
 
+	if (!user.emailVerified) {
+		return json(
+			{
+				message: 'Email belum diverifikasi. Silakan cek inbox email kamu.',
+				needsVerification: true
+			},
+			{ status: 403 }
+		);
+	}
+
 	await createSession(cookies, user.id, event);
+
+	// Audit log
+	try {
+		const userAgent = request.headers.get('user-agent') ?? 'unknown';
+		await db.insert(auditLogs).values({
+			userId: user.id,
+			action: 'user_login',
+			description: 'Login berhasil',
+			ip: clientIp,
+			userAgent
+		});
+	} catch (e) {
+		// Non-critical, don't block login
+		console.error('Failed to record audit log:', e);
+	}
+
 	return json({ ok: true });
 };

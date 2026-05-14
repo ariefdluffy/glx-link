@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { users } from '$lib/db/schema';
+import { users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 
 const isValidEmail = (value: string) => /.+@.+\..+/.test(value);
@@ -48,6 +48,22 @@ export const PATCH = async ({ request, cookies }) => {
 	}
 
 	await db.update(users).set(updates).where(eq(users.id, userId));
+
+	// Audit log
+	try {
+		const description = Object.entries(updates)
+			.map(([k, v]) => `${k}: ${v}`)
+			.join(', ');
+		await db.insert(auditLogs).values({
+			userId,
+			action: 'profile_updated',
+			description: `Update profil: ${description}`,
+			ip: 'api',
+			userAgent: 'api'
+		});
+	} catch (e) {
+		console.error('Failed to record audit log:', e);
+	}
 
 	return json({ ok: true });
 };

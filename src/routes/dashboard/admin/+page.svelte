@@ -432,6 +432,64 @@
 		</form>
 	</div>
 
+	<!-- Monitoring Section -->
+	<div class="glass-panel rounded-3xl p-6">
+		<div class="mb-5 flex items-center justify-between">
+			<div>
+				<h2 class="font-display text-xl font-semibold">Monitoring & Audit Logs</h2>
+				<p class="mt-1 text-xs text-white/50">Pantau aktivitas sistem dan audit trail pengguna</p>
+			</div>
+			<a
+				href="/dashboard/admin/monitoring"
+				class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition-all hover:border-violet-500/50 hover:bg-violet-500/10"
+			>
+				<div class="flex items-center gap-2">
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+						/>
+					</svg>
+					<span>Lihat Audit Logs</span>
+				</div>
+			</a>
+		</div>
+
+		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+				<div class="text-xs text-white/50">Total Logs</div>
+				<div class="font-display mt-2 text-2xl font-bold text-white">
+					{formatNumber(data.stats.totalLogs || 0)}
+				</div>
+				<div class="mt-1 text-xs text-white/40">Audit trail sistem</div>
+			</div>
+			<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+				<div class="text-xs text-white/50">Unique Actions</div>
+				<div class="font-display mt-2 text-2xl font-bold text-white">
+					{formatNumber(data.stats.uniqueActions || 0)}
+				</div>
+				<div class="mt-1 text-xs text-white/40">Jenis aktivitas</div>
+			</div>
+			<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+				<div class="text-xs text-white/50">24h Logs</div>
+				<div class="font-display mt-2 text-2xl font-bold text-white">
+					{formatNumber(data.stats.logs24h || 0)}
+				</div>
+				<div class="mt-1 text-xs text-white/40">Aktivitas hari ini</div>
+			</div>
+			<div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+				<div class="text-xs text-white/50">Status</div>
+				<div class="mt-2 flex items-center gap-2">
+					<span class="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+					<span class="font-display text-2xl font-bold text-emerald-400">Active</span>
+				</div>
+				<div class="mt-1 text-xs text-white/40">Monitoring aktif</div>
+			</div>
+		</div>
+	</div>
+
 	<!-- Latest Users Section -->
 	<div class="glass-panel rounded-3xl p-6">
 		<div class="mb-5 flex items-center justify-between">

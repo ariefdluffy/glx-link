@@ -1,6 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db';
-import { users, subscriptions } from '$lib/db/schema';
+import { users, subscriptions, auditLogs } from '$lib/db/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 import type { Actions } from './$types';
@@ -225,6 +225,19 @@ export const actions: Actions = {
 			})
 			.where(eq(subscriptions.id, subscriptionId));
 
+		// Audit log
+		try {
+			await db.insert(auditLogs).values({
+				userId,
+				action: 'subscription_cancelled',
+				description: `Batalkan langganan #${subscriptionId}`,
+				ip: 'self',
+				userAgent: 'self'
+			});
+		} catch (e) {
+			console.error('Failed to record audit log:', e);
+		}
+
 		return { success: true, message: 'Langganan berhasil dibatalkan' };
 	},
 
@@ -254,6 +267,21 @@ export const actions: Actions = {
 
 		// Update auto-renew status
 		await db.update(subscriptions).set({ autoRenew }).where(eq(subscriptions.id, subscriptionId));
+
+		// Audit log
+		try {
+			await db.insert(auditLogs).values({
+				userId,
+				action: 'auto_renew_toggled',
+				description: autoRenew
+					? `Aktifkan auto-renew untuk langganan #${subscriptionId}`
+					: `Nonaktifkan auto-renew untuk langganan #${subscriptionId}`,
+				ip: 'self',
+				userAgent: 'self'
+			});
+		} catch (e) {
+			console.error('Failed to record audit log:', e);
+		}
 
 		return {
 			success: true,

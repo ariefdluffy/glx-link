@@ -58,10 +58,11 @@
 				errorMessage = payload?.message ?? 'Gagal mendaftar.';
 				return;
 			}
-			successMessage = 'Akun berhasil dibuat! Mengarahkan...';
+			successMessage = payload?.message ?? 'Akun berhasil dibuat! Cek email untuk verifikasi.';
+			// Redirect to dashboard tetap jalan, tapi user bakal liat pesan verifikasi
 			setTimeout(() => {
 				window.location.href = '/dashboard';
-			}, 500);
+			}, 1500);
 		} catch {
 			errorMessage = 'Gagal terhubung ke server.';
 		} finally {

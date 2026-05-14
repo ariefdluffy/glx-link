@@ -15,31 +15,124 @@ Platform GLX adalah layanan shortlink dan microsite yang ditargetkan untuk anak 
 
 ---
 
-## ✅ Status Implementasi (Saat Ini)
+## ✅ Status Implementasi (Terakhir Diperbarui: 14 Mei 2026)
 
+### ✅ Frontend & UI
 - SvelteKit + Tailwind CSS v4 + Drizzle ORM + MySQL sudah terintegrasi penuh.
+- Svelte 5 runes mode ($state(), $props(), $derived(), event atribut baru).
 - Landing page lengkap: hero, form shortlink guest (slug progresif 4→5→6), fitur 3 card, pricing, footer.
 - **Admin session handling di homepage:** Jika admin sudah login, tombol "Login" berubah menjadi "Dashboard" dan tombol "Daftar" dinonaktifkan.
 - **Preview microsite interaktif:** Card preview dengan tampilan microsite lengkap (header gradient, avatar, 4 link items dengan icon sosial media, social icons row) yang mencerminkan template microsite sebenarnya.
-- Auth register/login + session cookie (httpOnly, signed HMAC), bcrypt cost 12.
 - Dashboard: layout sidebar/nav, ringkasan statistik, quick actions, daftar link & microsite terbaru.
 - **Dashboard admin button:** Tombol "Upgrade Pro" berubah menjadi "Beranda" (link ke `/`) untuk user dengan role admin.
+- Auto-refresh stats setiap 10 detik di dashboard dan halaman list.
+- Live indicator "Live" dengan animasi ping di dashboard.
+
+### ✅ Auth System
+- Auth register/login + session cookie (httpOnly, SameSite=Strict, HMAC-signed), bcrypt cost 12.
+- Turnstile CAPTCHA integration untuk keamanan.
+- Session management: create, verify, clear session.
+- User profile: edit nama/email, ganti password.
+- Session revocation (logout dari perangkat lain).
+- Server-side redirect: user sudah login dikembalikan ke `/dashboard`.
+
+### ✅ Shortlink CRUD
 - CRUD shortlink: create (random + custom untuk Pro), list, edit modal, hapus.
-- CRUD microsite: create/edit dengan live preview, 4 tema (default/gradient/minimal/neon), 7 animasi, 3 tipe link (link/divider/image), upload avatar + header bg.
+- Guest user: 1 link, random slug saja.
+- Free user: max 5 shortlink, random slug.
+- Pro user: max 15 custom slug/bulan + unlimited random.
+- Slug validation: 3-24 karakter, huruf/angka/tanda hubung.
+- Copy to clipboard untuk shortlink.
+- QR Code generator untuk shortlink (per-item).
+- Search dan pagination di halaman list.
+- Delete confirmation modal: custom glass-panel modal.
+
+### ✅ Microsite CRUD
+- CRUD microsite: create/edit dengan live preview, 4 tema (default/gradient/minimal/neon).
+- 7 animasi global (fade, slide-up, scale, bounce, flip, zoom, none).
+- 4 tipe link: link (dengan icon), divider (garis), image (gambar + caption), text (label tanpa link).
+- Upload avatar + header bg (5MB max, JPG/PNG/WebP/GIF).
+- Drag-and-drop urutan link (native HTML5 DnD + tombol ▲/▼).
+- Animasi per-link override.
+- QR Code generator untuk microsite (per-item + halaman buat/edit).
+- Social media links: Facebook, Instagram, YouTube, Website.
+- Link text color customization.
+- Multi-step form untuk create microsite.
+- Empty state dengan CTA upgrade untuk Free user.
+
+### ✅ Halaman Publik
 - Halaman publik microsite: `/m/[slug]`.
-- API endpoints: auth (register/login/logout/me/update/password), links, microsites, upload file.
 - Redirect `/[slug]`: lookup → redirect ke tujuan + catat klik.
+- Microsite clicks tracking.
+- Responsive mobile-first (max-width 480px).
+- Footer "Dibuat dengan GLX".
+
+### ✅ API Endpoints
+- **Auth (6 endpoint):** register, login, logout, me, update, password.
+- **Shortlink (4 endpoint):** GET list, POST create, PATCH update, DELETE.
+- **Microsite (5 endpoint):** POST create, GET list, GET detail, PATCH update, DELETE.
+- **Upload (1 endpoint):** POST `/api/upload`.
+- **Redirect (3 endpoint):** `/[slug]`, `/m/[slug]`, GET fallback.
+
+### ✅ File Upload
+- Endpoint: POST `/api/upload`.
+- Validasi: file type (JPG/PNG/WebP/GIF), max size 5MB.
+- Storage: `static/uploads/{uuid}.{ext}`.
+- Return: URL path `/uploads/{filename}`.
+- Digunakan untuk: avatar microsite, header background, gambar link.
+
+### ✅ Halaman Dashboard
+- `/dashboard` — Beranda (statistik, quick actions, link & microsite terbaru).
+- `/dashboard/links` — List shortlink (search, pagination, edit, delete, QR).
+- `/dashboard/links/new` — Buat shortlink baru.
+- `/dashboard/microsites` — List microsite (stats, edit, delete, QR).
+- `/dashboard/microsites/new` — Buat microsite baru (multi-step form).
+- `/dashboard/microsites/[id]/edit` — Edit microsite.
+- `/dashboard/billing` — Overview paket, perbandingan fitur, riwayat langganan.
+- `/dashboard/settings` — Edit profil, ganti password, session management.
+- `/dashboard/admin` — Admin panel (overview sistem, user management, microsite management).
+
+### ✅ Billing & Langganan
 - Halaman billing: overview paket, perbandingan fitur, riwayat langganan.
-- Halaman settings: edit profil, ganti password.
-- Admin panel: overview sistem (total users/links/microsites/subscriptions/klik), user terbaru, semua microsite.
-- File upload: avatar, header bg, gambar link (5MB max, JPG/PNG/WebP/GIF).
-- Fitur plan-based: guest 1 link, Free max 5 shortlink acak, Pro custom shortlink (max 15/bulan) + microsite (max 4).
-- Svelte 5 runes mode ($state(), $props(), $derived(), event atribut baru).
-- Drag-and-drop urutan link di microsite (native HTML5 DnD + tombol ▲/▼).
-- QR Code generator untuk shortlink (per-item) dan microsite (per-item + halaman buat/edit).
-- Login server-side redirect: user sudah login dikembalikan ke `/dashboard`.
-- Daftar Link layout: URL input full-width prominent (cyan), delete button full-width red.
-- Delete confirmation modal: custom glass-panel modal ganti `confirm()`/`alert()` native browser.
+- Status paket saat ini: Free / Pro + tanggal expired + sisa hari.
+- Panel upgrade: Transfer Bank (manual) dan Midtrans (placeholder).
+- Riwayat langganan dari tabel `subscriptions`.
+- Filter dan export CSV untuk subscription history.
+- Auto-renew toggle.
+- Cancel subscription.
+- Admin: create subscription untuk user lain.
+
+### ✅ Admin Panel
+- Hanya untuk user dengan `role = 'admin'`.
+- 5 card statistik: Users, Shortlinks, Microsites, Langganan, Total Klik.
+- Tabel user terbaru (10) dengan pagination dan search.
+- Tabel semua microsite (20) dengan pagination.
+- Form create subscription manual (user, plan, price, duration, payment method, payment ref, auto-renew, notes).
+
+### ✅ Fitur Plan-Based
+- Guest: 1 link, random slug saja.
+- Free: max 5 shortlink acak, tidak bisa custom slug, tidak bisa microsite.
+- Pro: 15 custom slug/bulan + unlimited random + microsite (max 4).
+- Enforcement di API level.
+
+### ✅ Keamanan
+- Password: bcrypt cost 12.
+- Session: Cookie httpOnly, SameSite=Strict, HMAC-signed.
+- CSRF: SvelteKit CSRF protection bawaan.
+- SQL Injection: Parameterized queries via Drizzle ORM.
+- Slug collision: Validasi duplicate di DB + error message.
+- Plan enforcement: Guest/Free/Pro limits di API.
+- Turnstile CAPTCHA untuk register/login.
+
+### ✅ Fitur Tambahan
+- QR Code generator untuk shortlink & microsite (via api.qrserver.com).
+- Download QR code dengan custom branding.
+- Copy QR link ke clipboard.
+- Delete confirmation modal: custom glass-panel style.
+- Toast notifications untuk semua aksi.
+- Search bar di halaman list shortlink.
+- Pagination untuk semua halaman list.
+- Empty state dengan CTA yang sesuai.
 
 ---
 
@@ -54,6 +147,248 @@ Platform GLX adalah layanan shortlink dan microsite yang ditargetkan untuk anak 
 | Auth           | Session-based (bcrypt untuk hashing password) |
 | Hosting (prod) | VPS / shared hosting dengan Node.js support   |
 | Dev            | localhost:5173                                |
+
+---
+
+## 📋 Error Handling & Monitoring
+
+### ✅ Error Handling System
+
+#### 1. **Centralized Error Utilities** (`src/lib/utils/error-utils.ts`)
+
+```typescript
+// Error codes
+export const ErrorCodes = {
+  AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
+  VALIDATION_EMAIL_INVALID: 'VALIDATION_EMAIL_INVALID',
+  BUSINESS_PLAN_LIMIT: 'BUSINESS_PLAN_LIMIT',
+  SERVER_DATABASE_ERROR: 'SERVER_DATABASE_ERROR',
+  // ... more
+};
+
+// Custom error classes
+export class RateLimitError extends Error { ... }
+export class ValidationError extends Error { ... }
+export class NotFoundError extends Error { ... }
+export class ForbiddenError extends Error { ... }
+export class UnauthorizedError extends Error { ... }
+```
+
+**Features:**
+- Consistent error codes untuk debugging
+- Human-readable error messages (Indonesian)
+- Custom error classes untuk type checking
+- Helper functions: `createErrorResponse()`, `isErrorResponse()`, `safeErrorHandler()`
+
+#### 2. **Structured Logging** (`src/lib/logger/index.ts`)
+
+```typescript
+import logger from '$lib/logger';
+
+logger.info('User login successful', { userId: 123 }, { ip: '192.168.1.1' });
+logger.error('Database connection failed', { error: err.message }, { path: '/api/users' });
+logger.errorWithStack('Unexpected error', err, { userId: 123 });
+```
+
+**Features:**
+- 5 log levels: VERBOSE, DEBUG, INFO, WARN, ERROR, FATAL
+- Colored console output (development)
+- JSON file output (production)
+- Context tracking (IP, userId, path, method)
+- Stack trace capture untuk debugging
+
+#### 3. **Global Error Handling** (`src/hooks.server.ts`)
+
+```typescript
+export const handle: Handle = async ({ event, resolve }) => {
+  // Security headers
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  
+  // Rate limiting
+  if (!checkRateLimit(clientIp)) {
+    return new Response('Too many requests', { status: 429 });
+  }
+  
+  // HTTPS redirect
+  if (!dev && event.url.protocol === 'http:') {
+    throw redirect(301, httpsUrl);
+  }
+  
+  return response;
+};
+```
+
+**Features:**
+- Security headers untuk semua responses
+- Rate limiting (100 requests/minute per IP)
+- HTTPS enforcement (production)
+- Automatic error responses
+
+#### 4. **User-Friendly Error Pages** (`src/routes/+error.svelte`)
+
+- 404 Not Found: Helpful tips, quick links
+- 500 Server Error: Reassuring message, retry button
+- Custom error messages dengan error code badge
+- Responsive design dengan illustrations
+
+### ✅ Monitoring System
+
+#### 1. **Health Check API** (`/api/monitoring`)
+
+```json
+{
+  "success": true,
+  "data": {
+    "health": {
+      "status": "healthy",
+      "timestamp": "2026-05-14T11:28:31.735Z",
+      "database": "connected"
+    },
+    "statistics": {
+      "totalUsers": 1234,
+      "totalLinks": 5678,
+      "totalMicrosites": 234,
+      "totalClicks": 123456,
+      "activeSessions": 456
+    },
+    "recentActivity": {
+      "newUsers24h": 12,
+      "newLinks24h": 45,
+      "newMicrosites24h": 8
+    }
+  }
+}
+```
+
+#### 2. **Audit Logs API** (`/api/monitoring/logs`)
+
+```json
+{
+  "success": true,
+  "data": {
+    "logs": [
+      {
+        "id": 1,
+        "action": "user_login",
+        "description": "User login successful",
+        "ip": "192.168.1.1",
+        "userAgent": "Mozilla/5.0 ...",
+        "createdAt": "2026-05-14T11:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "totalCount": 123,
+      "totalPages": 7
+    }
+  }
+}
+```
+
+**Features:**
+- Filter by action, date range, search
+- Pagination support
+- User-specific logs
+- IP & User-Agent tracking
+
+#### 3. **Audit Logs Table** (`audit_logs`)
+
+```sql
+CREATE TABLE `audit_logs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userId` INT,
+  `action` VARCHAR(50) NOT NULL,
+  `description` TEXT,
+  `ip` VARCHAR(45),
+  `userAgent` TEXT,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 📊 Usage Examples
+
+#### Logging in API Routes
+
+```typescript
+import logger from '$lib/logger';
+import { createErrorResponse, ErrorCodes } from '$lib/utils/error-utils';
+
+export const POST = async ({ request, cookies }) => {
+  try {
+    const payload = await request.json();
+    logger.info('Processing request', { endpoint: '/api/links' });
+    
+    // ... business logic
+    
+    return json({ success: true, data: result });
+  } catch (error) {
+    logger.errorWithStack('Failed to create link', error, {
+      userId: getSessionUserId(cookies),
+      path: '/api/links'
+    });
+    
+    return json(createErrorResponse(ErrorCodes.SERVER_UNKNOWN_ERROR));
+  }
+};
+```
+
+#### Recording Audit Logs
+
+```typescript
+import { db } from '$lib/db';
+import { auditLogs } from '$lib/db/schema';
+
+// Record login
+await db.insert(auditLogs).values({
+  userId: user.id,
+  action: 'user_login',
+  description: 'User login successful',
+  ip: clientIp,
+  userAgent: userAgent
+});
+
+// Record link creation
+await db.insert(auditLogs).values({
+  userId: user.id,
+  action: 'link_created',
+  description: `Created shortlink: ${slug}`,
+  ip: clientIp,
+  userAgent: userAgent
+});
+```
+
+### 🔧 Configuration
+
+#### Environment Variables
+
+```env
+# Logging
+LOG_FILE_PATH=/var/log/glx/app.log
+
+# Rate Limiting
+RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_WINDOW_MS=60000
+```
+
+### 📈 Benefits
+
+1. **Better Debugging**: Structured logs dengan context
+2. **Security**: Audit trail untuk semua actions
+3. **Performance**: Rate limiting mencegah abuse
+4. **User Experience**: User-friendly error messages
+5. **Monitoring**: Real-time system health check
+6. **Compliance**: Audit logs untuk regulatory requirements
+
+### 🚀 Next Steps
+
+1. Run migration: `mysql -u root -p glx < drizzle/0007_audit_logs.sql`
+2. Set `LOG_FILE_PATH` di production
+3. Add audit logging ke semua API routes
+4. Setup monitoring dashboard (Grafana/Prometheus)
+5. Configure alerting untuk critical errors
 
 ---
 

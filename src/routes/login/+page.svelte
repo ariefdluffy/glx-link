@@ -11,6 +11,7 @@
 	let isLoading = $state(false);
 	let successMessage = $state('');
 	let turnstileToken = $state('');
+	let needsVerification = $state(false);
 	let logoutMessage = $state(
 		$page.url.searchParams.get('logged_out') ? 'Berhasil keluar dari akun.' : ''
 	);
@@ -18,6 +19,7 @@
 	const handleSubmit = async () => {
 		errorMessage = '';
 		successMessage = '';
+		needsVerification = false;
 		if (!email.trim() || !password) {
 			errorMessage = 'Email dan password wajib diisi.';
 			return;
@@ -38,6 +40,7 @@
 			const payload = await response.json();
 			if (!response.ok) {
 				errorMessage = payload?.message ?? 'Login gagal.';
+				needsVerification = payload?.needsVerification ?? false;
 				return;
 			}
 			successMessage = 'Berhasil login! Mengarahkan...';
@@ -108,6 +111,15 @@
 				<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
 			{/if}
 
+			{#if needsVerification}
+				<a
+					href="/verify-email"
+					class="block text-center text-xs text-violet-400 transition hover:text-violet-300"
+				>
+					Kirim ulang email verifikasi
+				</a>
+			{/if}
+
 			{#if logoutMessage}
 				<Toast message={logoutMessage} type="warning" onClose={() => (logoutMessage = '')} />
 			{/if}
@@ -116,9 +128,12 @@
 				<Toast message={successMessage} type="success" onClose={() => (successMessage = '')} />
 			{/if}
 
-			<p class="text-xs text-white/60">
-				Belum punya akun? <a class="text-white" href="/register">Daftar di sini</a>
-			</p>
+			<div class="flex items-center justify-between text-xs">
+				<a class="text-white/60 transition hover:text-white" href="/forgot-password"
+					>Lupa password?</a
+				>
+				<a class="text-white" href="/register">Daftar</a>
+			</div>
 		</div>
 	</div>
 </div>

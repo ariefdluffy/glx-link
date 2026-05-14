@@ -1,9 +1,11 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { users } from '$lib/db/schema';
+import { users, auditLogs, emailVerifications } from '$lib/db/schema';
 import { hashPassword } from '$lib/auth/password';
 import { createSession } from '$lib/auth/session';
+import { sendEmail, generateToken, getBaseUrl } from '$lib/email';
+import { verifyEmailHtml } from '$lib/email/templates/verify-email';
 import { env } from '$env/dynamic/private';
 
 const isValidEmail = (value: string) => /.+@.+\..+/.test(value);
@@ -89,13 +91,48 @@ export const POST = async (event) => {
 
 	// Fetch the newly created user to get the ID
 	const [created] = await db
-		.select({ id: users.id })
+		.select({ id: users.id, name: users.name })
 		.from(users)
 		.where(eq(users.email, email))
 		.limit(1);
 	if (created?.id) {
 		await createSession(cookies, created.id, event);
+
+		// Audit log
+		try {
+			const userAgent = request.headers.get('user-agent') ?? 'unknown';
+			const clientIp = getClientAddress();
+			await db.insert(auditLogs).values({
+				userId: created.id,
+				action: 'user_register',
+				description: 'Pendaftaran akun baru',
+				ip: clientIp,
+				userAgent
+			});
+		} catch (e) {
+			console.error('Failed to record audit log:', e);
+		}
+
+		// Kirim email verifikasi
+		try {
+			const token = generateToken();
+			const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+			await db.insert(emailVerifications).values({
+				userId: created.id,
+				token,
+				expiresAt
+			});
+
+			const verificationUrl = `${getBaseUrl()}/verify-email?token=${token}`;
+			await sendEmail({
+				to: email,
+				subject: 'Verifikasi Email - GLX Link',
+				html: verifyEmailHtml(created.name, verificationUrl)
+			});
+		} catch (e) {
+			console.error('Failed to send verification email:', e);
+		}
 	}
 
-	return json({ ok: true });
+	return json({ ok: true, message: 'Akun berhasil dibuat! Cek email untuk verifikasi.' });
 };

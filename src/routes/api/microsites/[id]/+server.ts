@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { and, asc, eq } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { microsites, micrositeLinks } from '$lib/db/schema';
+import { microsites, micrositeLinks, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 
 const sanitizeSlug = (value: string) =>
@@ -205,9 +205,22 @@ export const PATCH = async ({ params, cookies, request }) => {
 		if (linkRows.length > 0) {
 			await db.insert(micrositeLinks).values(linkRows);
 		}
-	}
 
-	return json({ ok: true });
+		// Audit log
+		try {
+			await db.insert(auditLogs).values({
+				userId,
+				action: 'microsite_updated',
+				description: `Update microsite #${id}: ${updates.title || updates.slug || ''}`,
+				ip: 'api',
+				userAgent: 'api'
+			});
+		} catch (e) {
+			console.error('Failed to record audit log:', e);
+		}
+
+		return json({ ok: true });
+	}
 };
 
 export const DELETE = async ({ params, cookies }) => {
@@ -223,5 +236,19 @@ export const DELETE = async ({ params, cookies }) => {
 
 	await db.delete(micrositeLinks).where(eq(micrositeLinks.micrositeId, id));
 	await db.delete(microsites).where(and(eq(microsites.id, id), eq(microsites.userId, userId)));
+
+	// Audit log
+	try {
+		await db.insert(auditLogs).values({
+			userId,
+			action: 'microsite_deleted',
+			description: `Hapus microsite #${id}`,
+			ip: 'api',
+			userAgent: 'api'
+		});
+	} catch (e) {
+		console.error('Failed to record audit log:', e);
+	}
+
 	return json({ ok: true });
 };

@@ -18,6 +18,15 @@ export const users = mysqlTable('users', {
 	role: mysqlEnum('role', ['user', 'admin']).default('user'),
 	plan: mysqlEnum('plan', ['free', 'pro']).default('free'),
 	planExpiresAt: datetime('plan_expires_at'),
+	emailVerified: boolean('email_verified').default(false),
+	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
+});
+
+export const emailVerifications = mysqlTable('email_verifications', {
+	id: int('id').autoincrement().primaryKey(),
+	userId: int('user_id').notNull(),
+	token: varchar('token', { length: 255 }).notNull(),
+	expiresAt: datetime('expires_at').notNull(),
 	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
@@ -90,4 +99,23 @@ export const userSessions = mysqlTable('user_sessions', {
 	userAgent: text('user_agent'),
 	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`),
 	lastActiveAt: datetime('last_active_at').default(sql`CURRENT_TIMESTAMP`)
+});
+
+export const auditLogs = mysqlTable('audit_logs', {
+	id: int('id').autoincrement().primaryKey(),
+	userId: int('user_id'),
+	action: varchar('action', { length: 50 }).notNull(),
+	description: text('description'),
+	ip: varchar('ip', { length: 45 }),
+	userAgent: text('user_agent'),
+	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
+});
+
+export const passwordResetTokens = mysqlTable('password_reset_tokens', {
+	id: int('id').autoincrement().primaryKey(),
+	userId: int('user_id').notNull(),
+	token: varchar('token', { length: 255 }).notNull(),
+	expiresAt: datetime('expires_at').notNull(),
+	usedAt: datetime('used_at'),
+	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
 });

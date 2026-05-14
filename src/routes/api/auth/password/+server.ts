@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { users } from '$lib/db/schema';
+import { users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 import { hashPassword, verifyPassword } from '$lib/auth/password';
 
@@ -49,6 +49,20 @@ export const PATCH = async ({ request, cookies }) => {
 
 	const hashed = await hashPassword(newPassword);
 	await db.update(users).set({ password: hashed }).where(eq(users.id, userId));
+
+	// Audit log
+	try {
+		const userAgent = request.headers.get('user-agent') ?? 'unknown';
+		await db.insert(auditLogs).values({
+			userId,
+			action: 'password_changed',
+			description: 'Ganti password berhasil',
+			ip: 'api',
+			userAgent
+		});
+	} catch (e) {
+		console.error('Failed to record audit log:', e);
+	}
 
 	return json({ ok: true });
 };

@@ -1,55 +1,69 @@
 {
-  "version": "7",
-  "dialect": "mysql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "5",
-      "when": 1777878696156,
-      "tag": "0000_far_wendigo",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1778423650867,
-      "tag": "0001_free_sally_floyd",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1778475292374,
-      "tag": "0002_bored_bloodscream",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1778475483131,
-      "tag": "0003_chief_sauron",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1778491422771,
-      "tag": "0004_bumpy_preak",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1778497121000,
-      "tag": "0005_clear_energizer",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1778579782028,
-      "tag": "0006_adorable_falcon",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "mysql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "5",
+			"when": 1777878696156,
+			"tag": "0000_far_wendigo",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "5",
+			"when": 1778423650867,
+			"tag": "0001_free_sally_floyd",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "5",
+			"when": 1778475292374,
+			"tag": "0002_bored_bloodscream",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "5",
+			"when": 1778475483131,
+			"tag": "0003_chief_sauron",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "5",
+			"when": 1778491422771,
+			"tag": "0004_bumpy_preak",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "5",
+			"when": 1778497121000,
+			"tag": "0005_clear_energizer",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "5",
+			"when": 1778579782028,
+			"tag": "0006_adorable_falcon",
+			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "5",
+			"when": 1744800000000,
+			"tag": "0007_audit_logs",
+			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "5",
+			"when": 1744900000000,
+			"tag": "0008_email_verification",
+			"breakpoints": true
+		}
+	]
 }
