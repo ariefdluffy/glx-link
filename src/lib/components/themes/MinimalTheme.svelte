@@ -1,98 +1,99 @@
 <script>
-	let {
-		microsite,
-		links,
-		headerStyle,
-		animClass,
-		getAnimClass,
-		getIcon
-	} = $props();
+	let { microsite, links, animClass, getAnimClass, getIcon } = $props();
 </script>
 
-<div class="min-h-screen bg-[#f8f6f3]">
-	<div class="mx-auto flex min-h-screen w-full max-w-md flex-col items-center px-6 py-16">
-		<!-- Header section with optional background -->
-		<div class="w-full rounded-3xl px-6 py-8" style={headerStyle}>
-			<div class="flex flex-col items-center">
-				<!-- Avatar -->
-				<div class="mb-6">
+<!-- ==================== VERTICAL TIMELINE STYLE ==================== -->
+<!-- Vertical timeline line on left, items along the line, monochrome -->
+<div class="min-h-screen bg-white">
+	<div class="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+		<!-- ==================== HEADER ==================== -->
+		<div class="mb-10" style={animClass}>
+			<!-- Avatar: minimal circle, no border -->
+			<div class="mb-4">
+				<div class="flex h-16 w-16 items-center justify-center rounded-full bg-black">
+					{#if microsite.avatarUrl}
+						<img
+							class="h-full w-full rounded-full object-cover"
+							src={microsite.avatarUrl}
+							alt={microsite.title}
+						/>
+					{:else}
+						<span class="text-xl font-bold text-white"
+							>{microsite.title.charAt(0).toUpperCase()}</span
+						>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Title: bold, black -->
+			<h1 class="text-2xl font-bold tracking-tight text-black">{microsite.title}</h1>
+
+			<!-- Bio: light gray, small -->
+			{#if microsite.bio}
+				<p class="mt-1 text-xs leading-relaxed text-neutral-400">{microsite.bio}</p>
+			{/if}
+		</div>
+
+		<!-- ==================== LINKS — VERTICAL TIMELINE ==================== -->
+		<!-- Vertical line on left, items positioned along line -->
+		<div class="relative flex flex-col">
+			<!-- Vertical timeline line -->
+			<div class="absolute top-0 left-5 h-full w-px bg-neutral-200"></div>
+
+			{#each links as link, i (link.id)}
+				{#if link.type === 'divider'}
+					<!-- Divider: small dot on timeline -->
+					<div class="relative mb-3 ml-4 h-2 w-2 rounded-full bg-neutral-300"></div>
+				{:else if link.type === 'image'}
+					<!-- Image: positioned along timeline -->
 					<div
-						class="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-white shadow-[0_2px_20px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]"
+						class="relative mb-4 pl-10 {getAnimClass(link.animation)}"
+						style={`animation-delay: ${i * 0.05}s`}
 					>
-						{#if microsite.avatarUrl}
-							<img
-								class="h-full w-full rounded-full object-cover"
-								src={microsite.avatarUrl}
-								alt={microsite.title}
-							/>
-						{:else}
-							<span class="font-display text-2xl font-bold text-zinc-800"
-								>{microsite.title.charAt(0).toUpperCase()}</span
-							>
+						<!-- Timeline dot -->
+						<div class="absolute top-0 left-4 h-2 w-2 rounded-full bg-neutral-400"></div>
+						<img
+							src={link.url}
+							alt={link.caption || ''}
+							class="w-full rounded-none border border-neutral-100"
+						/>
+						{#if link.caption}
+							<p class="mt-1.5 pl-10 text-xs text-neutral-400">{link.caption}</p>
 						{/if}
 					</div>
-				</div>
+				{:else}
+					<!-- Link: positioned along timeline, clickable -->
+					<a
+						href={link.url}
+						target="_blank"
+						rel="noreferrer"
+						class="relative mb-0 block border-b border-neutral-100 pr-2 pb-3.5 pl-10 transition-colors hover:bg-neutral-50 {getAnimClass(
+							link.animation
+						)}"
+						style={`animation-delay: ${i * 0.05}s`}
+					>
+						<!-- Timeline dot -->
+						<div class="absolute top-0 left-4 h-2 w-2 rounded-full bg-black"></div>
 
-				<h1 class="font-display text-center text-2xl font-bold text-zinc-800 {animClass}">
-					{microsite.title}
-				</h1>
-
-				{#if microsite.bio}
-					<p class="mt-2 text-center text-sm text-zinc-500 {animClass}">{microsite.bio}</p>
+						<span class="flex items-center gap-3">
+							<span class="text-xs text-neutral-300">{getIcon(link.icon)}</span>
+							<span class="text-sm font-medium text-neutral-800">{link.label}</span>
+						</span>
+					</div>
 				{/if}
-			</div>
-
-			<!-- Links -->
-			<div class="mt-8 w-full space-y-2">
-				{#each links as link, i (link.id)}
-					{#if link.type === 'divider'}
-						<div
-							class="h-px w-full bg-zinc-300 {getAnimClass(link.animation)}"
-							style={`animation-delay: ${i * 0.06}s`}
-						></div>
-					{:else if link.type === 'image'}
-						<div
-							class="mx-auto w-3/4 {getAnimClass(link.animation)}"
-							style={`animation-delay: ${i * 0.06}s`}
-						>
-							<img src={link.url} alt={link.caption || ''} class="w-full rounded-xl" />
-							{#if link.caption}
-								<p class="mt-1.5 text-center text-xs text-zinc-500">{link.caption}</p>
-							{/if}
-						</div>
-					{:else}
-						<a
-							href={link.url}
-							target="_blank"
-							rel="noreferrer"
-							class="flex w-full items-center justify-between rounded-xl bg-white px-5 py-3.5 text-sm text-zinc-700 shadow-[0_1px_4px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:ring-black/[0.08] {getAnimClass(
-								link.animation
-							)}"
-							style={`animation-delay: ${i * 0.06}s`}
-						>
-							<span class="flex items-center gap-3">
-								<span class="text-base">{getIcon(link.icon)}</span>
-								<span class="font-medium">{link.label}</span>
-							</span>
-							<span class="text-xs text-zinc-300">→</span>
-						</a>
-					{/if}
-				{/each}
-			</div>
-
-			<!-- No links placeholder -->
-			{#if links.length === 0}
-				<div
-					class="w-full rounded-xl border border-dashed border-zinc-200 py-8 text-center text-sm text-zinc-400"
-				>
-					Belum ada link.
-				</div>
-			{/if}
-
-			<!-- Footer -->
-			<p class="mt-8 text-xs text-zinc-400">
-				Dibuat dengan <span class="font-semibold text-zinc-600">GLX</span>
-			</p>
+			{/each}
 		</div>
+
+		<!-- ==================== EMPTY STATE ==================== -->
+		{#if links.length === 0}
+			<div
+				class="mt-12 w-full border-b border-neutral-200 py-8 text-center text-xs text-neutral-300"
+			>
+				Belum ada link.
+			</div>
+		{/if}
+
+		<!-- ==================== FOOTER ==================== -->
+		<p class="mt-10 text-center text-[10px] tracking-[0.3em] text-neutral-300 uppercase">GLX</p>
 	</div>
 </div>

@@ -20,6 +20,7 @@
 		onDrop = () => {},
 		onDragEnd = () => {},
 		onLinkImageUpload = async () => {},
+		onDuplicateLink = () => {},
 		dragOverIndex = null
 	} = $props<{
 		links: MicrositeLink[];
@@ -31,8 +32,15 @@
 		onDrop?: (index: number) => void;
 		onDragEnd?: () => void;
 		onLinkImageUpload?: (index: number, e: Event) => Promise<void>;
+		onDuplicateLink?: (index: number) => void;
 		dragOverIndex?: number | null;
 	}>();
+
+	let expandedIndex = $state(-1);
+
+	function toggleExpand(index: number) {
+		expandedIndex = expandedIndex === index ? -1 : index;
+	}
 
 	const addTextLabel = () => {
 		onAddLink('text');
@@ -108,7 +116,7 @@
 	};
 </script>
 
-<div class="space-y-6">
+<div class="max-w-full min-w-0 space-y-6">
 	<!-- Custom Links Section -->
 	<div>
 		<div class="mb-3 flex items-center justify-between">
@@ -132,7 +140,7 @@
 		</div>
 
 		<!-- Links List -->
-		<div class="max-h-[650px] space-y-3 overflow-y-auto pr-1">
+		<div class="max-h-[650px] space-y-3 overflow-x-hidden overflow-y-auto pr-1">
 			{#if links.length === 0}
 				<div class="rounded-2xl border border-dashed border-white/20 bg-white/5 py-12 text-center">
 					<svg
@@ -154,7 +162,7 @@
 			{:else}
 				{#each links as link, index (index)}
 					<div
-						class="space-y-3 rounded-2xl border bg-white/5 p-4 transition-all duration-150 {dragOverIndex ===
+						class="w-full max-w-full min-w-0 space-y-3 rounded-2xl border bg-white/5 p-4 transition-all duration-150 {dragOverIndex ===
 						index
 							? 'border-violet-500/50 ring-2 ring-violet-500/20'
 							: 'border-white/10'}"
@@ -164,13 +172,17 @@
 						ondrop={() => onDrop(index)}
 						ondragend={onDragEnd}
 					>
-						<!-- Header: Drag Handle + Controls -->
-						<div class="flex items-center justify-between gap-2">
-							<div class="flex items-center gap-2">
+						<!-- Header: Collapsed View (clickable to expand) -->
+						<div
+							class="flex min-w-0 cursor-pointer items-center justify-between gap-2"
+							onclick={() => toggleExpand(index)}
+						>
+							<div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
 								<button
 									type="button"
 									class="cursor-grab text-white/40 transition hover:text-white/70 active:cursor-grabbing"
 									title="Seret untuk urutkan"
+									onclick={(e) => e.stopPropagation()}
 								>
 									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -182,13 +194,24 @@
 									</svg>
 								</button>
 								<span class="text-xs text-white/30">#{index + 1}</span>
+								{#if link.icon && iconSvgPath(link.icon)}
+									<img src={iconSvgPath(link.icon)} alt={link.icon} class="h-5 w-5 shrink-0" />
+								{/if}
+								<div class="min-w-0 flex-1 truncate text-sm text-white/80" title={link.label}>
+									{(link.label || 'Untitled Link').slice(0, 20)}{(link.label || '').length > 35
+										? '...'
+										: ''}
+								</div>
 							</div>
-							<div class="flex items-center gap-1">
+							<div class="flex shrink-0 items-center gap-1">
 								<button
 									type="button"
 									class="rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white/70 disabled:opacity-30"
 									disabled={index === 0}
-									onclick={() => onMoveLink(index, -1)}
+									onclick={(e) => {
+										e.stopPropagation();
+										onMoveLink(index, -1);
+									}}
 									title="Pindah ke atas"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +227,10 @@
 									type="button"
 									class="rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white/70 disabled:opacity-30"
 									disabled={index === links.length - 1}
-									onclick={() => onMoveLink(index, 1)}
+									onclick={(e) => {
+										e.stopPropagation();
+										onMoveLink(index, 1);
+									}}
 									title="Pindah ke bawah"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,315 +242,443 @@
 										/>
 									</svg>
 								</button>
+								<button
+									type="button"
+									class="rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-cyan-400"
+									onclick={(e) => {
+										e.stopPropagation();
+										onDuplicateLink(index);
+									}}
+									title="Duplikat"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-4 w-4"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
+										/>
+									</svg>
+								</button>
+								<button
+									type="button"
+									class="rounded-lg p-1.5 transition {expandedIndex === index
+										? 'text-white/70'
+										: 'text-white/40 hover:bg-white/10 hover:text-white/70'}"
+									onclick={(e) => {
+										e.stopPropagation();
+										toggleExpand(index);
+									}}
+								>
+									<svg
+										class="h-4 w-4 transition {expandedIndex === index ? 'rotate-180' : ''}"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M19 9l-7 7-7-7"
+										/>
+									</svg>
+								</button>
 							</div>
 						</div>
 
-						<!-- Type Selector -->
-						<div class="flex gap-2">
-							{#each ['link', 'text', 'divider', 'image'] as t (t)}
-								<button
-									type="button"
-									class="rounded-lg px-3 py-1.5 text-xs transition-all {(link.type || 'link') === t
-										? 'border border-violet-400 bg-violet-500/30 text-white'
-										: 'border border-white/10 bg-white/5 text-white/50 hover:border-white/30'}"
-									onclick={() => (links[index].type = t)}
-								>
-									{t === 'link'
-										? '🔗 Link'
-										: t === 'text'
-											? '📝 Text'
-											: t === 'image'
-												? '🖼 Image'
-												: '➖ Divider'}
-								</button>
-							{/each}
-						</div>
-
-						<!-- Content based on type -->
-						{#if link.type === 'link'}
-							<div class="space-y-2">
-								<div class="grid grid-cols-2 gap-2">
-									<input
-										placeholder="Label"
-										bind:value={link.label}
-										class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
-									/>
-									<!-- Icon Dropdown -->
-									<div class="relative">
+						{#if expandedIndex === index}
+							<div class="space-y-4 border-t border-white/10 p-4">
+								<!-- Type Selector -->
+								<div class="flex gap-2">
+									{#each ['link', 'text', 'divider', 'image'] as type (type)}
 										<button
-											type="button"
-											class="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition hover:border-white/30"
-											onclick={() => {
-												document.getElementById('icon-picker-' + index)?.classList.toggle('hidden');
-											}}
+											onclick={() =>
+												(links[index].type = type as 'link' | 'text' | 'divider' | 'image')}
+											class="rounded-lg px-3 py-1.5 text-xs transition-all {link.type === type
+												? 'border border-violet-400 bg-violet-500/30 text-white'
+												: 'border border-white/10 bg-white/5 text-white/50 hover:border-white/30'}"
 										>
-											<span class="shrink-0">
-												{#if iconSvgPath(link.icon)}
-													<img src={iconSvgPath(link.icon)} alt={link.icon} class="h-5 w-5" />
-												{:else}
-													{iconPreview(link.icon) ?? '—'}
-												{/if}
-											</span>
-											<span class="flex-1 text-left text-white/60"
-												>{link.icon || 'Pilih icon...'}</span
-											>
-											<svg
-												class="h-3 w-3 text-white/40"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M19 9l-7 7-7-7"
-												/>
-											</svg>
+											{type === 'link'
+												? '🔗 Link'
+												: type === 'text'
+													? '📝 Text'
+													: type === 'image'
+														? '🖼 Image'
+														: '➖ Divider'}
 										</button>
-										<div
-											id="icon-picker-{index}"
-											class="absolute right-0 z-50 mt-1 hidden w-72 rounded-2xl border border-white/10 bg-zinc-900 p-3 shadow-2xl"
-										>
-											<div class="mb-2 text-[10px] font-medium text-white/40">Pilih Icon</div>
-											<div class="mb-2">
-												<input
-													type="text"
-													placeholder="Cari..."
-													class="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none placeholder:text-white/30"
-													oninput={(e) => {
-														const val = (e.target as HTMLInputElement).value.toLowerCase();
-														const p = (e.target as HTMLElement).closest('.absolute');
-														if (!p) return;
-														p.querySelectorAll('[data-i]').forEach((el) => {
-															el.classList.toggle(
-																'hidden',
-																!!(val && !(el.getAttribute('data-n') || '').includes(val))
-															);
-														});
-													}}
-												/>
-											</div>
-											<div class="grid grid-cols-5 gap-1">
-												<button
-													type="button"
-													data-i
-													data-n=""
-													class="flex aspect-square items-center justify-center rounded-lg border border-white/10 text-xs text-white/40 transition hover:border-white/30 hover:bg-white/10 {!link.icon
-														? 'border-violet-400 bg-violet-500/20'
-														: ''}"
-													onclick={() => {
-														link.icon = '';
-														document
-															.getElementById('icon-picker-' + index)
-															?.classList.add('hidden');
-													}}
-													title="Tanpa icon">—</button
+									{/each}
+								</div>
+
+								{#if link.type === 'link'}
+									<div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+										<div class="min-w-0 space-y-1">
+											<label
+												for="link-label-{index}"
+												class="text-[10px] font-semibold text-white/40 uppercase">Label</label
+											>
+											<input
+												id="link-label-{index}"
+												type="text"
+												bind:value={link.label}
+												placeholder="Nama Link"
+												class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
+											/>
+										</div>
+										<div class="relative space-y-1">
+											<label class="text-[10px] font-semibold text-white/40 uppercase">Icon</label>
+											<button
+												type="button"
+												class="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs text-white hover:border-white/30"
+												onclick={() => {
+													document
+														.getElementById('icon-picker-' + index)
+														?.classList.toggle('hidden');
+												}}
+											>
+												<div class="flex items-center gap-2">
+													<div class="flex h-5 w-5 items-center justify-center">
+														{#if iconSvgPath(link.icon)}
+															<img
+																src={iconSvgPath(link.icon)}
+																alt={link.icon}
+																class="h-full w-full"
+															/>
+														{:else}
+															<span>{iconPreview(link.icon) || '🔗'}</span>
+														{/if}
+													</div>
+													<span class="text-white/60"
+														>{iconOptions.find((i) => i.name === link.icon)?.label ||
+															'Pilih Icon'}</span
+													>
+												</div>
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													class="h-4 w-4 text-white/40"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
 												>
-												{#each iconOptions as opt (opt.name)}
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M19 9l-7 7-7-7"
+													/>
+												</svg>
+											</button>
+
+											<div
+												id="icon-picker-{index}"
+												class="absolute right-0 z-50 mt-1 hidden w-72 rounded-2xl border border-white/10 bg-zinc-900 p-3 shadow-2xl"
+											>
+												<div class="mb-2 text-[10px] font-medium text-white/40">Pilih Icon</div>
+												<div class="mb-2">
+													<input
+														type="text"
+														placeholder="Cari..."
+														class="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none placeholder:text-white/30"
+														oninput={(e) => {
+															const val = (e.target as HTMLInputElement).value.toLowerCase();
+															const p = (e.target as HTMLElement).closest('.absolute');
+															if (!p) return;
+															p.querySelectorAll('[data-i]').forEach((el) => {
+																el.classList.toggle(
+																	'hidden',
+																	!!(val && !(el.getAttribute('data-n') || '').includes(val))
+																);
+															});
+														}}
+													/>
+												</div>
+												<div class="grid grid-cols-5 gap-1">
 													<button
 														type="button"
 														data-i
-														data-n={opt.name}
-														class="flex aspect-square items-center justify-center rounded-lg border text-sm transition {link.icon ===
-														opt.name
+														data-n=""
+														class="flex aspect-square items-center justify-center rounded-lg border border-white/10 text-xs text-white/40 transition hover:border-white/30 hover:bg-white/10 {!link.icon
 															? 'border-violet-400 bg-violet-500/20'
-															: 'border-white/10 hover:border-white/30 hover:bg-white/10'}"
+															: ''}"
 														onclick={() => {
-															link.icon = opt.name;
+															link.icon = '';
 															document
 																.getElementById('icon-picker-' + index)
 																?.classList.add('hidden');
 														}}
-														title={opt.label}
-														>{#if opt.svg}
-															<img src={opt.svg} alt={opt.name} class="h-5 w-5" />
-														{:else}
-															{opt.display}
-														{/if}</button
+														title="Tanpa icon">—</button
 													>
-												{/each}
+													{#each iconOptions as opt (opt.name)}
+														<button
+															type="button"
+															data-i
+															data-n={opt.name}
+															class="flex aspect-square items-center justify-center rounded-lg border text-sm transition {link.icon ===
+															opt.name
+																? 'border-violet-400 bg-violet-500/20'
+																: 'border-white/10 hover:border-white/30 hover:bg-white/10'}"
+															onclick={() => {
+																link.icon = opt.name;
+																document
+																	.getElementById('icon-picker-' + index)
+																	?.classList.add('hidden');
+															}}
+															title={opt.label}
+															>{#if opt.svg}
+																<img src={opt.svg} alt={opt.name} class="h-5 w-5" />
+															{:else}
+																{opt.display}
+															{/if}</button
+														>
+													{/each}
+												</div>
+											</div>
+										</div>
+										<div class="col-span-full min-w-0 space-y-1">
+											<label
+												for="link-url-{index}"
+												class="text-[10px] font-semibold text-white/40 uppercase">URL</label
+											>
+											<input
+												id="link-url-{index}"
+												type="url"
+												bind:value={link.url}
+												placeholder="https://..."
+												class="w-full min-w-0 rounded-xl border border-cyan-400/40 bg-cyan-500/5 px-3 py-2 text-xs text-white placeholder-cyan-200/50 transition outline-none focus:border-cyan-400"
+											/>
+										</div>
+										<div class="col-span-full min-w-0 space-y-1">
+											<label
+												for="link-caption-{index}"
+												class="text-[10px] font-semibold text-white/40 uppercase"
+												>Caption (Opsional)</label
+											>
+											<input
+												id="link-caption-{index}"
+												type="text"
+												bind:value={link.caption}
+												placeholder="Keterangan singkat"
+												class="w-full min-w-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
+											/>
+										</div>
+									</div>
+
+									<div class="flex items-center gap-2 pt-2">
+										<label class="text-[10px] text-white/40 uppercase">Font Size:</label>
+										<input
+											type="number"
+											min="8"
+											max="32"
+											bind:value={link.fontSize}
+											class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white"
+										/>
+										<span class="text-[10px] text-white/40">px</span>
+									</div>
+								{:else if link.type === 'text'}
+									<div class="space-y-3">
+										<div class="space-y-1">
+											<label
+												for="text-label-{index}"
+												class="text-[10px] font-semibold text-white/40 uppercase">Teks</label
+											>
+											<input
+												id="text-label-{index}"
+												type="text"
+												bind:value={link.label}
+												placeholder="Masukkan teks di sini..."
+												class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
+											/>
+										</div>
+										<div class="flex flex-wrap gap-4">
+											<div class="flex-1 space-y-1">
+												<label class="text-[10px] font-semibold text-white/40 uppercase"
+													>Alignment</label
+												>
+												<div class="flex gap-1">
+													{#each ['left', 'center', 'right'] as align (align)}
+														<button
+															type="button"
+															onclick={() =>
+																(links[index].alignment = align as 'left' | 'center' | 'right')}
+															class="rounded-lg border px-3 py-1.5 text-[10px] transition {link.alignment ===
+															align
+																? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-300'
+																: 'border-white/10 text-white/60 hover:border-white/30'}"
+														>
+															{align === 'left' ? '←' : align === 'center' ? '↔' : '→'}
+														</button>
+													{/each}
+												</div>
+											</div>
+											<div class="flex items-center gap-2 pt-4">
+												<label class="text-[10px] text-white/40 uppercase">Font Size:</label>
+												<input
+													type="number"
+													min="8"
+													max="32"
+													bind:value={link.fontSize}
+													class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white"
+												/>
+												<span class="text-[10px] text-white/40">px</span>
 											</div>
 										</div>
 									</div>
-								</div>
-								<input
-									placeholder="https://example.com"
-									bind:value={link.url}
-									class="w-full rounded-xl border border-cyan-400/40 bg-cyan-500/5 px-3 py-2.5 text-xs text-white placeholder-cyan-200/50 transition outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(34,211,238,0.15)]"
-								/>
-								<div class="flex items-center gap-2">
-									<label class="text-[10px] text-white/40">Font Size:</label>
-									<input
-										type="number"
-										min="8"
-										max="32"
-										bind:value={link.fontSize}
-										class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white"
-									/>
-									<span class="text-[10px] text-white/40">px</span>
-								</div>
-							</div>
-						{:else if link.type === 'text'}
-							<div class="space-y-2">
-								<input
-									placeholder="Teks Label"
-									bind:value={link.label}
-									class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
-								/>
-								<div class="flex items-center gap-2">
-									<span class="text-[10px] text-white/40">Alignment:</span>
-									<button
-										type="button"
-										class="rounded-lg border px-2 py-1 text-[10px] transition {link.alignment ===
-										'left'
-											? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-300'
-											: 'border-white/10 text-white/60 hover:border-white/30'}"
-										onclick={() => (links[index].alignment = 'left')}
-									>
-										← Kiri
-									</button>
-									<button
-										type="button"
-										class="rounded-lg border px-2 py-1 text-[10px] transition {link.alignment ===
-										'center'
-											? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-300'
-											: 'border-white/10 text-white/60 hover:border-white/30'}"
-										onclick={() => (links[index].alignment = 'center')}
-									>
-										↔ Tengah
-									</button>
-									<button
-										type="button"
-										class="rounded-lg border px-2 py-1 text-[10px] transition {link.alignment ===
-										'right'
-											? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-300'
-											: 'border-white/10 text-white/60 hover:border-white/30'}"
-										onclick={() => (links[index].alignment = 'right')}
-									>
-										Kanan →
-									</button>
-								</div>
-								<div class="flex items-center gap-2">
-									<label class="text-[10px] text-white/40">Font Size:</label>
-									<input
-										type="number"
-										min="8"
-										max="32"
-										bind:value={link.fontSize}
-										class="w-16 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white"
-									/>
-									<span class="text-[10px] text-white/40">px</span>
-								</div>
-							</div>
-						{:else if link.type === 'image'}
-							<div class="space-y-2">
-								<div class="flex items-center gap-2">
-									{#if link.url}
-										<img
-											src={link.url}
-											class="h-12 w-12 shrink-0 rounded-lg border border-white/10 object-cover"
-											alt=""
-										/>
-									{/if}
-									<button
-										type="button"
-										class="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70 transition hover:border-white/40"
-										onclick={() => document.getElementById('link-img-' + index)?.click()}
-									>
-										{link.url ? '🖼 Ganti' : '📤 Upload Gambar'}
-									</button>
-									<input
-										id="link-img-{index}"
-										type="file"
-										accept="image/*"
-										class="hidden"
-										onchange={(e) => onLinkImageUpload(index, e)}
-									/>
-									{#if link.url}
-										<button
-											type="button"
-											class="text-xs text-red-400 transition hover:text-red-300"
-											onclick={() => (links[index].url = '')}>Hapus</button
+								{:else if link.type === 'image'}
+									<div class="space-y-3">
+										<div
+											class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-white/20 bg-white/5 p-4"
 										>
-									{/if}
+											{#if link.url}
+												<div class="group relative mb-2">
+													<img
+														src={link.url}
+														alt="Preview"
+														class="h-32 w-auto rounded-lg shadow-sm"
+													/>
+													<button
+														type="button"
+														onclick={() => (link.url = '')}
+														class="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															class="h-4 w-4"
+															viewBox="0 0 20 20"
+															fill="currentColor"
+														>
+															<path
+																fill-rule="evenodd"
+																d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+																clip-rule="evenodd"
+															/>
+														</svg>
+													</button>
+												</div>
+											{/if}
+											<button
+												type="button"
+												class="rounded-xl border border-white/15 px-4 py-2 text-xs text-white/70 transition hover:border-white/40"
+												onclick={() => document.getElementById('link-img-' + index)?.click()}
+											>
+												{link.url ? '🖼 Ganti Gambar' : '📤 Upload Gambar'}
+											</button>
+											<input
+												id="link-img-{index}"
+												type="file"
+												accept="image/*"
+												class="hidden"
+												onchange={(e) => onLinkImageUpload(index, e)}
+											/>
+										</div>
+										<div class="space-y-1">
+											<label
+												for="image-caption-{index}"
+												class="text-[10px] font-semibold text-white/40 uppercase">Caption</label
+											>
+											<input
+												id="image-caption-{index}"
+												type="text"
+												bind:value={link.caption}
+												placeholder="Keterangan gambar"
+												class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
+											/>
+										</div>
+									</div>
+								{:else if link.type === 'divider'}
+									<div
+										class="flex h-20 items-center justify-center rounded-xl border border-white/10 bg-white/5"
+									>
+										<div class="relative h-px w-2/3 bg-white/20">
+											<span
+												class="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#121212] px-2 text-[10px] font-bold tracking-widest text-white/40 uppercase"
+												>Divider</span
+											>
+										</div>
+									</div>
+								{/if}
+
+								<!-- Animation Selector -->
+								<div class="space-y-1">
+									<label class="text-[10px] font-semibold text-white/40 uppercase">Animasi</label>
+									<div class="flex flex-wrap gap-1">
+										{#each ['', 'fade', 'slide-up', 'scale', 'bounce', 'flip', 'zoom'] as anim (anim)}
+											<button
+												type="button"
+												class="rounded px-2 py-1 text-[10px] transition {(link.animation || '') ===
+												anim
+													? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+													: 'text-white/40 hover:text-white/60'}"
+												onclick={() => (links[index].animation = anim || '')}
+											>
+												{anim || 'default'}
+											</button>
+										{/each}
+									</div>
+
+									<!-- Continuous Animations (looping) -->
+									<div class="mt-1 flex flex-wrap gap-1">
+										<span class="mr-1 self-center text-[9px] text-white/30">▶ terus:</span>
+										{#each ['continuous-float', 'continuous-pulse', 'continuous-wiggle', 'continuous-breathe', 'continuous-shake', 'continuous-bounce'] as anim (anim)}
+											<button
+												type="button"
+												class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') ===
+												anim
+													? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+													: 'text-white/40 hover:text-white/60'}"
+												onclick={() => (links[index].animation = anim || '')}
+											>
+												{anim.replace('continuous-', '')}
+											</button>
+										{/each}
+									</div>
+
+									<!-- Cycle Animations (1min on / 1min off) -->
+									<div class="mt-1 flex flex-wrap gap-1">
+										<span class="mr-1 self-center text-[9px] text-white/30">⟳ siklus:</span>
+										{#each ['cycle-float', 'cycle-pulse', 'cycle-wiggle', 'cycle-breathe', 'cycle-bounce'] as anim (anim)}
+											<button
+												type="button"
+												class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') ===
+												anim
+													? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
+													: 'text-white/40 hover:text-white/60'}"
+												onclick={() => (links[index].animation = anim || '')}
+											>
+												{anim.replace('cycle-', '')}
+											</button>
+										{/each}
+									</div>
 								</div>
-								<input
-									placeholder="Caption (opsional)"
-									bind:value={link.caption}
-									class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
-								/>
-							</div>
-						{:else if link.type === 'divider'}
-							<div class="py-2 text-center text-xs text-white/40">
-								<div class="mx-auto h-px w-full bg-white/20"></div>
-								<p class="mt-2">Garis pemisah</p>
+
+								<div class="flex justify-end pt-2">
+									<button
+										type="button"
+										onclick={() => onRemoveLink(index)}
+										class="flex items-center gap-1.5 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/20 hover:text-red-200"
+									>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											viewBox="0 0 20 20"
+											fill="currentColor"
+										>
+											<path
+												fill-rule="evenodd"
+												d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+												clip-rule="evenodd"
+											/>
+										</svg>
+										Hapus Item
+									</button>
+								</div>
 							</div>
 						{/if}
-
-						<!-- Animation Picker -->
-						<div class="flex flex-wrap gap-1">
-							{#each ['', 'fade', 'slide-up', 'scale', 'bounce', 'flip', 'zoom'] as anim (anim)}
-								<button
-									type="button"
-									class="rounded px-2 py-1 text-[10px] transition {(link.animation || '') === anim
-										? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
-										: 'text-white/40 hover:text-white/60'}"
-									onclick={() => (links[index].animation = anim || '')}
-								>
-									{anim || 'default'}
-								</button>
-							{/each}
-						</div>
-
-						<!-- Continuous Animations (looping) -->
-						<div class="mt-1 flex flex-wrap gap-1">
-							<span class="mr-1 self-center text-[9px] text-white/30">▶ terus:</span>
-							{#each ['continuous-float', 'continuous-pulse', 'continuous-wiggle', 'continuous-breathe', 'continuous-shake', 'continuous-bounce'] as anim (anim)}
-								<button
-									type="button"
-									class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') === anim
-										? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
-										: 'text-white/40 hover:text-white/60'}"
-									onclick={() => (links[index].animation = anim || '')}
-								>
-									{anim.replace('continuous-', '')}
-								</button>
-							{/each}
-						</div>
-
-						<!-- Cycle Animations (1min on / 1min off) -->
-						<div class="mt-1 flex flex-wrap gap-1">
-							<span class="mr-1 self-center text-[9px] text-white/30">⟳ siklus:</span>
-							{#each ['cycle-float', 'cycle-pulse', 'cycle-wiggle', 'cycle-breathe', 'cycle-bounce'] as anim (anim)}
-								<button
-									type="button"
-									class="rounded px-2 py-1 text-[9px] transition {(link.animation || '') === anim
-										? 'border border-cyan-400/30 bg-cyan-500/20 text-cyan-300'
-										: 'text-white/40 hover:text-white/60'}"
-									onclick={() => (links[index].animation = anim || '')}
-								>
-									{anim.replace('cycle-', '')}
-								</button>
-							{/each}
-						</div>
-
-						<!-- Delete Button -->
-						<button
-							type="button"
-							class="flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300 transition hover:bg-red-500/20 hover:text-red-200"
-							onclick={() => onRemoveLink(index)}
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-								/>
-							</svg>
-							Hapus Link
-						</button>
 					</div>
 				{/each}
 			{/if}

@@ -32,7 +32,7 @@
 	};
 </script>
 
-<div class="space-y-6">
+<div class="max-w-full min-w-0 space-y-6">
 	<div>
 		<div class="mb-2 flex items-center justify-between">
 			<label class="text-xs font-medium text-white/60" for="title">

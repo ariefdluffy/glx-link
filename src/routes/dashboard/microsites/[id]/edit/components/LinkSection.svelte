@@ -114,7 +114,7 @@
 					ondragover={(e) => ondragover(e, index)}
 					ondrop={() => ondrop(index)}
 					{ondragend}
-					class="group relative rounded-2xl border bg-white/5 transition-all duration-150 {draggedIndex ===
+					class="group relative w-full max-w-full min-w-0 rounded-2xl border bg-white/5 transition-all duration-150 {draggedIndex ===
 					index
 						? 'opacity-50 ring-2 ring-violet-500/20'
 						: ''} {dragOverIndex === index ? 'border-violet-500/50' : 'border-white/10'}"

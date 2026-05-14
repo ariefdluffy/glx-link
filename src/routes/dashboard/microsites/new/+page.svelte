@@ -215,6 +215,12 @@
 		links = links.filter((_, idx) => idx !== index);
 	};
 
+	const duplicateLink = (index: number) => {
+		const original = links[index];
+		const copy = { ...original };
+		links = [...links.slice(0, index + 1), copy, ...links.slice(index + 1)];
+	};
+
 	const handleLinkImageUpload = async (index: number, e: Event) => {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -403,7 +409,7 @@
 		<div class="grid gap-6 lg:grid-cols-[1fr_420px] lg:gap-8">
 			<!-- Left: Form Panel -->
 			<div class="space-y-6">
-				<div class="glass-panel rounded-3xl px-4 py-6 md:px-8 md:py-8">
+				<div class="glass-panel max-w-3xl rounded-3xl px-4 py-4 md:px-8 md:py-8">
 					<!-- Step Content -->
 					{#if currentStep === 1}
 						<Step1_BasicInfo
@@ -438,6 +444,7 @@
 							onDrop={handleDrop}
 							onDragEnd={handleDragEnd}
 							onLinkImageUpload={handleLinkImageUpload}
+							onDuplicateLink={duplicateLink}
 							{dragOverIndex}
 						/>
 					{:else if currentStep === 4}

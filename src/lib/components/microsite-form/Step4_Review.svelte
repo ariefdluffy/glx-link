@@ -82,7 +82,7 @@
 					class="rounded-lg border border-white/15 px-2 py-1 text-[10px] text-white/60 transition hover:border-violet-400/50 hover:text-violet-300"
 					onclick={onGenerateQR}
 				>
-					📱 QR
+					📱 QR Code
 				</button>
 			</div>
 
