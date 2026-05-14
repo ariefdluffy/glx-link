@@ -1,4 +1,6 @@
 <script>
+	import { resolve } from '$app/paths';
+
 	let { microsite, links, headerStyle, animClass, getAnimClass, getIcon } = $props();
 </script>
 
@@ -13,9 +15,7 @@
 		></div>
 	</div>
 
-	<div
-		class="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center px-6 py-16"
-	>
+	<div class="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center px-6 py-16">
 		<!-- Header section with optional background -->
 		<div class="w-full rounded-3xl px-6 py-8" style={headerStyle}>
 			<div class="flex flex-col items-center">
@@ -102,7 +102,7 @@
 
 			<!-- Footer -->
 			<p class="mt-8 text-xs text-zinc-600">
-				Dibuat dengan <span class="text-violet-400">GLX</span>
+				Dibuat dengan <a href={resolve('/')} class="text-violet-400 no-underline">GLX</a>
 			</p>
 		</div>
 	</div>

@@ -1,4 +1,6 @@
 <script>
+	import { resolve } from '$app/paths';
+
 	let { microsite, links, animClass, getAnimClass, getIcon } = $props();
 </script>
 
@@ -79,7 +81,7 @@
 							<span class="text-xs text-neutral-300">{getIcon(link.icon)}</span>
 							<span class="text-sm font-medium text-neutral-800">{link.label}</span>
 						</span>
-					</div>
+					</a>
 				{/if}
 			{/each}
 		</div>
@@ -94,6 +96,10 @@
 		{/if}
 
 		<!-- ==================== FOOTER ==================== -->
-		<p class="mt-10 text-center text-[10px] tracking-[0.3em] text-neutral-300 uppercase">GLX</p>
+		<p class="mt-10 text-center text-[10px] tracking-[0.3em] text-neutral-500 uppercase">
+			Dibuat dengan <a href={resolve('/')} class="font-semibold text-neutral-700 no-underline"
+				>GLX</a
+			>
+		</p>
 	</div>
 </div>

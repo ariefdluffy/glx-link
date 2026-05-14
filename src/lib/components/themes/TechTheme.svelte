@@ -1,15 +1,19 @@
 <script>
+	import { resolve } from '$app/paths';
+
 	let { microsite, links, headerStyle, animClass, getAnimClass, getIcon } = $props();
 </script>
 
-<div class="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100">
+<div
+	class="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100"
+>
 	<!-- Holographic gradient background -->
 	<div class="pointer-events-none fixed inset-0">
 		<div
 			class="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.12),transparent_60%)] blur-3xl"
 		></div>
 		<div
-			class="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_60%)] blur-3xl"
+			class="absolute right-1/4 bottom-0 h-[400px] w-[400px] rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_60%)] blur-3xl"
 		></div>
 		<div
 			class="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.08),transparent_60%)] blur-3xl"
@@ -17,7 +21,10 @@
 	</div>
 
 	<!-- Hex pattern overlay -->
-	<div class="pointer-events-none fixed inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2228%22 height=%2249%22 viewBox=%220 0 28 49%22%3E%3Cg fill-rule=%22evenodd%22%3E%3Cg fill=%22%239C92AC%22 fill-opacity=%220.4%22%3E%3Cpath d=%22M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+	<div
+		class="pointer-events-none fixed inset-0 opacity-[0.03]"
+		style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2228%22 height=%2249%22 viewBox=%220 0 28 49%22%3E%3Cg fill-rule=%22evenodd%22%3E%3Cg fill=%22%239C92AC%22 fill-opacity=%220.4%22%3E%3Cpath d=%22M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"
+	></div>
 
 	<!-- Floating particles -->
 	<div class="pointer-events-none fixed inset-0 overflow-hidden">
@@ -91,9 +98,13 @@
 							class="relative my-4 flex items-center {getAnimClass(link.animation)}"
 							style={`animation-delay: ${i * 0.08}s`}
 						>
-							<div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+							<div
+								class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"
+							></div>
 							<div class="mx-3 h-1.5 w-1.5 rotate-45 bg-slate-400/60"></div>
-							<div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+							<div
+								class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"
+							></div>
 						</div>
 					{:else if link.type === 'image'}
 						<div
@@ -121,7 +132,7 @@
 						>
 							<!-- Shine effect -->
 							<div
-								class="pointer-events-none absolute -inset-x-full -inset-y-full group-hover:animate-shine bg-gradient-to-r from-transparent via-white/30 to-transparent"
+								class="group-hover:animate-shine pointer-events-none absolute -inset-x-full -inset-y-full bg-gradient-to-r from-transparent via-white/30 to-transparent"
 							></div>
 
 							<span class="relative z-10 flex items-center gap-3">
@@ -150,9 +161,10 @@
 			<div class="mt-8 flex items-center justify-center gap-2">
 				<div class="h-px w-8 bg-gradient-to-r from-transparent to-slate-300"></div>
 				<p class="text-xs text-slate-400">
-					Dibuat dengan <span
+					Dibuat dengan <a
+						href={resolve('/')}
 						class="bg-gradient-to-r from-amber-500 via-blue-500 to-purple-500 bg-clip-text font-semibold text-transparent"
-						>GLX</span
+						>GLX</a
 					>
 				</p>
 				<div class="h-px w-8 bg-gradient-to-l from-transparent to-slate-300"></div>
@@ -196,15 +208,24 @@
 		inset: -8px;
 		border-radius: 50%;
 		border: 1px solid transparent;
-		background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(59, 130, 246, 0.3), rgba(168, 85, 247, 0.3)) border-box;
-		-webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+		background: linear-gradient(
+				135deg,
+				rgba(251, 191, 36, 0.3),
+				rgba(59, 130, 246, 0.3),
+				rgba(168, 85, 247, 0.3)
+			)
+			border-box;
+		-webkit-mask:
+			linear-gradient(#fff 0 0) padding-box,
+			linear-gradient(#fff 0 0);
 		-webkit-mask-composite: xor;
 		mask-composite: exclude;
 		animation: rotate-ring 8s linear infinite;
 	}
 
 	@keyframes float-particle {
-		0%, 100% {
+		0%,
+		100% {
 			transform: translateY(0) translateX(0);
 			opacity: 0.4;
 		}

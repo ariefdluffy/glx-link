@@ -1,4 +1,6 @@
 <script>
+	import { resolve } from '$app/paths';
+
 	/** @type {{ microsite: { title: string; bio: string | null; avatarUrl: string | null }, links: { id: number; label: string; url: string; icon: string | null; type: string | null; caption: string | null; animation: string | null }[], headerStyle: string, animClass: string, getAnimClass: (anim: string | null | undefined) => string, getIcon: (icon: string | null) => string }} */
 	let { microsite, links, headerStyle, animClass, getAnimClass, getIcon } = $props();
 
@@ -125,10 +127,11 @@
 			{/if}
 
 			<!-- Footer -->
-			<p class="mt-8 text-center text-xs text-violet-200/40">
-				Dibuat dengan <span
+			<p class="mt-8 text-center text-xs text-violet-200/70">
+				Dibuat dengan <a
+					href={resolve('/')}
 					class="bg-gradient-to-r from-pink-300 via-violet-300 to-cyan-300 bg-clip-text font-semibold text-transparent"
-					>GLX</span
+					>GLX</a
 				>
 			</p>
 		</div>

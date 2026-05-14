@@ -1,4 +1,6 @@
 <script>
+	import { resolve } from '$app/paths';
+
 	let {
 		microsite = $bindable(),
 		links = [],
@@ -24,9 +26,7 @@
 		></div>
 	</div>
 
-	<div
-		class="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center px-6 py-16"
-	>
+	<div class="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center px-6 py-16">
 		<!-- Header section with optional background -->
 		<div class="w-full rounded-3xl px-6 py-8" style={headerStyle}>
 			<div class="flex flex-col items-center">
@@ -110,8 +110,8 @@
 			{/if}
 
 			<!-- Footer -->
-			<p class="mt-8 text-xs text-zinc-700">
-				Dibuat dengan <span class="text-cyan-400">GLX</span>
+			<p class="mt-8 text-xs text-zinc-500">
+				Dibuat dengan <a href={resolve('/')} class="text-cyan-400 no-underline">GLX</a>
 			</p>
 		</div>
 	</div>

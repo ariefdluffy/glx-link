@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import SocialIconRow from '$lib/components/SocialIconRow.svelte';
 
 	let { data } = $props<{
@@ -309,6 +310,11 @@
 				</div>
 			{/if}
 		</div>
+
+		<!-- Footer -->
+		<p class="mt-4 text-center text-xs text-zinc-400">
+			Dibuat dengan <a href={resolve('/')} class="font-semibold text-zinc-700 no-underline">GLX</a>
+		</p>
 	</div>
 </div>
 
