@@ -205,7 +205,7 @@
 	);
 </script>
 
-<div class="mx-auto w-full max-w-[480px]">
+<div class="mx-auto w-full max-w-[400px]">
 	<div class={cardClass}>
 		<div class="h-[150px] w-full bg-zinc-100 sm:h-[170px] md:h-[180px]" style={bannerStyle}></div>
 

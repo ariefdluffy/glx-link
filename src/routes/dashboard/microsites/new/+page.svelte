@@ -394,14 +394,14 @@
 		</div>
 	</div>
 {:else}
-	<div class="mx-auto w-full max-w-7xl px-1 pb-16">
-		<div class="py-6">
+	<div class="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6">
+		<div class="py-2">
 			<h1 class="font-display text-2xl font-semibold">Buat Microsite Baru</h1>
 			<p class="text-sm text-white/60">Ikuti langkah-langkah untuk membuat microsite Anda.</p>
 		</div>
 
 		<!-- Step Indicator -->
-		<div class="mb-8">
+		<div class="mb-8 py-2">
 			<StepIndicator {currentStep} {totalSteps} onStepClick={goToStep} />
 		</div>
 
@@ -507,8 +507,8 @@
 			</div>
 
 			<!-- Right: Preview Sidebar (Sticky) -->
-			<div class="lg:sticky lg:top-6 lg:h-fit">
-				<div class="glass-panel overflow-hidden rounded-3xl p-3 sm:p-4">
+			<div class="lg:sticky lg:top-6 lg:h-fit lg:w-fit">
+				<div class="glass-panel max-w-full overflow-hidden rounded-3xl p-5 md:p-8">
 					<div class="mb-2 text-center text-[10px] text-white/50 sm:mb-3 sm:text-xs">
 						Pratinjau Langsung
 					</div>
