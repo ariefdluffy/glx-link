@@ -3,12 +3,12 @@ module.exports = {
 		{
 			name: 'glx-link',
 			script: 'build/index.js',
-			instances: 'max', // Gunakan semua CPU cores yang tersedia
+			instances: '1', // Gunakan semua CPU cores yang tersedia
 			exec_mode: 'fork',
 			env: {
 				NODE_ENV: 'production',
 				PUBLIC_BASE_URL: 'https://glx.my.id',
-				UPLOAD_DIR: '/glx-link/uploads'
+				UPLOAD_DIR: '/var/www/glx-link/uploads'
 			},
 			// Logging
 			error_file: './logs/pm2-error.log',
