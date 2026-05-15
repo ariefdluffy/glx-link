@@ -3,6 +3,7 @@ import { eq, and, gt, sql } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { users, emailVerifications } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
+import { maskEmail } from '$lib/email';
 
 export const load = async ({ cookies, url }) => {
 	const token = url.searchParams.get('token');
@@ -21,26 +22,47 @@ export const load = async ({ cookies, url }) => {
 			.limit(1);
 
 		if (verification) {
-			await db
-				.update(users)
-				.set({ emailVerified: true })
-				.where(eq(users.id, verification.userId));
+			await db.update(users).set({ emailVerified: true }).where(eq(users.id, verification.userId));
 
-			await db
-				.delete(emailVerifications)
-				.where(eq(emailVerifications.userId, verification.userId));
+			await db.delete(emailVerifications).where(eq(emailVerifications.userId, verification.userId));
 
 			return { verified: true, message: 'Email berhasil diverifikasi! Silakan login.' };
 		}
 
-		return { verified: false, message: 'Token tidak valid atau sudah kedaluwarsa.' };
+		// Token expired / invalid — cari user lewat session kalau ada
+		const userId = getSessionUserId(cookies);
+		let userEmail: string | null = null;
+		if (userId) {
+			const [user] = await db
+				.select({ email: users.email })
+				.from(users)
+				.where(eq(users.id, userId))
+				.limit(1);
+			userEmail = user?.email ? maskEmail(user.email) : null;
+		}
+		return {
+			verified: false,
+			message: 'Token tidak valid atau sudah kedaluwarsa.',
+			isLoggedIn: !!userId,
+			email: userEmail
+		};
 	}
 
 	const userId = getSessionUserId(cookies);
+	let userEmail: string | null = null;
+	if (userId) {
+		const [user] = await db
+			.select({ email: users.email })
+			.from(users)
+			.where(eq(users.id, userId))
+			.limit(1);
+		userEmail = user?.email ? maskEmail(user.email) : null;
+	}
 
 	return {
 		verified: false,
 		message: null,
-		isLoggedIn: !!userId
+		isLoggedIn: !!userId,
+		email: userEmail
 	};
 };

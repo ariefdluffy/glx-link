@@ -61,7 +61,7 @@
 			successMessage = payload?.message ?? 'Akun berhasil dibuat! Cek email untuk verifikasi.';
 			// Redirect to dashboard tetap jalan, tapi user bakal liat pesan verifikasi
 			setTimeout(() => {
-				window.location.href = '/dashboard';
+				window.location.href = '/verify-email';
 			}, 1500);
 		} catch {
 			errorMessage = 'Gagal terhubung ke server.';

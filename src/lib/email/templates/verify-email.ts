@@ -4,7 +4,7 @@ export function verifyEmailHtml(name: string, verificationUrl: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verifikasi Email - GLX Link</title>
+  <title>Verifikasi Email - GLX ShortLink</title>
 </head>
 <body style="margin:0;padding:0;background:#0f0f12;font-family:'Inter',system-ui,-apple-system,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f12;padding:40px 20px;">
@@ -29,7 +29,7 @@ export function verifyEmailHtml(name: string, verificationUrl: string): string {
             <td align="center" style="padding-bottom:24px;">
               <p style="font-size:14px;color:#8b8b94;margin:0;line-height:1.6;">
                 Halo <strong style="color:#f4f4f5;">${name}</strong>,<br/>
-                Terima kasih telah mendaftar di GLX Link.<br/>
+                Terima kasih telah mendaftar di GLX ShortLink.<br/>
                 Klik tombol di bawah untuk memverifikasi email kamu.
               </p>
             </td>
@@ -60,7 +60,7 @@ export function verifyEmailHtml(name: string, verificationUrl: string): string {
             <td align="center" style="padding-top:16px;">
               <p style="font-size:11px;color:#5a5a62;margin:0;line-height:1.5;">
                 Link verifikasi berlaku selama 24 jam.<br/>
-                Jika kamu tidak mendaftar di GLX Link, abaikan email ini.
+                Jika kamu tidak mendaftar di GLX ShortLink, abaikan email ini.
               </p>
             </td>
           </tr>

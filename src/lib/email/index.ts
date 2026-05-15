@@ -77,3 +77,12 @@ export function generateToken(length = 48): string {
 export function getBaseUrl(): string {
 	return env.PUBLIC_BASE_URL || 'http://localhost:5173';
 }
+
+// Mask email for display: user@example.com → u***@example.com
+export function maskEmail(email: string): string {
+	const atIndex = email.indexOf('@');
+	if (atIndex < 2) return email;
+	const firstChar = email.charAt(0);
+	const domain = email.slice(atIndex);
+	return `${firstChar}***${domain}`;
+}

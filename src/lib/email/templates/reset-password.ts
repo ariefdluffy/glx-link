@@ -4,7 +4,7 @@ export function resetPasswordHtml(name: string, resetUrl: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reset Password - GLX Link</title>
+  <title>Reset Password - GLX ShortLink</title>
 </head>
 <body style="margin:0;padding:0;background:#0f0f12;font-family:'Inter',system-ui,-apple-system,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f12;padding:40px 20px;">
@@ -29,7 +29,7 @@ export function resetPasswordHtml(name: string, resetUrl: string): string {
             <td align="center" style="padding-bottom:24px;">
               <p style="font-size:14px;color:#8b8b94;margin:0;line-height:1.6;">
                 Halo <strong style="color:#f4f4f5;">${name}</strong>,<br/>
-                Kami menerima permintaan reset password akun GLX Link kamu.<br/>
+                Kami menerima permintaan reset password akun GLX ShortLink kamu.<br/>
                 Klik tombol di bawah untuk membuat password baru.
               </p>
             </td>
