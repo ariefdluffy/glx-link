@@ -429,34 +429,77 @@
 						<p class="text-[11px] text-white/30">
 							Email tidak bisa diubah. Hubungi admin untuk perubahan.
 						</p>
-						{#if !data.user.emailVerified}
+					</div>
+					{#if !data.user.emailVerified}
+						<div
+							class="mt-3 flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3"
+						>
+							<div
+								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-4 w-4 text-amber-400"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path
+										d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+									/>
+									<line x1="12" y1="9" x2="12" y2="13" />
+									<line x1="12" y1="17" x2="12.01" y2="17" />
+								</svg>
+							</div>
+							<div class="flex-1">
+								<p class="text-xs font-medium text-amber-300">Email belum diverifikasi</p>
+								<p class="mt-0.5 text-[11px] text-amber-400/60">
+									Verifikasi email untuk mengakses semua fitur
+								</p>
+							</div>
 							<button
 								type="button"
 								onclick={handleResendVerification}
 								disabled={isResendingVerification}
-								class="text-xs font-medium text-blue-400 transition hover:text-blue-300 disabled:opacity-50"
+								class="flex shrink-0 items-center gap-1.5 rounded-lg bg-linear-to-r from-violet-500/20 to-cyan-400/20 px-3.5 py-2 text-[11px] font-semibold text-violet-300 shadow-sm ring-1 shadow-violet-500/10 ring-violet-500/20 transition hover:from-violet-500/30 hover:to-cyan-400/30 hover:text-violet-200 hover:ring-violet-500/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
 							>
-								{isResendingVerification ? 'Mengirim...' : 'Kirim Verifikasi'}
+								{#if isResendingVerification}
+									<svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+										<circle
+											class="opacity-25"
+											cx="12"
+											cy="12"
+											r="10"
+											stroke="currentColor"
+											stroke-width="4"
+										/>
+										<path
+											class="opacity-75"
+											fill="currentColor"
+											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+										/>
+									</svg>
+									<span>Mengirim...</span>
+								{:else}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-3.5 w-3.5"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+									>
+										<rect width="20" height="16" x="2" y="4" rx="2" />
+										<path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+									</svg>
+									<span>Kirim Ulang Email Verifikasi</span>
+								{/if}
 							</button>
-						{/if}
-					</div>
-					{#if !data.user.emailVerified}
-						<div class="mt-2 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="h-4 w-4 text-amber-400"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<path
-									d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-								/>
-								<line x1="12" y1="9" x2="12" y2="13" />
-								<line x1="12" y1="17" x2="12.01" y2="17" />
-							</svg>
-							<span class="text-xs text-amber-400">Email belum diverifikasi</span>
 						</div>
 
 						{#if verificationMessage}
