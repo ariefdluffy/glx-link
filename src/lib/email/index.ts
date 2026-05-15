@@ -1,8 +1,8 @@
 import nodemailer from 'nodemailer';
 import { env } from '$env/dynamic/private';
 
-const FROM_NAME = 'GLX Link';
-const FROM_EMAIL = env.SMTP_FROM_EMAIL || 'noreply@glx-link.com';
+const FROM_NAME = 'GLX ShortLink';
+const FROM_EMAIL = env.SMTP_FROM_EMAIL || 'no-reply@glx-link.com';
 
 let transporter: nodemailer.Transporter | null = null;
 
