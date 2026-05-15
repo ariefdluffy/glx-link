@@ -75,5 +75,5 @@ export function generateToken(length = 48): string {
 
 // Get app base URL (for constructing verification links)
 export function getBaseUrl(): string {
-	return env.PUBLIC_APP_URL || 'http://localhost:5173';
+	return env.PUBLIC_BASE_URL || 'http://localhost:5173';
 }
