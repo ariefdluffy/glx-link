@@ -33,3 +33,5 @@ backups/
 *.sql.gz
 
 nul
+
+ecosystem.config.cjs
