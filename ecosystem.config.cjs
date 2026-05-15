@@ -7,7 +7,8 @@ module.exports = {
 			exec_mode: 'fork',
 			env: {
 				NODE_ENV: 'production',
-				UPLOAD_DIR: '/var/www/glx-link/uploads'
+				PUBLIC_BASE_URL: 'https://glx.my.id',
+				UPLOAD_DIR: '/glx-link/uploads'
 			},
 			// Logging
 			error_file: './logs/pm2-error.log',
