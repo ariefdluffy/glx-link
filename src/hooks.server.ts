@@ -8,9 +8,12 @@ const securityHeaders = {
 	'X-Frame-Options': 'DENY',
 	'X-XSS-Protection': '1; mode=block',
 	'Referrer-Policy': 'strict-origin-when-cross-origin',
-	'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
-	'Cache-Control': dev ? 'no-store' : 'public, max-age=31536000, immutable'
+	'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
 };
+
+// Cache control: static assets get immutable cache, everything else no-cache
+const STATIC_CACHE = 'public, max-age=31536000, immutable';
+const DYNAMIC_CACHE = 'no-cache';
 
 // Rate limiting state (in-memory, for production use Redis)
 interface RateLimitState {
@@ -55,6 +58,9 @@ setInterval(() => {
 
 // Handle function
 export const handle: Handle = async ({ event, resolve }) => {
+	const url = new URL(event.request.url);
+	const isStaticAsset = url.pathname.startsWith('/_app/immutable/');
+
 	// Add security headers to all responses
 	const response = await resolve(event);
 
@@ -62,8 +68,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		response.headers.set(key, value);
 	}
 
+	// Cache static assets aggressively, dynamic pages no-cache
+	response.headers.set(
+		'Cache-Control',
+		dev ? 'no-store' : isStaticAsset ? STATIC_CACHE : DYNAMIC_CACHE
+	);
+
 	// Rate limiting (skip for static files and health checks)
-	const url = new URL(event.request.url);
 	if (!url.pathname.startsWith('/_sveltekit') && !url.pathname.startsWith('/health')) {
 		// Get client IP
 		const headers = event.request.headers;
