@@ -15,7 +15,7 @@ export function resetPasswordHtml(name: string, resetUrl: string): string {
           <tr>
             <td align="center" style="padding-bottom:20px;">
               <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:700;color:#f4f4f5;">GLX</span>
-              <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:300;color:#7c3aed;">Link</span>
+              <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:300;color:#7c3aed;">ShortLink</span>
             </td>
           </tr>
           <!-- Title -->

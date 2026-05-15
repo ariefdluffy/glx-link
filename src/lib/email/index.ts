@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '$env/dynamic/private';
+import { PUBLIC_BASE_URL } from '$env/static/public';
 
 const FROM_NAME = 'GLX ShortLink';
 const FROM_EMAIL = env.SMTP_FROM_EMAIL || 'no-reply@glx-link.com';
@@ -75,7 +76,7 @@ export function generateToken(length = 48): string {
 
 // Get app base URL (for constructing verification links)
 export function getBaseUrl(): string {
-	return env.PUBLIC_BASE_URL || 'http://localhost:5173';
+	return PUBLIC_BASE_URL || 'http://localhost:5173';
 }
 
 // Mask email for display: user@example.com → u***@example.com
