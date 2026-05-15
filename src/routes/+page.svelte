@@ -241,7 +241,7 @@
 				</div>
 				<div class="grid max-w-md grid-cols-3 gap-4 text-xs text-white/60">
 					<div>
-						<div class="font-display text-lg text-white">15+</div>
+						<div class="font-display text-lg text-white">10+</div>
 						<span>Custom slug Pro</span>
 					</div>
 					<div>
@@ -249,7 +249,7 @@
 						<span>Microsite Pro</span>
 					</div>
 					<div>
-						<div class="font-display text-lg text-white">29K</div>
+						<div class="font-display text-lg text-white">IDR 29.000</div>
 						<span>Per bulan</span>
 					</div>
 				</div>
