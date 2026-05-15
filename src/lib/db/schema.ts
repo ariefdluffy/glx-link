@@ -37,6 +37,8 @@ export const shortLinks = mysqlTable('short_links', {
 	destination: text('destination').notNull(),
 	isCustom: boolean('is_custom').default(false),
 	clicks: int('clicks').default(0),
+	isActive: boolean('is_active').default(true),
+	subscriptionExpiredAt: datetime('subscription_expired_at'),
 	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
 });
 
@@ -82,10 +84,13 @@ export const subscriptions = mysqlTable('subscriptions', {
 	startedAt: datetime('started_at').default(sql`CURRENT_TIMESTAMP`),
 	expiresAt: datetime('expires_at').notNull(),
 	paymentRef: varchar('payment_ref', { length: 100 }),
-	paymentMethod: mysqlEnum('payment_method', ['bank_transfer', 'midtrans', 'manual']).default(
+	paymentMethod: mysqlEnum('payment_method', [
+		'bank_transfer',
+		'xendit',
+		'mayar',
 		'manual'
-	),
-	status: mysqlEnum('status', ['active', 'expired', 'cancelled']).default('active'),
+	]).default('manual'),
+	status: mysqlEnum('status', ['pending', 'active', 'expired', 'cancelled']).default('active'),
 	autoRenew: boolean('auto_renew').default(false),
 	cancelledAt: datetime('cancelled_at'),
 	notes: text('notes')
@@ -118,4 +123,17 @@ export const passwordResetTokens = mysqlTable('password_reset_tokens', {
 	expiresAt: datetime('expires_at').notNull(),
 	usedAt: datetime('used_at'),
 	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
+});
+
+export const promoCodes = mysqlTable('promo_codes', {
+	id: int('id').autoincrement().primaryKey(),
+	code: varchar('code', { length: 50 }).notNull().unique(),
+	discountType: mysqlEnum('discount_type', ['percent', 'fixed']).notNull(),
+	discountValue: int('discount_value').notNull(),
+	maxUses: int('max_uses'),
+	usedCount: int('used_count').default(0),
+	isActive: boolean('is_active').default(true),
+	expiresAt: datetime('expires_at'),
+	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`),
+	description: varchar('description', { length: 255 })
 });

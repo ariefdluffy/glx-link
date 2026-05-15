@@ -72,25 +72,27 @@
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<a
-				href="/dashboard/admin"
-				class="mb-2 inline-flex items-center gap-2 text-sm text-white/60 transition-colors hover:text-white"
-			>
-				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M15 19l-7-7 7-7"
-					/>
-				</svg>
-				Kembali ke Admin Panel
-			</a>
 			<h1 class="font-display text-3xl font-bold">Kelola Microsites</h1>
 			<p class="mt-1 text-sm text-white/60">
 				Mengelola {data.pagination.totalItems} microsites
 			</p>
 		</div>
+		<a
+			href="/dashboard/admin"
+			class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:border-white/30 hover:bg-white/10"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+			</svg>
+			Kembali
+		</a>
 	</div>
 
 	<!-- Search Bar -->

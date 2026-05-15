@@ -3,6 +3,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { microsites, micrositeLinks, users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
+import { isProActive } from '$lib/auth/plan';
 
 const sanitizeSlug = (value: string) =>
 	value
@@ -69,12 +70,15 @@ export const POST = async ({ request, cookies }) => {
 	const links = Array.isArray(payload.links) ? payload.links : [];
 
 	const [user] = await db
-		.select({ plan: users.plan })
+		.select({ plan: users.plan, planExpiresAt: users.planExpiresAt })
 		.from(users)
 		.where(eq(users.id, userId))
 		.limit(1);
-	if (!user || user.plan !== 'pro') {
-		return json({ message: 'Upgrade ke Pro untuk membuat microsite.' }, { status: 403 });
+	if (!user || !isProActive(user.plan, user.planExpiresAt)) {
+		return json(
+			{ message: 'Upgrade ke Pro atau perpanjang langganan untuk membuat microsite.' },
+			{ status: 403 }
+		);
 	}
 
 	const userMicrosites = await db

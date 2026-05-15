@@ -1,10 +1,17 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	type FormResult = {
 		success?: boolean;
 		message?: string;
 		error?: string;
+		invoiceUrl?: string;
+		invoiceId?: string;
+		amount?: number;
+		discount?: number;
+		promoCode?: string;
 	};
 
 	type PageData = {
@@ -57,6 +64,49 @@
 	let showFilters = $state(false);
 	let cancellingId = $state<number | null>(null);
 	let togglingAutoRenew = $state<number | null>(null);
+	let showPromoModal = $state(false);
+	let promoCode = $state('');
+	let selectedDuration = $state(30);
+	let paymentStatus = $state<string | null>(null);
+	let showPaymentNotification = $state(false);
+
+	// Handle payment callback from Mayar
+	onMount(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const payment = urlParams.get('payment');
+
+		if (payment === 'success' || payment === 'failed' || payment === 'cancelled') {
+			paymentStatus = payment;
+			showPaymentNotification = true;
+
+			console.log('[Billing] Payment callback received:', payment);
+
+			// Force refresh data from server
+			invalidateAll();
+
+			// Auto-hide notification after 5 seconds
+			setTimeout(() => {
+				showPaymentNotification = false;
+			}, 5000);
+
+			// Clean URL after handling
+			setTimeout(() => {
+				const cleanUrl = window.location.pathname;
+				window.history.replaceState({}, '', cleanUrl);
+			}, 1000);
+		}
+	});
+
+	// Auto-redirect to Mayar payment page when invoice is created
+	$effect(() => {
+		if (form?.invoiceUrl) {
+			console.log('[Billing] Redirecting to Mayar payment page:', form.invoiceUrl);
+			// Redirect after a short delay to show success message
+			setTimeout(() => {
+				window.location.href = form.invoiceUrl!;
+			}, 1500);
+		}
+	});
 
 	$effect(() => {
 		filterStatus = data.filters.status ?? '';
@@ -103,6 +153,13 @@
 		return Math.max(0, diff);
 	};
 
+	// Check if subscription is expiring soon (within 7 days)
+	const isExpiringSoon = () => {
+		if (!isProActive()) return false;
+		const days = daysRemaining();
+		return days > 0 && days <= 7;
+	};
+
 	const getStatusBadge = (status: string) => {
 		switch (status) {
 			case 'active':
@@ -133,8 +190,10 @@
 		switch (method) {
 			case 'bank_transfer':
 				return 'Transfer Bank';
-			case 'midtrans':
-				return 'Midtrans';
+			case 'xendit':
+				return 'Xendit';
+			case 'mayar':
+				return 'Mayar';
 			case 'manual':
 				return 'Manual';
 			default:
@@ -212,6 +271,76 @@
 		<p class="text-sm text-white/60">Kelola paket dan riwayat pembayaran kamu.</p>
 	</div>
 
+	<!-- Payment Status Notification -->
+	{#if showPaymentNotification}
+		{#if paymentStatus === 'success'}
+			<div
+				class="glass-panel animate-in fade-in slide-in-from-top-4 mb-6 rounded-3xl border-2 border-green-500/30 bg-green-500/10 p-6 duration-500"
+			>
+				<div class="flex items-start gap-3">
+					<div class="text-3xl">✅</div>
+					<div class="flex-1">
+						<h3 class="font-display text-lg font-semibold text-green-400">Pembayaran Berhasil!</h3>
+						<p class="mt-2 text-sm text-white/80">
+							Terima kasih! Pembayaran Anda telah berhasil diproses. Langganan Pro Anda sekarang
+							aktif.
+						</p>
+						<div class="mt-3 flex items-center gap-2 text-xs text-green-300">
+							<span class="flex h-2 w-2 rounded-full bg-green-500"></span>
+							<span>Status langganan telah diperbarui</span>
+						</div>
+					</div>
+					<button
+						onclick={() => (showPaymentNotification = false)}
+						class="text-white/40 transition hover:text-white/80"
+					>
+						✕
+					</button>
+				</div>
+			</div>
+		{:else if paymentStatus === 'failed'}
+			<div
+				class="glass-panel animate-in fade-in slide-in-from-top-4 mb-6 rounded-3xl border-2 border-red-500/30 bg-red-500/10 p-6 duration-500"
+			>
+				<div class="flex items-start gap-3">
+					<div class="text-3xl">❌</div>
+					<div class="flex-1">
+						<h3 class="font-display text-lg font-semibold text-red-400">Pembayaran Gagal</h3>
+						<p class="mt-2 text-sm text-white/80">
+							Maaf, pembayaran Anda tidak dapat diproses. Silakan coba lagi atau hubungi support.
+						</p>
+					</div>
+					<button
+						onclick={() => (showPaymentNotification = false)}
+						class="text-white/40 transition hover:text-white/80"
+					>
+						✕
+					</button>
+				</div>
+			</div>
+		{:else if paymentStatus === 'cancelled'}
+			<div
+				class="glass-panel animate-in fade-in slide-in-from-top-4 mb-6 rounded-3xl border-2 border-amber-500/30 bg-amber-500/10 p-6 duration-500"
+			>
+				<div class="flex items-start gap-3">
+					<div class="text-3xl">⚠️</div>
+					<div class="flex-1">
+						<h3 class="font-display text-lg font-semibold text-amber-400">Pembayaran Dibatalkan</h3>
+						<p class="mt-2 text-sm text-white/80">
+							Anda membatalkan proses pembayaran. Silakan coba lagi jika Anda ingin melanjutkan.
+						</p>
+					</div>
+					<button
+						onclick={() => (showPaymentNotification = false)}
+						class="text-white/40 transition hover:text-white/80"
+					>
+						✕
+					</button>
+				</div>
+			</div>
+		{/if}
+	{/if}
+
 	<!-- Migration Warning -->
 	{#if data.migrationWarning}
 		<div class="glass-panel mb-6 rounded-3xl border-2 border-amber-500/30 bg-amber-500/10 p-6">
@@ -228,6 +357,42 @@
 					<p class="mt-3 text-xs text-white/60">
 						Setelah migration, fitur lengkap akan tersedia: filter, status badge, auto-renew, dll.
 					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Expiring Soon Warning (7 days before) -->
+	{#if isExpiringSoon()}
+		<div class="glass-panel mb-6 rounded-3xl border-2 border-amber-500/30 bg-amber-500/10 p-6">
+			<div class="flex items-start gap-3">
+				<div class="text-2xl">⏰</div>
+				<div class="flex-1">
+					<h3 class="font-display text-lg font-semibold text-amber-400">
+						Langganan Anda Akan Berakhir
+					</h3>
+					<p class="mt-2 text-sm text-white/80">
+						Langganan Pro Anda akan berakhir dalam <strong class="text-amber-300"
+							>{daysRemaining()} hari</strong
+						>
+						(pada {formatDate(data.user.planExpiresAt)}). Perpanjang sekarang untuk menghindari
+						pembatasan fitur.
+					</p>
+					<div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+						<p class="text-sm font-semibold text-amber-300">⚠️ Setelah langganan berakhir:</p>
+						<ul class="mt-2 space-y-1 text-sm text-white/70">
+							<li>• Maksimal 5 shortlink aktif</li>
+							<li>• Tidak dapat membuat microsite baru</li>
+							<li>• Tidak dapat menggunakan custom slug</li>
+							<li>• Link tidak aktif akan dihapus setelah 7 hari</li>
+						</ul>
+					</div>
+					<a
+						href="#upgrade"
+						class="mt-4 inline-block rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/40"
+					>
+						🔄 Perpanjang Langganan Sekarang
+					</a>
 				</div>
 			</div>
 		</div>
@@ -312,8 +477,14 @@
 	<!-- Upgrade Section -->
 	{#if !isProActive()}
 		<div id="upgrade" class="glass-panel mt-6 rounded-3xl p-4">
-			<h2 class="font-display text-lg font-semibold">Upgrade ke Pro</h2>
-			<p class="mt-2 text-sm text-white/60">Hubungi kami via WhatsApp untuk aktivasi akun Pro.</p>
+			<h2 class="font-display text-lg font-semibold">
+				{data.user.plan === 'pro' ? 'Perpanjang Langganan Pro' : 'Upgrade ke Pro'}
+			</h2>
+			<p class="mt-2 text-sm text-white/60">
+				{data.user.plan === 'pro'
+					? 'Pilih metode pembayaran untuk memperpanjang langganan Pro Anda.'
+					: 'Pilih metode pembayaran untuk aktivasi akun Pro.'}
+			</p>
 
 			<!-- Payment Method Cards -->
 			<div class="mt-6 grid gap-4 md:grid-cols-2">
@@ -339,29 +510,72 @@
 					</div>
 				</a>
 
-				<!-- Midtrans (Disabled) -->
-				<div class="rounded-2xl border border-white/5 bg-white/[0.02] p-4 opacity-50">
+				<!-- Mayar Payment - DISABLED (Menunggu Verifikasi Akun) -->
+				<button
+					type="button"
+					disabled
+					class="group cursor-not-allowed rounded-2xl border border-white/10 bg-white/5 p-4 text-left opacity-50"
+				>
 					<div class="flex items-center justify-between">
 						<div>
-							<div class="font-display text-sm font-semibold text-white/40">Midtrans</div>
-							<div class="mt-1 text-xs text-white/30">Pembayaran instan - Segera hadir</div>
+							<div class="font-display flex items-center gap-2 text-sm font-semibold text-white">
+								Mayar
+								<span class="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] text-amber-400"
+									>Segera Hadir</span
+								>
+							</div>
+							<div class="mt-1 text-xs text-white/50">Menunggu verifikasi akun Mayar</div>
 						</div>
-						<span class="rounded-full border border-white/10 px-4 py-2 text-xs text-white/30">
-							Nonaktif
+						<span class="rounded-full border border-white/20 px-4 py-2 text-xs text-white/40">
+							Rp 29.000
 						</span>
 					</div>
-				</div>
+				</button>
 			</div>
 
+			{#if form?.invoiceUrl}
+				<div class="mt-4 rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<div class="text-sm font-semibold text-blue-400">Invoice Dibuat</div>
+							<div class="mt-1 text-xs text-white/60">
+								Klik tombol untuk membuka halaman pembayaran
+							</div>
+						</div>
+						<a
+							href={form.invoiceUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-600"
+						>
+							Bayar Sekarang
+						</a>
+					</div>
+					{#if form.invoiceId}
+						<div class="mt-2 text-xs text-white/40">Invoice ID: {form.invoiceId}</div>
+					{/if}
+					{#if form.discount}
+						<div class="mt-1 text-xs text-green-400">
+							Diskon: Rp {form.discount.toLocaleString()}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			<div class="mt-4 text-xs text-white/50">
-				Setelah pembayaran diverifikasi, akun Pro akan aktif dalam 1x24 jam.
+				Pembayaran via Mayar akan aktif secara otomatis setelah pembayaran berhasil.
 			</div>
 		</div>
 	{/if}
 
 	<!-- Grid: Langganan Aktif + Riwayat -->
-	<div class="mt-6 {data.activeSubscription ? 'grid gap-6 md:grid-cols-2' : ''}">
+	<div
+		class="mt-6 {data.user.plan === 'pro' || data.activeSubscription
+			? 'grid gap-6 md:grid-cols-2'
+			: ''}"
+	>
 		{#if data.activeSubscription}
+			<!-- User has active subscription -->
 			<div class="glass-panel relative overflow-hidden rounded-3xl p-4">
 				<!-- Decorative gradient blur -->
 				<div
@@ -454,6 +668,75 @@
 								: 'Batalkan Langganan'}
 						</button>
 					</form>
+				</div>
+			</div>
+		{:else if data.user.plan === 'pro'}
+			<!-- User is pro but no active subscription (expired/cancelled) -->
+			<div class="glass-panel relative overflow-hidden rounded-3xl p-4">
+				<!-- Decorative gradient blur -->
+				<div
+					class="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-gradient-to-br from-amber-500/15 to-yellow-500/5 blur-3xl"
+				></div>
+
+				<div class="relative z-10">
+					<!-- Header with status -->
+					<div class="mb-5 flex items-center justify-between">
+						<h2 class="font-display text-lg font-semibold">Status Langganan</h2>
+						{#if data.user.planExpiresAt && new Date(data.user.planExpiresAt) > new Date()}
+							<span
+								class="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-xs text-amber-400"
+							>
+								<span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+								Akan Berakhir
+							</span>
+						{:else}
+							<span
+								class="flex items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 text-xs text-red-400"
+							>
+								<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-500"></span>
+								Berakhir
+							</span>
+						{/if}
+					</div>
+
+					<!-- Plan centerpiece -->
+					<div class="py-4 text-center">
+						<div
+							class="font-display bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-4xl font-bold text-transparent"
+						>
+							PRO
+						</div>
+						{#if data.user.planExpiresAt}
+							<div class="mt-2 text-sm text-white/60">
+								{#if new Date(data.user.planExpiresAt) > new Date()}
+									Berakhir pada {formatDate(data.user.planExpiresAt)}
+								{:else}
+									Berakhir pada {formatDate(data.user.planExpiresAt)}
+								{/if}
+							</div>
+						{/if}
+					</div>
+
+					<!-- Info message -->
+					<div class="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+						<div class="text-sm text-amber-400">
+							{#if data.user.planExpiresAt && new Date(data.user.planExpiresAt) > new Date()}
+								⚠️ Langganan Anda akan berakhir. Perpanjang sekarang untuk tetap menikmati fitur
+								Pro.
+							{:else}
+								⚠️ Langganan Anda telah berakhir. Perpanjang sekarang untuk mengaktifkan kembali
+								fitur Pro.
+							{/if}
+						</div>
+					</div>
+
+					<!-- Renew button -->
+					<a
+						href="#upgrade"
+						class="mt-4 block w-full rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-2.5 text-center text-sm font-semibold text-green-400 transition hover:bg-green-500/20"
+					>
+						Perpanjang Langganan
+					</a>
 				</div>
 			</div>
 		{/if}
@@ -666,3 +949,135 @@
 		<div class="mt-4 text-xs text-white/50">Untuk mengubah nama atau email, hubungi support.</div>
 	</div>
 </div>
+
+<!-- Promo Code Modal -->
+{#if showPromoModal}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+		onclick={() => (showPromoModal = false)}
+		onkeydown={(e) => e.key === 'Escape' && (showPromoModal = false)}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="promo-modal-title"
+	>
+		<div
+			class="glass-panel w-full max-w-md rounded-3xl p-6"
+			onclick={(e) => e.stopPropagation()}
+			role="document"
+		>
+			<div class="mb-4 flex items-center justify-between">
+				<h2 id="promo-modal-title" class="font-display text-lg font-semibold">Pembayaran Pro</h2>
+				<button
+					type="button"
+					class="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+					onclick={() => (showPromoModal = false)}
+					aria-label="Tutup"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path d="M18 6L6 18M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+
+			<form method="POST" action="?/createPayment" use:enhance>
+				<!-- Duration Selection -->
+				<div class="mb-4">
+					<label class="mb-2 block text-sm font-medium text-white/80">Pilih Durasi</label>
+					<div class="grid grid-cols-3 gap-2">
+						<button
+							type="button"
+							class="rounded-xl border px-4 py-3 text-center text-sm transition {selectedDuration ===
+							30
+								? 'border-blue-500 bg-blue-500/20 text-blue-400'
+								: 'border-white/10 bg-white/5 text-white/70 hover:border-white/30'}"
+							onclick={() => (selectedDuration = 30)}
+						>
+							<div class="font-semibold">1 Bulan</div>
+							<div class="mt-1 text-xs opacity-70">Rp 29.000</div>
+						</button>
+						<button
+							type="button"
+							class="rounded-xl border px-4 py-3 text-center text-sm transition {selectedDuration ===
+							90
+								? 'border-blue-500 bg-blue-500/20 text-blue-400'
+								: 'border-white/10 bg-white/5 text-white/70 hover:border-white/30'}"
+							onclick={() => (selectedDuration = 90)}
+						>
+							<div class="font-semibold">3 Bulan</div>
+							<div class="mt-1 text-xs opacity-70">Rp 87.000</div>
+						</button>
+						<button
+							type="button"
+							class="rounded-xl border px-4 py-3 text-center text-sm transition {selectedDuration ===
+							365
+								? 'border-blue-500 bg-blue-500/20 text-blue-400'
+								: 'border-white/10 bg-white/5 text-white/70 hover:border-white/30'}"
+							onclick={() => (selectedDuration = 365)}
+						>
+							<div class="font-semibold">1 Tahun</div>
+							<div class="mt-1 text-xs opacity-70">Rp 290.000</div>
+						</button>
+					</div>
+				</div>
+
+				<!-- Promo Code Input -->
+				<div class="mb-6">
+					<label for="promoCode" class="mb-2 block text-sm font-medium text-white/80">
+						Kode Promo <span class="text-white/40">(opsional)</span>
+					</label>
+					<input
+						type="text"
+						id="promoCode"
+						name="promoCode"
+						bind:value={promoCode}
+						placeholder="Masukkan kode promo"
+						class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-blue-500/50 focus:bg-white/10"
+					/>
+				</div>
+
+				<!-- Price Summary -->
+				<div class="mb-6 rounded-xl border border-white/10 bg-white/5 p-4">
+					<div class="flex items-center justify-between text-sm">
+						<span class="text-white/60">Durasi</span>
+						<span class="text-white"
+							>{selectedDuration === 30
+								? '1 Bulan'
+								: selectedDuration === 90
+									? '3 Bulan'
+									: '1 Tahun'}</span
+						>
+					</div>
+					<div class="mt-2 flex items-center justify-between text-sm">
+						<span class="text-white/60">Harga</span>
+						<span class="text-white"
+							>Rp {Math.round((29000 / 30) * selectedDuration).toLocaleString()}</span
+						>
+					</div>
+				</div>
+
+				<!-- Hidden fields -->
+				<input type="hidden" name="plan" value="pro" />
+				<input type="hidden" name="durationDays" value={selectedDuration} />
+
+				<!-- Submit Button -->
+				<button
+					type="submit"
+					class="w-full rounded-xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600"
+				>
+					Lanjut ke Pembayaran
+				</button>
+
+				<p class="mt-3 text-center text-xs text-white/40">
+					Anda akan diarahkan ke halaman pembayaran Mayar
+				</p>
+			</form>
+		</div>
+	</div>
+{/if}

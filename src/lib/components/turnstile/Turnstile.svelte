@@ -20,6 +20,12 @@
 	let container: HTMLDivElement;
 	let widgetId: string | null = null;
 
+	export const reset = () => {
+		if (window.turnstile && widgetId) {
+			window.turnstile.reset(widgetId);
+		}
+	};
+
 	onMount(() => {
 		const script = document.createElement('script');
 		script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';

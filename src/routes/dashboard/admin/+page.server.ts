@@ -200,7 +200,7 @@ export const actions: Actions = {
 				price,
 				durationDays,
 				paymentRef,
-				paymentMethod: paymentMethod as 'bank_transfer' | 'midtrans' | 'manual',
+				paymentMethod: paymentMethod as 'bank_transfer' | 'xendit' | 'manual',
 				autoRenew,
 				notes
 			});

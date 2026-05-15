@@ -284,6 +284,176 @@
 		</div>
 	</div>
 
+	<!-- Quick Links -->
+	<div class="glass-panel rounded-3xl p-6">
+		<h2 class="font-display mb-4 text-xl font-semibold">Akses Cepat</h2>
+		<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+			<!-- Users -->
+			<a
+				href="/dashboard/admin/users"
+				class="group rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:-translate-y-1 hover:border-blue-500/50 hover:bg-blue-500/10"
+			>
+				<div class="flex items-center gap-3">
+					<div class="rounded-xl bg-blue-500/20 p-3">
+						<svg
+							class="h-5 w-5 text-blue-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+							/>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<div class="text-sm font-semibold text-white">Kelola Users</div>
+						<div class="text-xs text-white/50">Manage semua user</div>
+					</div>
+					<svg
+						class="h-5 w-5 text-white/30 transition-transform group-hover:translate-x-1"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 5l7 7-7 7"
+						/>
+					</svg>
+				</div>
+			</a>
+
+			<!-- Microsites -->
+			<a
+				href="/dashboard/admin/microsites"
+				class="group rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:-translate-y-1 hover:border-cyan-500/50 hover:bg-cyan-500/10"
+			>
+				<div class="flex items-center gap-3">
+					<div class="rounded-xl bg-cyan-500/20 p-3">
+						<svg
+							class="h-5 w-5 text-cyan-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+							/>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<div class="text-sm font-semibold text-white">Microsites</div>
+						<div class="text-xs text-white/50">Kelola microsites</div>
+					</div>
+					<svg
+						class="h-5 w-5 text-white/30 transition-transform group-hover:translate-x-1"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 5l7 7-7 7"
+						/>
+					</svg>
+				</div>
+			</a>
+
+			<!-- Promo Codes -->
+			<a
+				href="/dashboard/admin/promo-codes"
+				class="group rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:-translate-y-1 hover:border-violet-500/50 hover:bg-violet-500/10"
+			>
+				<div class="flex items-center gap-3">
+					<div class="rounded-xl bg-violet-500/20 p-3">
+						<svg
+							class="h-5 w-5 text-violet-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+							/>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<div class="text-sm font-semibold text-white">Kode Promo</div>
+						<div class="text-xs text-white/50">Kelola promo codes</div>
+					</div>
+					<svg
+						class="h-5 w-5 text-white/30 transition-transform group-hover:translate-x-1"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 5l7 7-7 7"
+						/>
+					</svg>
+				</div>
+			</a>
+
+			<!-- Monitoring -->
+			<a
+				href="/dashboard/admin/monitoring"
+				class="group rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:-translate-y-1 hover:border-emerald-500/50 hover:bg-emerald-500/10"
+			>
+				<div class="flex items-center gap-3">
+					<div class="rounded-xl bg-emerald-500/20 p-3">
+						<svg
+							class="h-5 w-5 text-emerald-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+							/>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<div class="text-sm font-semibold text-white">Monitoring</div>
+						<div class="text-xs text-white/50">Audit logs & stats</div>
+					</div>
+					<svg
+						class="h-5 w-5 text-white/30 transition-transform group-hover:translate-x-1"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M9 5l7 7-7 7"
+						/>
+					</svg>
+				</div>
+			</a>
+		</div>
+	</div>
+
 	<!-- Tambah Langganan - Admin Panel -->
 	<div class="glass-panel rounded-3xl p-6">
 		<div class="mb-5 flex items-center justify-between">
@@ -376,7 +546,7 @@
 					>
 						<option value="manual" class="bg-gray-900">Manual (Admin)</option>
 						<option value="bank_transfer" class="bg-gray-900">Transfer Bank</option>
-						<option value="midtrans" class="bg-gray-900">Midtrans</option>
+						<option value="xendit" class="bg-gray-900">Xendit</option>
 					</select>
 				</div>
 

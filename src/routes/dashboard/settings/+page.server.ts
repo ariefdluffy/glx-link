@@ -15,6 +15,7 @@ export const load = async ({ cookies }) => {
 			email: users.email,
 			plan: users.plan,
 			planExpiresAt: users.planExpiresAt,
+			emailVerified: users.emailVerified,
 			createdAt: users.createdAt
 		})
 		.from(users)
@@ -34,6 +35,7 @@ export const load = async ({ cookies }) => {
 			email: user.email,
 			plan: user.plan ?? 'free',
 			planExpiresAt: user.planExpiresAt,
+			emailVerified: user.emailVerified ?? false,
 			createdAt: user.createdAt
 		},
 		sessions

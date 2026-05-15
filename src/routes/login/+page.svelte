@@ -12,6 +12,8 @@
 	let successMessage = $state('');
 	let turnstileToken = $state('');
 	let needsVerification = $state(false);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let turnstileRef: any = $state(null);
 	let logoutMessage = $state(
 		$page.url.searchParams.get('logged_out') ? 'Berhasil keluar dari akun.' : ''
 	);
@@ -41,6 +43,11 @@
 			if (!response.ok) {
 				errorMessage = payload?.message ?? 'Login gagal.';
 				needsVerification = payload?.needsVerification ?? false;
+				// Reset Turnstile untuk bisa coba lagi
+				turnstileToken = '';
+				if (turnstileRef?.reset) {
+					turnstileRef.reset();
+				}
 				return;
 			}
 			successMessage = 'Berhasil login! Mengarahkan...';
@@ -49,6 +56,11 @@
 			}, 500);
 		} catch {
 			errorMessage = 'Gagal terhubung ke server.';
+			// Reset Turnstile untuk bisa coba lagi
+			turnstileToken = '';
+			if (turnstileRef?.reset) {
+				turnstileRef.reset();
+			}
 		} finally {
 			isLoading = false;
 		}
@@ -89,6 +101,7 @@
 			<div>
 				{#if data.turnstileSiteKey}
 					<Turnstile
+						bind:this={turnstileRef}
 						sitekey={data.turnstileSiteKey}
 						onVerify={(token) => (turnstileToken = token)}
 						onExpire={() => (turnstileToken = '')}

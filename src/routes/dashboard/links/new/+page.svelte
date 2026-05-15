@@ -1,7 +1,23 @@
 <script lang="ts">
+	import { page } from '$app/stores';
+	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import Toast from '$lib/components/toast/Toast.svelte';
 
 	const baseUrl = 'glx.my.id';
+	let plan = $derived($page.data.plan);
+	let isProActive = $derived($page.data.isProActive);
+
+	// Force refresh data on mount to get latest from database
+	onMount(() => {
+		if (browser) {
+			console.log('[Links New] Refreshing data on mount...');
+			invalidateAll().then(() => {
+				console.log('[Links New] Data refreshed, plan:', plan, 'isProActive:', isProActive);
+			});
+		}
+	});
 
 	let destination = $state('');
 	let mode: 'random' | 'custom' = $state('random');
@@ -69,6 +85,33 @@
 		<h1 class="font-display text-2xl font-semibold">Buat Shortlink Baru</h1>
 		<p class="text-sm text-white/60">Pilih slug acak atau gunakan custom untuk akun Pro.</p>
 	</div>
+
+	<!-- Pro Expired Warning -->
+	{#if plan === 'pro' && !isProActive}
+		<div class="glass-panel mb-6 rounded-3xl border-2 border-amber-500/30 bg-amber-500/10 p-6">
+			<div class="flex items-start gap-4">
+				<div class="text-3xl">⚠️</div>
+				<div class="flex-1">
+					<h3 class="font-display text-lg font-semibold text-amber-400">
+						Langganan Pro Anda Telah Berakhir
+					</h3>
+					<p class="mt-2 text-sm text-white/80">
+						Anda hanya dapat memiliki maksimal 5 shortlink aktif ({$page.data.activeLinksCount}/5).
+						Link yang melebihi batas akan dinonaktifkan otomatis. Custom slug juga tidak tersedia.
+					</p>
+					<p class="mt-2 text-sm text-red-400">
+						⚠ Link tidak aktif akan dihapus permanen setelah 7 hari tidak perpanjang langganan.
+					</p>
+					<a
+						href="/dashboard/billing"
+						class="mt-4 inline-block rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/40"
+					>
+						🔄 Perpanjang Langganan untuk Unlimited
+					</a>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<div class="glass-panel rounded-3xl p-6 md:p-8">
 		<div class="space-y-4">

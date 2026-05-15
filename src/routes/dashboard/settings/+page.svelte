@@ -20,6 +20,11 @@
 	let saveError = $state('');
 	let isSaving = $state(false);
 
+	// Email Verification
+	let isResendingVerification = $state(false);
+	let verificationMessage = $state('');
+	let verificationError = $state('');
+
 	// Password
 	let currentPassword = $state('');
 	let newPassword = $state('');
@@ -169,6 +174,35 @@
 			saveError = 'Gagal terhubung ke server.';
 		} finally {
 			isSaving = false;
+		}
+	};
+
+	const handleResendVerification = async () => {
+		verificationMessage = '';
+		verificationError = '';
+		isResendingVerification = true;
+
+		try {
+			const response = await fetch('/api/auth/resend-verification', {
+				method: 'POST'
+			});
+			const result = await response.json();
+
+			if (response.ok && result.ok) {
+				verificationMessage = result.message || 'Email verifikasi telah dikirim!';
+				toastMessage = verificationMessage;
+				toastType = 'success';
+			} else {
+				verificationError = result.message || 'Gagal mengirim email verifikasi.';
+				toastMessage = verificationError;
+				toastType = 'error';
+			}
+		} catch {
+			verificationError = 'Gagal terhubung ke server.';
+			toastMessage = verificationError;
+			toastType = 'error';
+		} finally {
+			isResendingVerification = false;
 		}
 	};
 
@@ -391,9 +425,55 @@
 							>
 						</div>
 					</div>
-					<p class="mt-1 text-[11px] text-white/30">
-						Email tidak bisa diubah. Hubungi admin untuk perubahan.
-					</p>
+					<div class="mt-2 flex items-center justify-between">
+						<p class="text-[11px] text-white/30">
+							Email tidak bisa diubah. Hubungi admin untuk perubahan.
+						</p>
+						{#if !data.user.emailVerified}
+							<button
+								type="button"
+								onclick={handleResendVerification}
+								disabled={isResendingVerification}
+								class="text-xs font-medium text-blue-400 transition hover:text-blue-300 disabled:opacity-50"
+							>
+								{isResendingVerification ? 'Mengirim...' : 'Kirim Verifikasi'}
+							</button>
+						{/if}
+					</div>
+					{#if !data.user.emailVerified}
+						<div class="mt-2 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-4 w-4 text-amber-400"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path
+									d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+								/>
+								<line x1="12" y1="9" x2="12" y2="13" />
+								<line x1="12" y1="17" x2="12.01" y2="17" />
+							</svg>
+							<span class="text-xs text-amber-400">Email belum diverifikasi</span>
+						</div>
+					{:else}
+						<div class="mt-2 flex items-center gap-2 rounded-lg bg-green-500/10 px-3 py-2">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-4 w-4 text-green-400"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+								<polyline points="22 4 12 14.01 9 11.01" />
+							</svg>
+							<span class="text-xs text-green-400">Email terverifikasi</span>
+						</div>
+					{/if}
 				</div>
 
 				<!-- Save button & messages -->
@@ -900,7 +980,10 @@
 			<button
 				type="button"
 				class="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-xs font-semibold text-red-400 transition hover:bg-red-500/20"
-				onclick={() => alert('Fitur ini belum tersedia.')}
+				onclick={() => {
+					toastMessage = 'Fitur ini belum tersedia. Kami sedang mengembangkan fitur ini.';
+					toastType = 'info';
+				}}
 			>
 				Hapus Akun
 			</button>

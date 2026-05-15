@@ -1,9 +1,31 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { browser } from '$app/environment';
 
 	let { data } = $props();
 	let autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
+
+	// Check if Pro is active
+	const isProActive = () => {
+		if (data.stats.plan !== 'pro' || !data.stats.planExpiresAt) return false;
+		return new Date(data.stats.planExpiresAt) > new Date();
+	};
+
+	// Check if Pro is expired
+	const isProExpired = () => {
+		return data.stats.plan === 'pro' && !isProActive();
+	};
+
+	// Force refresh data on mount to get latest from database
+	onMount(() => {
+		if (browser) {
+			console.log('[Dashboard] Refreshing data on mount...');
+			invalidateAll().then(() => {
+				console.log('[Dashboard] Data refreshed');
+			});
+		}
+	});
 
 	// Auto-refresh stats every 10 seconds
 	const startAutoRefresh = () => {
@@ -34,6 +56,47 @@
 </svelte:head>
 
 <div class="space-y-6">
+	<!-- Pro Expired Warning Banner -->
+	{#if isProExpired()}
+		<div class="glass-panel rounded-3xl border-2 border-amber-500/30 bg-amber-500/10 p-6">
+			<div class="flex items-start gap-4">
+				<div class="text-3xl">⚠️</div>
+				<div class="flex-1">
+					<h3 class="font-display text-lg font-semibold text-amber-400">
+						Langganan Pro Anda Telah Berakhir
+					</h3>
+					<p class="mt-2 text-sm text-white/80">Akun Anda saat ini memiliki pembatasan:</p>
+					<ul class="mt-3 space-y-2 text-sm text-white/70">
+						<li class="flex items-center gap-2">
+							<span class="text-red-400">✗</span>
+							<span>Tidak dapat membuat microsite baru</span>
+						</li>
+						<li class="flex items-center gap-2">
+							<span class="text-amber-400">⚠</span>
+							<span>Maksimal 5 shortlink aktif (link tidak aktif tidak dihitung)</span>
+						</li>
+						<li class="flex items-center gap-2">
+							<span class="text-red-400">✗</span>
+							<span>Tidak dapat menggunakan custom slug</span>
+						</li>
+						<li class="flex items-center gap-2">
+							<span class="text-amber-400">⚠</span>
+							<span
+								>Link tidak aktif akan otomatis dihapus setelah 7 hari tidak perpanjang langganan</span
+							>
+						</li>
+					</ul>
+					<a
+						href="/dashboard/billing"
+						class="mt-4 inline-block rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/40"
+					>
+						🔄 Perpanjang Langganan Sekarang
+					</a>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Live Indicator -->
 	<div class="flex items-center justify-between">
 		<div>

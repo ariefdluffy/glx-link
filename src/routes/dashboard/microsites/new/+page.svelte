@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import MicrositePreview from '$lib/components/MicrositePreview.svelte';
 	import Toast from '$lib/components/toast/Toast.svelte';
 	import StepIndicator from '$lib/components/microsite-form/StepIndicator.svelte';
@@ -10,7 +12,18 @@
 	import Step3_Links from '$lib/components/microsite-form/Step3_Links.svelte';
 	import Step4_Review from '$lib/components/microsite-form/Step4_Review.svelte';
 
-	const plan = $page.data.plan;
+	let plan = $derived($page.data.plan);
+	let isProActive = $derived($page.data.isProActive);
+
+	// Force refresh data on mount to get latest from database
+	onMount(() => {
+		if (browser) {
+			console.log('[Microsites New] Refreshing data on mount...');
+			invalidateAll().then(() => {
+				console.log('[Microsites New] Data refreshed, plan:', plan, 'isProActive:', isProActive);
+			});
+		}
+	});
 
 	// Multi-step state
 	let currentStep = $state(1);
@@ -399,6 +412,38 @@
 			<h1 class="font-display text-2xl font-semibold">Buat Microsite Baru</h1>
 			<p class="text-sm text-white/60">Ikuti langkah-langkah untuk membuat microsite Anda.</p>
 		</div>
+
+		<!-- Pro Expired Warning -->
+		{#if !isProActive}
+			<div class="glass-panel mb-6 rounded-3xl border-2 border-red-500/30 bg-red-500/10 p-6">
+				<div class="flex items-start gap-4">
+					<div class="text-3xl">🚫</div>
+					<div class="flex-1">
+						<h3 class="font-display text-lg font-semibold text-red-400">
+							Langganan Pro Anda Telah Berakhir
+						</h3>
+						<p class="mt-2 text-sm text-white/80">
+							Anda tidak dapat membuat microsite baru karena langganan Pro Anda telah berakhir.
+							Perpanjang langganan untuk mengaktifkan kembali fitur ini.
+						</p>
+						<div class="mt-4 flex gap-3">
+							<a
+								href="/dashboard/billing"
+								class="rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/40"
+							>
+								🔄 Perpanjang Langganan
+							</a>
+							<a
+								href="/dashboard/microsites"
+								class="rounded-full border border-white/20 px-6 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/5"
+							>
+								← Kembali
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Step Indicator -->
 		<div class="mb-8 py-2">

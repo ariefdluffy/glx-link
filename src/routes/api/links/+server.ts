@@ -3,6 +3,7 @@ import { desc, eq, and, gte } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { shortLinks, users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
+import { isProActive } from '$lib/auth/plan';
 
 const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
 const attemptsPerLength = 10;
@@ -94,41 +95,47 @@ export const POST = async ({ request, cookies }) => {
 		return json({ message: 'Slug custom hanya untuk pengguna terdaftar.' }, { status: 403 });
 	}
 
-	// Check limit for Free users
+	// Check limit for Free users and Pro expired users
 	if (userId) {
 		const [user] = await db
-			.select({ plan: users.plan })
+			.select({ plan: users.plan, planExpiresAt: users.planExpiresAt })
 			.from(users)
 			.where(eq(users.id, userId))
 			.limit(1);
 
-		if (user && user.plan === 'free') {
-			const existingLinks = await db
-				.select({ id: shortLinks.id })
-				.from(shortLinks)
-				.where(eq(shortLinks.userId, userId));
+		if (user) {
+			const isProActiveUser = isProActive(user.plan, user.planExpiresAt);
 
-			if (existingLinks.length >= 5) {
-				return json(
-					{
-						message:
-							'Batas 5 shortlink untuk akun Free telah tercapai. Upgrade ke Pro untuk unlimited.'
-					},
-					{ status: 403 }
-				);
+			// Free users or Pro expired users: limit to 5 active links
+			if (user.plan === 'free' || (user.plan === 'pro' && !isProActiveUser)) {
+				const existingLinks = await db
+					.select({ id: shortLinks.id })
+					.from(shortLinks)
+					.where(and(eq(shortLinks.userId, userId), eq(shortLinks.isActive, true)));
+
+				if (existingLinks.length >= 5) {
+					const message =
+						user.plan === 'pro' && !isProActiveUser
+							? 'Batas 5 shortlink aktif telah tercapai. Perpanjang langganan untuk mengaktifkan lebih banyak.'
+							: 'Batas 5 shortlink untuk akun Free telah tercapai. Upgrade ke Pro untuk unlimited.';
+					return json({ message }, { status: 403 });
+				}
 			}
 		}
 	}
 
 	if (userId && requestedSlug) {
 		const [userForCustom] = await db
-			.select({ plan: users.plan })
+			.select({ plan: users.plan, planExpiresAt: users.planExpiresAt })
 			.from(users)
 			.where(eq(users.id, userId))
 			.limit(1);
 
-		if (!userForCustom || userForCustom.plan !== 'pro') {
-			return json({ message: 'Upgrade ke Pro untuk menggunakan custom slug.' }, { status: 403 });
+		if (!userForCustom || !isProActive(userForCustom.plan, userForCustom.planExpiresAt)) {
+			return json(
+				{ message: 'Upgrade ke Pro atau perpanjang langganan untuk menggunakan custom slug.' },
+				{ status: 403 }
+			);
 		}
 
 		const thisMonth = new Date();

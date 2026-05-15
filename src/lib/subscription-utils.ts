@@ -1,5 +1,5 @@
 import { db } from '$lib/db';
-import { subscriptions, users } from '$lib/db/schema';
+import { subscriptions, users, auditLogs } from '$lib/db/schema';
 import { eq, and, lte, gte } from 'drizzle-orm';
 
 /**
@@ -9,11 +9,37 @@ import { eq, and, lte, gte } from 'drizzle-orm';
 export async function updateExpiredSubscriptions() {
 	const now = new Date();
 
+	// Find subscriptions that have expired
+	const expiredSubs = await db
+		.select({
+			id: subscriptions.id,
+			userId: subscriptions.userId,
+			plan: subscriptions.plan,
+			expiresAt: subscriptions.expiresAt
+		})
+		.from(subscriptions)
+		.where(and(eq(subscriptions.status, 'active'), lte(subscriptions.expiresAt, now)));
+
 	// Update subscriptions that have expired
 	const result = await db
 		.update(subscriptions)
 		.set({ status: 'expired' })
 		.where(and(eq(subscriptions.status, 'active'), lte(subscriptions.expiresAt, now)));
+
+	// Create audit logs for each expired subscription
+	for (const sub of expiredSubs) {
+		try {
+			await db.insert(auditLogs).values({
+				userId: sub.userId,
+				action: 'SUBSCRIPTION_EXPIRED',
+				description: `Subscription #${sub.id} (${sub.plan}) expired at ${sub.expiresAt?.toISOString()}`,
+				ip: null,
+				userAgent: 'system-cron'
+			});
+		} catch (error) {
+			console.error(`Failed to create audit log for expired subscription #${sub.id}:`, error);
+		}
+	}
 
 	return result;
 }
@@ -66,7 +92,7 @@ export async function createSubscription(data: {
 	price: number;
 	durationDays: number;
 	paymentRef?: string;
-	paymentMethod?: 'bank_transfer' | 'midtrans' | 'manual';
+	paymentMethod?: 'bank_transfer' | 'xendit' | 'mayar' | 'manual';
 	autoRenew?: boolean;
 	notes?: string;
 }) {
@@ -128,6 +154,22 @@ export async function cancelSubscription(subscriptionId: number, userId: number)
 		})
 		.where(eq(subscriptions.id, subscriptionId));
 
+	// Create audit log for cancellation
+	try {
+		await db.insert(auditLogs).values({
+			userId,
+			action: 'SUBSCRIPTION_CANCELLED',
+			description: `Subscription #${subscriptionId} (${sub.plan}) cancelled by user`,
+			ip: null,
+			userAgent: 'user-action'
+		});
+	} catch (error) {
+		console.error(
+			`Failed to create audit log for cancelled subscription #${subscriptionId}:`,
+			error
+		);
+	}
+
 	return true;
 }
 
@@ -163,10 +205,7 @@ export async function renewSubscription(subscriptionId: number) {
  * Get subscription statistics for a user
  */
 export async function getSubscriptionStats(userId: number) {
-	const allSubs = await db
-		.select()
-		.from(subscriptions)
-		.where(eq(subscriptions.userId, userId));
+	const allSubs = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId));
 
 	const totalSpent = allSubs.reduce((sum, sub) => sum + (sub.price ?? 0), 0);
 	const activeCount = allSubs.filter((sub) => sub.status === 'active').length;

@@ -1,8 +1,9 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/db';
-import { users, subscriptions, auditLogs } from '$lib/db/schema';
+import { users, subscriptions, auditLogs, promoCodes } from '$lib/db/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
+import { createInvoice } from '$lib/mayar';
 import type { Actions } from './$types';
 
 export const load = async ({ cookies, url }) => {
@@ -287,5 +288,165 @@ export const actions: Actions = {
 			success: true,
 			message: autoRenew ? 'Auto-renew diaktifkan' : 'Auto-renew dinonaktifkan'
 		};
+	},
+
+	// Create Xendit payment
+	createPayment: async ({ cookies, request }) => {
+		const userId = getSessionUserId(cookies);
+		if (!userId) throw redirect(302, '/login');
+
+		const formData = await request.formData();
+		const plan = formData.get('plan') as string;
+		const durationDays = parseInt(formData.get('durationDays') as string) || 30;
+		const promoCode = formData.get('promoCode') as string;
+
+		if (!plan || plan !== 'pro') {
+			return fail(400, { error: 'Plan tidak valid' });
+		}
+
+		// Get user info
+		const [user] = await db
+			.select({ id: users.id, name: users.name, email: users.email })
+			.from(users)
+			.where(eq(users.id, userId))
+			.limit(1);
+
+		if (!user) {
+			return fail(404, { error: 'User tidak ditemukan' });
+		}
+
+		// Calculate price (Rp 29,000 per month)
+		const pricePerMonth = 29000;
+		let price = Math.round((pricePerMonth / 30) * durationDays);
+		let discount = 0;
+
+		// Apply promo code if provided
+		if (promoCode && promoCode.trim()) {
+			const [promo] = await db
+				.select()
+				.from(promoCodes)
+				.where(and(eq(promoCodes.code, promoCode.toUpperCase()), eq(promoCodes.isActive, true)))
+				.limit(1);
+
+			if (promo) {
+				// Check if expired
+				if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+					console.log(`[Xendit] Promo code expired: ${promoCode}`);
+				} else if (promo.maxUses && promo.usedCount && promo.usedCount >= promo.maxUses) {
+					// Check if max uses reached
+					console.log(`[Xendit] Promo code max uses reached: ${promoCode}`);
+				} else {
+					// Apply discount
+					if (promo.discountType === 'percent') {
+						discount = Math.round(price * (promo.discountValue / 100));
+					} else {
+						discount = promo.discountValue;
+					}
+					price = Math.max(0, price - discount);
+					console.log(`[Xendit] Promo code applied: ${promoCode}, discount: ${discount}`);
+
+					// Increment used count
+					await db
+						.update(promoCodes)
+						.set({ usedCount: (promo.usedCount ?? 0) + 1 })
+						.where(eq(promoCodes.id, promo.id));
+				}
+			} else {
+				console.log(`[Xendit] Invalid promo code: ${promoCode}`);
+			}
+		}
+
+		// Create pending subscription
+		const expiresAt = new Date();
+		expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+		const [subscription] = await db
+			.insert(subscriptions)
+			.values({
+				userId,
+				plan: 'pro',
+				price,
+				expiresAt,
+				paymentMethod: 'mayar',
+				status: 'pending', // Changed from 'active' to 'pending'
+				autoRenew: false,
+				notes: `Pending payment via Mayar - ${durationDays} days`
+			})
+			.$returningId();
+
+		// Create Mayar invoice
+		try {
+			const externalId = `sub_${subscription.id}_${userId}_${Date.now()}`;
+
+			console.log('[Mayar] Creating invoice:', {
+				externalId,
+				amount: price,
+				description: `GLX.my.id Pro - ${durationDays} hari`,
+				payerEmail: user.email ?? undefined
+			});
+
+			const invoice = await createInvoice({
+				externalId,
+				amount: price,
+				description: `GLX.my.id Pro - ${durationDays} hari`,
+				payerEmail: user.email ?? undefined,
+				payerName: user.name ?? undefined,
+				payerMobile: undefined,
+				metadata: {
+					subscription_id: subscription.id,
+					user_id: userId,
+					plan,
+					duration_days: durationDays
+				}
+			});
+
+			console.log('[Mayar] Invoice created:', invoice.data.id, invoice.data.link);
+
+			// Update subscription with payment ref
+			await db
+				.update(subscriptions)
+				.set({
+					paymentRef: invoice.data.id,
+					notes: `Mayar Invoice: ${invoice.data.id}`
+				})
+				.where(eq(subscriptions.id, subscription.id));
+
+			// Audit log
+			await db.insert(auditLogs).values({
+				userId,
+				action: 'PAYMENT_CREATED',
+				description: `Created Mayar invoice for subscription #${subscription.id}. Amount: ${price}`,
+				ip: 'self',
+				userAgent: 'self'
+			});
+
+			// Return invoice URL for redirect
+			return {
+				success: true,
+				invoiceUrl: invoice.data.link,
+				invoiceId: invoice.data.id,
+				amount: price,
+				discount: discount > 0 ? discount : undefined,
+				promoCode: discount > 0 ? promoCode : undefined
+			};
+		} catch (error) {
+			console.error('[Mayar] Failed to create invoice:', error);
+
+			// Provide more detailed error message
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+
+			console.error('[Mayar] Error details:', errorMessage);
+
+			// Delete the pending subscription
+			try {
+				await db.delete(subscriptions).where(eq(subscriptions.id, subscription.id));
+			} catch (deleteError) {
+				console.error('[Mayar] Failed to delete subscription:', deleteError);
+			}
+
+			return fail(500, {
+				error: `Gagal membuat invoice: ${errorMessage}`
+			});
+		}
 	}
 };

@@ -9,7 +9,12 @@ export const load = async ({ cookies }) => {
 	if (!userId) throw redirect(302, '/login');
 
 	const [userDb] = await db
-		.select({ plan: users.plan, name: users.name, email: users.email })
+		.select({
+			plan: users.plan,
+			planExpiresAt: users.planExpiresAt,
+			name: users.name,
+			email: users.email
+		})
 		.from(users)
 		.where(eq(users.id, userId))
 		.limit(1);
@@ -91,6 +96,7 @@ export const load = async ({ cookies }) => {
 			totalMicrositeClicks,
 			micrositeLimit,
 			plan,
+			planExpiresAt: userDb?.planExpiresAt ?? null,
 			userName: userDb?.name ?? 'User',
 			userEmail: userDb?.email ?? ''
 		},

@@ -49,6 +49,11 @@
 			subscription_cancelled: 'Batalkan Langganan',
 			auto_renew_toggled: 'Auto-Renew',
 			payment_received: 'Pembayaran Diterima',
+			PAYMENT_CREATED: 'Pembayaran Dibuat (Pending)',
+			PAYMENT_SUCCESS: 'Pembayaran Berhasil',
+			PAYMENT_FAILED: 'Pembayaran Gagal',
+			SUBSCRIPTION_EXPIRED: 'Langganan Kadaluarsa',
+			SUBSCRIPTION_CANCELLED: 'Langganan Dibatalkan',
 			password_changed: 'Ganti Password',
 			password_reset_requested: 'Minta Reset Password',
 			password_reset_completed: 'Reset Password Berhasil',
@@ -137,6 +142,36 @@
 				border: 'border-emerald-500/30',
 				icon: 'credit-card'
 			},
+			PAYMENT_CREATED: {
+				color: 'text-blue-400',
+				bg: 'bg-blue-500/10',
+				border: 'border-blue-500/30',
+				icon: 'credit-card'
+			},
+			PAYMENT_SUCCESS: {
+				color: 'text-emerald-400',
+				bg: 'bg-emerald-500/10',
+				border: 'border-emerald-500/30',
+				icon: 'credit-card'
+			},
+			PAYMENT_FAILED: {
+				color: 'text-red-400',
+				bg: 'bg-red-500/10',
+				border: 'border-red-500/30',
+				icon: 'credit-card'
+			},
+			SUBSCRIPTION_EXPIRED: {
+				color: 'text-orange-400',
+				bg: 'bg-orange-500/10',
+				border: 'border-orange-500/30',
+				icon: 'credit-card'
+			},
+			SUBSCRIPTION_CANCELLED: {
+				color: 'text-red-400',
+				bg: 'bg-red-500/10',
+				border: 'border-red-500/30',
+				icon: 'credit-card'
+			},
 			password_changed: {
 				color: 'text-amber-400',
 				bg: 'bg-amber-500/10',
@@ -220,9 +255,27 @@
 
 <div class="mx-auto w-full space-y-6 px-1 pb-16">
 	<!-- Header -->
-	<div class="py-6">
-		<h1 class="font-display text-2xl font-semibold">Monitoring & Audit Logs</h1>
-		<p class="text-sm text-white/60">Pantau aktivitas sistem dan audit trail pengguna.</p>
+	<div class="flex items-center justify-between py-6">
+		<div>
+			<h1 class="font-display text-2xl font-semibold">Monitoring & Audit Logs</h1>
+			<p class="text-sm text-white/60">Pantau aktivitas sistem dan audit trail pengguna.</p>
+		</div>
+		<a
+			href="/dashboard/admin"
+			class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm transition hover:border-white/30 hover:bg-white/10"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+			</svg>
+			Kembali
+		</a>
 	</div>
 
 	<!-- Stats Cards -->
