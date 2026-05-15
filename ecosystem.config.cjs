@@ -2,7 +2,7 @@ module.exports = {
 	apps: [
 		{
 			name: 'glx-link',
-			script: 'build/index.js',
+			script: 'node -r dotenv/config build/index.js',
 			instances: '1', // Gunakan semua CPU cores yang tersedia
 			exec_mode: 'fork',
 			env: {

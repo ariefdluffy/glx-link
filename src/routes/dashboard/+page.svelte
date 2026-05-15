@@ -52,7 +52,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard GLX</title>
+	<title>Dashboard GLX ShortLink</title>
 </svelte:head>
 
 <div class="space-y-6">
