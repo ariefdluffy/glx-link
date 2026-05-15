@@ -21,17 +21,17 @@ export const load = async ({ cookies }) => {
 	}
 
 	// Get all promo codes
-	const codes = await db
-		.select()
-		.from(promoCodes)
-		.orderBy(desc(promoCodes.createdAt));
+	const codes = await db.select().from(promoCodes).orderBy(desc(promoCodes.createdAt));
 
 	return {
 		promoCodes: codes.map((code) => ({
 			id: code.id,
 			code: code.code,
+			type: code.type,
 			discountType: code.discountType,
 			discountValue: code.discountValue,
+			grantDays: code.grantDays,
+			grantPlan: code.grantPlan,
 			maxUses: code.maxUses,
 			usedCount: code.usedCount ?? 0,
 			isActive: code.isActive ?? true,
@@ -61,35 +61,72 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const code = (formData.get('code') as string)?.toUpperCase().trim();
-		const discountType = formData.get('discountType') as 'percent' | 'fixed';
-		const discountValue = parseInt(formData.get('discountValue') as string);
+		const type = formData.get('type') as 'discount' | 'grant';
 		const maxUses = formData.get('maxUses') as string;
 		const expiresAt = formData.get('expiresAt') as string;
 		const description = formData.get('description') as string;
 
-		if (!code || !discountType || !discountValue) {
-			return fail(400, { error: 'Semua field wajib diisi' });
+		if (!code || !type) {
+			return fail(400, { error: 'Kode dan tipe promo wajib diisi' });
 		}
 
-		if (discountType === 'percent' && (discountValue < 1 || discountValue > 100)) {
-			return fail(400, { error: 'Diskon persentase harus antara 1-100' });
+		if (type === 'discount') {
+			const discountType = formData.get('discountType') as 'percent' | 'fixed';
+			const discountValue = parseInt(formData.get('discountValue') as string);
+
+			if (!discountType || !discountValue) {
+				return fail(400, { error: 'Tipe dan nilai diskon wajib diisi' });
+			}
+
+			if (discountType === 'percent' && (discountValue < 1 || discountValue > 100)) {
+				return fail(400, { error: 'Diskon persentase harus antara 1-100' });
+			}
+
+			try {
+				await db.insert(promoCodes).values({
+					code,
+					type: 'discount',
+					discountType,
+					discountValue,
+					maxUses: maxUses ? parseInt(maxUses) : null,
+					expiresAt: expiresAt ? new Date(expiresAt) : null,
+					description: description || null
+				});
+
+				return { success: true, message: 'Kode promo diskon berhasil dibuat' };
+			} catch (error) {
+				console.error('Failed to create promo code:', error);
+				return fail(500, { error: 'Gagal membuat kode promo. Kode mungkin sudah ada.' });
+			}
 		}
 
-		try {
-			await db.insert(promoCodes).values({
-				code,
-				discountType,
-				discountValue,
-				maxUses: maxUses ? parseInt(maxUses) : null,
-				expiresAt: expiresAt ? new Date(expiresAt) : null,
-				description: description || null
-			});
+		if (type === 'grant') {
+			const grantDays = parseInt(formData.get('grantDays') as string);
+			const grantPlan = (formData.get('grantPlan') as string) || 'pro';
 
-			return { success: true, message: 'Kode promo berhasil dibuat' };
-		} catch (error) {
-			console.error('Failed to create promo code:', error);
-			return fail(500, { error: 'Gagal membuat kode promo. Kode mungkin sudah ada.' });
+			if (!grantDays || grantDays < 1) {
+				return fail(400, { error: 'Durasi grant minimal 1 hari' });
+			}
+
+			try {
+				await db.insert(promoCodes).values({
+					code,
+					type: 'grant',
+					grantDays,
+					grantPlan,
+					maxUses: maxUses ? parseInt(maxUses) : null,
+					expiresAt: expiresAt ? new Date(expiresAt) : null,
+					description: description || null
+				});
+
+				return { success: true, message: `Kode promo grant ${grantDays} hari berhasil dibuat` };
+			} catch (error) {
+				console.error('Failed to create promo code:', error);
+				return fail(500, { error: 'Gagal membuat kode promo. Kode mungkin sudah ada.' });
+			}
 		}
+
+		return fail(400, { error: 'Tipe promo tidak valid' });
 	},
 
 	// Toggle active status

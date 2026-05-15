@@ -128,8 +128,11 @@ export const passwordResetTokens = mysqlTable('password_reset_tokens', {
 export const promoCodes = mysqlTable('promo_codes', {
 	id: int('id').autoincrement().primaryKey(),
 	code: varchar('code', { length: 50 }).notNull().unique(),
-	discountType: mysqlEnum('discount_type', ['percent', 'fixed']).notNull(),
-	discountValue: int('discount_value').notNull(),
+	type: mysqlEnum('type', ['discount', 'grant']).notNull().default('discount'),
+	discountType: mysqlEnum('discount_type', ['percent', 'fixed']),
+	discountValue: int('discount_value'),
+	grantDays: int('grant_days'),
+	grantPlan: varchar('grant_plan', { length: 20 }).default('pro'),
 	maxUses: int('max_uses'),
 	usedCount: int('used_count').default(0),
 	isActive: boolean('is_active').default(true),

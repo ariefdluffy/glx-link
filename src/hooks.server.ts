@@ -78,7 +78,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (!url.pathname.startsWith('/_sveltekit') && !url.pathname.startsWith('/health')) {
 		// Get client IP
 		const headers = event.request.headers;
-		let clientIp =
+		const clientIp =
 			headers.get('cf-connecting-ip') ??
 			headers.get('x-real-ip') ??
 			headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??

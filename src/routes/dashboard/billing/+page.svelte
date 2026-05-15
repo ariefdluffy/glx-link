@@ -486,7 +486,40 @@
 					: 'Pilih metode pembayaran untuk aktivasi akun Pro.'}
 			</p>
 
-			<!-- Payment Method Cards -->
+			<!-- Grant Promo Code Section -->
+			<div class="mt-6 rounded-2xl border border-dashed border-violet-500/30 bg-violet-500/5 p-4">
+				<div class="flex items-center gap-2">
+					<span class="text-xl">🎫</span>
+					<div>
+						<div class="text-sm font-semibold text-white">Punya kode promo gratis?</div>
+						<div class="text-xs text-white/50">Masukkan kode untuk aktivasi Pro langsung</div>
+					</div>
+				</div>
+				<form method="POST" action="?/redeemGrant" use:enhance class="mt-3 flex gap-2">
+					<input
+						type="text"
+						name="promoCode"
+						required
+						placeholder="GRATIS7HARI"
+						class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 transition outline-none focus:border-violet-500/50 focus:bg-white/10"
+					/>
+					<button
+						type="submit"
+						class="rounded-xl bg-gradient-to-r from-violet-500 to-cyan-400 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
+					>
+						Aktifkan
+					</button>
+				</form>
+			</div>
+
+			<div class="relative my-6">
+				<div class="absolute inset-0 flex items-center">
+					<div class="w-full border-t border-white/10"></div>
+				</div>
+				<div class="relative flex justify-center text-xs">
+					<span class="bg-[#0f0f1a] px-3 text-white/40">atau bayar via</span>
+				</div>
+			</div>
 			<div class="mt-6 grid gap-4 md:grid-cols-2">
 				<!-- Transfer Bank / WhatsApp -->
 				<a

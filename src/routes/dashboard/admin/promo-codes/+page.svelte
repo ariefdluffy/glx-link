@@ -4,8 +4,11 @@
 	type PromoCode = {
 		id: number;
 		code: string;
-		discountType: 'percent' | 'fixed';
-		discountValue: number;
+		type: 'discount' | 'grant';
+		discountType: 'percent' | 'fixed' | null;
+		discountValue: number | null;
+		grantDays: number | null;
+		grantPlan: string | null;
 		maxUses: number | null;
 		usedCount: number;
 		isActive: boolean;
@@ -35,7 +38,8 @@
 		});
 	};
 
-	const formatDiscount = (type: string, value: number) => {
+	const formatDiscount = (type: string, value: number | null) => {
+		if (!value) return '-';
 		if (type === 'percent') {
 			return `${value}%`;
 		}
@@ -129,11 +133,19 @@
 								</div>
 
 								<div class="mt-2 space-y-1 text-sm text-white/60">
-									<div>
-										Diskon: <span class="text-white"
-											>{formatDiscount(promo.discountType, promo.discountValue)}</span
-										>
-									</div>
+									{#if promo.type === 'discount'}
+										<div>
+											Diskon: <span class="text-white"
+												>{formatDiscount(promo.discountType!, promo.discountValue)}</span
+											>
+										</div>
+									{:else if promo.type === 'grant'}
+										<div>
+											Grant: <span class="text-white"
+												>{promo.grantDays} hari {promo.grantPlan?.toUpperCase()}</span
+											>
+										</div>
+									{/if}
 									{#if promo.description}
 										<div class="text-xs text-white/40">{promo.description}</div>
 									{/if}
@@ -233,37 +245,90 @@
 						/>
 					</div>
 
-					<!-- Discount Type -->
+					<!-- Type -->
 					<div>
-						<label for="discountType" class="mb-2 block text-sm font-medium text-white/80">
-							Tipe Diskon <span class="text-red-400">*</span>
+						<label for="type" class="mb-2 block text-sm font-medium text-white/80">
+							Tipe Promo <span class="text-red-400">*</span>
 						</label>
 						<select
-							id="discountType"
-							name="discountType"
+							id="type"
+							name="type"
 							required
 							class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-blue-500/50 focus:bg-white/10"
 						>
-							<option value="percent">Persentase (%)</option>
-							<option value="fixed">Nominal (Rp)</option>
+							<option value="discount">Diskon</option>
+							<option value="grant">Grant (Gratis)</option>
 						</select>
 					</div>
 
-					<!-- Discount Value -->
-					<div>
-						<label for="discountValue" class="mb-2 block text-sm font-medium text-white/80">
-							Nilai Diskon <span class="text-red-400">*</span>
-						</label>
-						<input
-							type="number"
-							id="discountValue"
-							name="discountValue"
-							required
-							min="1"
-							placeholder="20"
-							class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-blue-500/50 focus:bg-white/10"
-						/>
+					<!-- Discount Fields -->
+					<div id="discount-fields" class="space-y-4">
+						<div>
+							<label for="discountType" class="mb-2 block text-sm font-medium text-white/80">
+								Tipe Diskon <span class="text-red-400">*</span>
+							</label>
+							<select
+								id="discountType"
+								name="discountType"
+								class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-blue-500/50 focus:bg-white/10"
+							>
+								<option value="percent">Persentase (%)</option>
+								<option value="fixed">Nominal (Rp)</option>
+							</select>
+						</div>
+
+						<div>
+							<label for="discountValue" class="mb-2 block text-sm font-medium text-white/80">
+								Nilai Diskon <span class="text-red-400">*</span>
+							</label>
+							<input
+								type="number"
+								id="discountValue"
+								name="discountValue"
+								min="1"
+								placeholder="20"
+								class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-blue-500/50 focus:bg-white/10"
+							/>
+						</div>
 					</div>
+
+					<!-- Grant Fields -->
+					<div id="grant-fields" class="hidden space-y-4">
+						<div>
+							<label for="grantDays" class="mb-2 block text-sm font-medium text-white/80">
+								Durasi (hari) <span class="text-red-400">*</span>
+							</label>
+							<input
+								type="number"
+								id="grantDays"
+								name="grantDays"
+								required
+								min="1"
+								placeholder="7"
+								class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-blue-500/50 focus:bg-white/10"
+							/>
+						</div>
+						<input type="hidden" name="grantPlan" value="pro" />
+					</div>
+
+					<script>
+						let typeSelect = document.getElementById('type');
+						let discountFields = document.getElementById('discount-fields');
+						let grantFields = document.getElementById('grant-fields');
+						if (typeSelect && discountFields && grantFields) {
+							const toggleFields = () => {
+								if (typeSelect.value === 'grant') {
+									discountFields.classList.add('hidden');
+									grantFields.classList.remove('hidden');
+								} else {
+									discountFields.classList.remove('hidden');
+									grantFields.classList.add('hidden');
+								}
+							};
+							typeSelect.addEventListener('change', toggleFields);
+							toggleFields();
+						}
+					</script>
 
 					<!-- Max Uses -->
 					<div>

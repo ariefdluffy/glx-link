@@ -338,9 +338,9 @@ export const actions: Actions = {
 				} else {
 					// Apply discount
 					if (promo.discountType === 'percent') {
-						discount = Math.round(price * (promo.discountValue / 100));
+						discount = Math.round(price * ((promo.discountValue ?? 0) / 100));
 					} else {
-						discount = promo.discountValue;
+						discount = promo.discountValue ?? 0;
 					}
 					price = Math.max(0, price - discount);
 					console.log(`[Xendit] Promo code applied: ${promoCode}, discount: ${discount}`);
@@ -447,6 +447,123 @@ export const actions: Actions = {
 			return fail(500, {
 				error: `Gagal membuat invoice: ${errorMessage}`
 			});
+		}
+	},
+
+	// Redeem grant promo code (free plan activation)
+	redeemGrant: async ({ cookies, request }) => {
+		const userId = getSessionUserId(cookies);
+		if (!userId) throw redirect(302, '/login');
+
+		const formData = await request.formData();
+		const promoCode = (formData.get('promoCode') as string)?.toUpperCase().trim();
+
+		if (!promoCode) {
+			return fail(400, { error: 'Kode promo wajib diisi' });
+		}
+
+		// Cari promo code grant aktif
+		const [promo] = await db
+			.select()
+			.from(promoCodes)
+			.where(
+				and(
+					eq(promoCodes.code, promoCode),
+					eq(promoCodes.isActive, true),
+					eq(promoCodes.type, 'grant')
+				)
+			)
+			.limit(1);
+
+		if (!promo) {
+			return fail(400, { error: 'Kode promo tidak valid atau sudah tidak aktif' });
+		}
+
+		// Cek expired
+		if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+			return fail(400, { error: 'Kode promo sudah kadaluarsa' });
+		}
+
+		// Cek max uses
+		if (promo.maxUses && promo.usedCount && promo.usedCount >= promo.maxUses) {
+			return fail(400, { error: 'Kuota kode promo sudah habis' });
+		}
+
+		// Ambil data user
+		const [user] = await db
+			.select({ plan: users.plan, planExpiresAt: users.planExpiresAt })
+			.from(users)
+			.where(eq(users.id, userId))
+			.limit(1);
+
+		if (!user) {
+			return fail(404, { error: 'User tidak ditemukan' });
+		}
+
+		// Hitung expired date baru
+		const now = new Date();
+		let newExpiresAt: Date;
+
+		if (user.plan === 'pro' && user.planExpiresAt && new Date(user.planExpiresAt) > now) {
+			// User udah Pro aktif → EXTEND
+			newExpiresAt = new Date(user.planExpiresAt);
+			newExpiresAt.setDate(newExpiresAt.getDate() + (promo.grantDays ?? 0));
+		} else {
+			// User Free / expired → MULAI dari sekarang
+			newExpiresAt = new Date(now);
+			newExpiresAt.setDate(newExpiresAt.getDate() + (promo.grantDays ?? 0));
+		}
+
+		try {
+			const grantPlan = 'pro' as const;
+
+			// Update user plan
+			await db
+				.update(users)
+				.set({
+					plan: grantPlan,
+					planExpiresAt: newExpiresAt
+				})
+				.where(eq(users.id, userId));
+
+			// Insert subscription record (free)
+			await db.insert(subscriptions).values({
+				userId,
+				plan: grantPlan,
+				price: 0,
+				startedAt: now,
+				expiresAt: newExpiresAt,
+				paymentMethod: 'manual',
+				status: 'active',
+				notes: `Grant via promo: ${promoCode} (${promo.grantDays} hari)`
+			});
+
+			// Increment used count
+			await db
+				.update(promoCodes)
+				.set({ usedCount: (promo.usedCount ?? 0) + 1 })
+				.where(eq(promoCodes.id, promo.id));
+
+			// Audit log
+			try {
+				await db.insert(auditLogs).values({
+					userId,
+					action: 'promo_grant_redeemed',
+					description: `Redeemed grant promo ${promoCode}: ${promo.grantDays} hari ${promo.grantPlan}`,
+					ip: 'self',
+					userAgent: 'self'
+				});
+			} catch (e) {
+				console.error('Failed to record audit log:', e);
+			}
+
+			return {
+				success: true,
+				message: `🎉 Selamat! Kamu mendapatkan ${promo.grantPlan?.toUpperCase()} selama ${promo.grantDays} hari!`
+			};
+		} catch (error) {
+			console.error('Failed to redeem grant promo:', error);
+			return fail(500, { error: 'Gagal mengaktifkan promo. Silakan coba lagi.' });
 		}
 	}
 };
