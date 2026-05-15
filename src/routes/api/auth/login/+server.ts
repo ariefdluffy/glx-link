@@ -5,6 +5,7 @@ import { users, auditLogs } from '$lib/db/schema';
 import { verifyPassword } from '$lib/auth/password';
 import { createSession } from '$lib/auth/session';
 import { env } from '$env/dynamic/private';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const verifyTurnstile = async (token: string, ip: string): Promise<boolean> => {
 	const secretKey = env.TURNSTILE_SECRET_KEY;
@@ -31,7 +32,7 @@ const verifyTurnstile = async (token: string, ip: string): Promise<boolean> => {
 };
 
 export const POST = async (event) => {
-	const { request, cookies, getClientAddress } = event;
+	const { request, cookies } = event;
 	const payload = await request.json().catch(() => null);
 	if (!payload) {
 		return json({ message: 'Data tidak valid.' }, { status: 400 });
@@ -51,7 +52,7 @@ export const POST = async (event) => {
 		return json({ message: 'Verifikasi Turnstile diperlukan.' }, { status: 400 });
 	}
 
-	const clientIp = getClientAddress();
+	const clientIp = getRealClientIP(event);
 	const isValidTurnstile = await verifyTurnstile(turnstileToken, clientIp);
 	if (!isValidTurnstile) {
 		return json({ message: 'Verifikasi Turnstile gagal.' }, { status: 400 });

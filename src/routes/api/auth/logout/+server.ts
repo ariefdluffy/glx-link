@@ -3,14 +3,16 @@ import { getSessionUserId } from '$lib/auth/session';
 import { clearSession } from '$lib/auth/session';
 import { db } from '$lib/db';
 import { auditLogs } from '$lib/db/schema';
+import { getRealClientIP } from '$lib/utils/ip';
 
-export const POST = async ({ cookies, request }) => {
+export const POST = async (event) => {
+	const { cookies, request } = event;
 	const userId = getSessionUserId(cookies);
 
 	// Audit log
 	if (userId) {
 		try {
-			const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+			const ip = getRealClientIP(event);
 			const userAgent = request.headers.get('user-agent') ?? 'unknown';
 			await db.insert(auditLogs).values({
 				userId,

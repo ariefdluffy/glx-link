@@ -7,6 +7,7 @@ import { createSession } from '$lib/auth/session';
 import { sendEmail, generateToken, getBaseUrl } from '$lib/email';
 import { verifyEmailHtml } from '$lib/email/templates/verify-email';
 import { env } from '$env/dynamic/private';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const isValidEmail = (value: string) => /.+@.+\..+/.test(value);
 const hasLetterAndNumber = (value: string) => /[a-zA-Z]/.test(value) && /\d/.test(value);
@@ -36,7 +37,7 @@ const verifyTurnstile = async (token: string, ip: string): Promise<boolean> => {
 };
 
 export const POST = async (event) => {
-	const { request, cookies, getClientAddress } = event;
+	const { request, cookies } = event;
 	const payload = await request.json().catch(() => null);
 	if (!payload) {
 		return json({ message: 'Data tidak valid.' }, { status: 400 });
@@ -53,7 +54,7 @@ export const POST = async (event) => {
 		return json({ message: 'Verifikasi Turnstile diperlukan.' }, { status: 400 });
 	}
 
-	const clientIp = getClientAddress();
+	const clientIp = getRealClientIP(event);
 	const isValidTurnstile = await verifyTurnstile(turnstileToken, clientIp);
 	if (!isValidTurnstile) {
 		return json({ message: 'Verifikasi Turnstile gagal.' }, { status: 400 });
@@ -101,7 +102,7 @@ export const POST = async (event) => {
 		// Audit log
 		try {
 			const userAgent = request.headers.get('user-agent') ?? 'unknown';
-			const clientIp = getClientAddress();
+			const clientIp = getRealClientIP(event);
 			await db.insert(auditLogs).values({
 				userId: created.id,
 				action: 'user_register',
