@@ -240,7 +240,7 @@
 									</button>
 								</form>
 								<a
-									href="/site/{ms.slug}"
+									href="/m/{ms.slug}"
 									target="_blank"
 									data-sveltekit-reload
 									class="rounded-xl border border-white/10 bg-white/5 p-2 transition-all hover:border-blue-500/50 hover:bg-blue-500/10"

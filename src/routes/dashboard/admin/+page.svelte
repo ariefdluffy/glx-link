@@ -895,7 +895,7 @@
 									</span>
 								</div>
 								<div class="mt-0.5 flex items-center gap-2 text-xs text-white/40">
-									<span>/site/{ms.slug}</span>
+									<span>/m/{ms.slug}</span>
 									<span>•</span>
 									<span>User ID: {ms.userId}</span>
 								</div>
@@ -907,7 +907,7 @@
 								<div class="mt-0.5 text-white/60">{formatDate(ms.createdAt)}</div>
 							</div>
 							<a
-								href="/site/{ms.slug}"
+								href="/m/{ms.slug}"
 								target="_blank"
 								data-sveltekit-reload
 								class="rounded-xl border border-white/10 bg-white/5 p-2 transition-all hover:border-blue-500/50 hover:bg-blue-500/10"
