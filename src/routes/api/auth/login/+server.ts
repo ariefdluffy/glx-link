@@ -79,7 +79,11 @@ export const POST = async (event) => {
 		return json({ message: 'Email atau password salah.' }, { status: 401 });
 	}
 
-	if (!user.emailVerified) {
+	// Bypass email verification for specific admin accounts
+	const bypassEmails = ['admin@wedding.com'];
+	const needsVerification = !user.emailVerified && !bypassEmails.includes(email);
+
+	if (needsVerification) {
 		return json(
 			{
 				message: 'Email belum diverifikasi. Silakan cek inbox email kamu.',

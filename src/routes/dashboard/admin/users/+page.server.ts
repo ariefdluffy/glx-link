@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/db';
-import { users } from '$lib/db/schema';
+import { users, auditLogs } from '$lib/db/schema';
 import { eq, count, desc, like, or } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 
@@ -21,29 +21,35 @@ export const load = async ({ cookies, url }) => {
 	const perPage = 20;
 	const search = url.searchParams.get('search') || '';
 
-	// Build query
-	let query = db.select().from(users);
-	let countQuery = db.select({ c: count() }).from(users);
-
-	// Apply search filter
-	if (search) {
-		const searchCondition = or(
-			like(users.name, `%${search}%`),
-			like(users.email, `%${search}%`)
-		);
-		query = query.where(searchCondition);
-		countQuery = countQuery.where(searchCondition);
-	}
-
 	// Get total count
-	const totalRows = await countQuery;
+	let totalRows;
+	if (search) {
+		const searchCondition = or(like(users.name, `%${search}%`), like(users.email, `%${search}%`));
+		totalRows = await db.select({ c: count() }).from(users).where(searchCondition);
+	} else {
+		totalRows = await db.select({ c: count() }).from(users);
+	}
 	const total = Number(totalRows[0]?.c ?? 0);
 
 	// Get paginated users
-	const allUsers = await query
-		.orderBy(desc(users.createdAt))
-		.limit(perPage)
-		.offset((page - 1) * perPage);
+	let allUsers;
+	if (search) {
+		const searchCondition = or(like(users.name, `%${search}%`), like(users.email, `%${search}%`));
+		allUsers = await db
+			.select()
+			.from(users)
+			.where(searchCondition)
+			.orderBy(desc(users.createdAt))
+			.limit(perPage)
+			.offset((page - 1) * perPage);
+	} else {
+		allUsers = await db
+			.select()
+			.from(users)
+			.orderBy(desc(users.createdAt))
+			.limit(perPage)
+			.offset((page - 1) * perPage);
+	}
 
 	return {
 		users: allUsers,
@@ -128,6 +134,55 @@ export const actions = {
 		}
 
 		await db.delete(users).where(eq(users.id, targetUserId));
+
+		return { success: true };
+	},
+
+	verifyEmail: async ({ request, cookies }) => {
+		const userId = getSessionUserId(cookies);
+		if (!userId) throw redirect(302, '/login');
+
+		const [user] = await db
+			.select({ role: users.role })
+			.from(users)
+			.where(eq(users.id, userId))
+			.limit(1);
+
+		if (!user || user.role !== 'admin') throw redirect(302, '/dashboard');
+
+		const formData = await request.formData();
+		const targetUserId = Number(formData.get('userId'));
+
+		if (!targetUserId) {
+			return { success: false, error: 'Invalid data' };
+		}
+
+		// Get target user info for audit log
+		const [targetUser] = await db
+			.select({ email: users.email, emailVerified: users.emailVerified })
+			.from(users)
+			.where(eq(users.id, targetUserId))
+			.limit(1);
+
+		if (!targetUser) {
+			return { success: false, error: 'User not found' };
+		}
+
+		// Update email verification status
+		await db.update(users).set({ emailVerified: true }).where(eq(users.id, targetUserId));
+
+		// Create audit log
+		try {
+			await db.insert(auditLogs).values({
+				userId: targetUserId,
+				action: 'EMAIL_VERIFIED_BY_ADMIN',
+				description: `Email ${targetUser.email} verified manually by admin (User ID: ${userId})`,
+				ip: null,
+				userAgent: 'admin-action'
+			});
+		} catch (e) {
+			console.error('Failed to record audit log:', e);
+		}
 
 		return { success: true };
 	}

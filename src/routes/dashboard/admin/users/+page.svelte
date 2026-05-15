@@ -162,6 +162,14 @@
 											Admin
 										</span>
 									{/if}
+									{#if !user.emailVerified}
+										<span
+											class="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400"
+											title="Email belum diverifikasi"
+										>
+											⚠
+										</span>
+									{/if}
 								</div>
 								<div class="mt-0.5 text-xs text-white/40">{user.email}</div>
 							</div>
@@ -300,7 +308,20 @@
 				role="document"
 			>
 				<h3 class="font-display text-xl font-semibold">Edit User</h3>
-				<p class="mt-1 text-sm text-white/60">{user.name} ({user.email})</p>
+				<div class="mt-1 flex items-center gap-2">
+					<p class="text-sm text-white/60">{user.name} ({user.email})</p>
+					{#if user.emailVerified}
+						<span
+							class="rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400"
+						>
+							✓ Verified
+						</span>
+					{:else}
+						<span class="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
+							⚠ Unverified
+						</span>
+					{/if}
+				</div>
 
 				<div class="mt-6 space-y-4">
 					<form
@@ -360,6 +381,93 @@
 							Update Plan
 						</button>
 					</form>
+
+					{#if !user.emailVerified}
+						<form
+							method="POST"
+							action="?/verifyEmail"
+							use:enhance={() => {
+								return async ({ result }) => {
+									if (result.type === 'success') {
+										editingUser = null;
+										goto(currentUrl.toString(), { invalidateAll: true });
+									}
+								};
+							}}
+						>
+							<input type="hidden" name="userId" value={user.id} />
+							<div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+								<div class="flex items-start gap-3">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-5 w-5 flex-shrink-0 text-amber-400"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+										/>
+									</svg>
+									<div class="flex-1">
+										<p class="text-sm font-medium text-amber-400">Email Belum Diverifikasi</p>
+										<p class="mt-1 text-xs text-amber-400/80">
+											User ini belum memverifikasi email mereka. Anda dapat memverifikasi secara
+											manual sebagai admin.
+										</p>
+									</div>
+								</div>
+								<button
+									type="submit"
+									class="mt-3 w-full rounded-xl bg-green-500/20 px-4 py-2.5 text-sm font-medium text-green-400 transition-all hover:bg-green-500/30"
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="inline h-4 w-4"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+									Verifikasi Email Sekarang
+								</button>
+							</div>
+						</form>
+					{:else}
+						<div class="rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+							<div class="flex items-center gap-3">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-5 w-5 text-green-400"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+									/>
+								</svg>
+								<div>
+									<p class="text-sm font-medium text-green-400">Email Sudah Diverifikasi</p>
+									<p class="mt-0.5 text-xs text-green-400/80">
+										User ini sudah memverifikasi email mereka.
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
 				</div>
 
 				<button

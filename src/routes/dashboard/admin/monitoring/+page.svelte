@@ -54,6 +54,7 @@
 			PAYMENT_FAILED: 'Pembayaran Gagal',
 			SUBSCRIPTION_EXPIRED: 'Langganan Kadaluarsa',
 			SUBSCRIPTION_CANCELLED: 'Langganan Dibatalkan',
+			EMAIL_VERIFIED_BY_ADMIN: 'Email Diverifikasi oleh Admin',
 			password_changed: 'Ganti Password',
 			password_reset_requested: 'Minta Reset Password',
 			password_reset_completed: 'Reset Password Berhasil',
@@ -171,6 +172,12 @@
 				bg: 'bg-red-500/10',
 				border: 'border-red-500/30',
 				icon: 'credit-card'
+			},
+			EMAIL_VERIFIED_BY_ADMIN: {
+				color: 'text-blue-400',
+				bg: 'bg-blue-500/10',
+				border: 'border-blue-500/30',
+				icon: 'user'
 			},
 			password_changed: {
 				color: 'text-amber-400',
