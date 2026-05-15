@@ -74,8 +74,8 @@ export const POST = async ({ cookies, request }) => {
 
 	if (lastToken?.createdAt) {
 		const elapsed = Date.now() - new Date(lastToken.createdAt).getTime();
-		const cooldownMs = 60 * 1000;
-		if (elapsed < cooldownMs) {
+		const cooldownMs = 120 * 1000;
+		if (elapsed < cooldownMs && elapsed > 0) {
 			const remaining = Math.ceil((cooldownMs - elapsed) / 1000);
 			return json(
 				{ message: `Tunggu ${remaining} detik sebelum mengirim ulang.` },
