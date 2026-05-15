@@ -500,7 +500,7 @@
 						type="text"
 						name="promoCode"
 						required
-						placeholder="GRATIS7HARI"
+						placeholder="INPUT KODE PROMO"
 						class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/30 transition outline-none focus:border-violet-500/50 focus:bg-white/10"
 					/>
 					<button

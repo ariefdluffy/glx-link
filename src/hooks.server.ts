@@ -78,11 +78,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (!url.pathname.startsWith('/_sveltekit') && !url.pathname.startsWith('/health')) {
 		// Get client IP
 		const headers = event.request.headers;
-		const clientIp =
-			headers.get('cf-connecting-ip') ??
-			headers.get('x-real-ip') ??
-			headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-			event.getClientAddress();
+		let clientIp: string;
+		try {
+			clientIp =
+				headers.get('cf-connecting-ip') ??
+				headers.get('x-real-ip') ??
+				headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+				event.getClientAddress();
+		} catch {
+			clientIp = '0.0.0.0';
+		}
 
 		if (!checkRateLimit(clientIp)) {
 			return new Response(

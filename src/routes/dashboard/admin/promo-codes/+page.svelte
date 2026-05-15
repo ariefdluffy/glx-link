@@ -27,6 +27,27 @@
 
 	let showCreateModal = $state(false);
 	let deletingId = $state<number | null>(null);
+	let promoType = $state<'discount' | 'grant'>('discount');
+	let notification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
+
+	// Auto-dismiss notification after 4 seconds
+	$effect(() => {
+		if (notification) {
+			const timer = setTimeout(() => {
+				notification = null;
+			}, 4000);
+			return () => clearTimeout(timer);
+		}
+	});
+
+	// Sync form result to notification state
+	$effect(() => {
+		if (form?.success) {
+			notification = { type: 'success', message: form.message ?? '' };
+		} else if (form?.error) {
+			notification = { type: 'error', message: form.error };
+		}
+	});
 
 	const formatDate = (date: Date | null) => {
 		if (!date) return '-';
@@ -91,14 +112,33 @@
 	</div>
 
 	<!-- Success/Error Messages -->
-	{#if form?.success}
-		<div class="rounded-xl border border-green-500/30 bg-green-500/10 p-4">
-			<p class="text-sm text-green-400">{form.message}</p>
-		</div>
-	{/if}
-	{#if form?.error}
-		<div class="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-			<p class="text-sm text-red-400">{form.error}</p>
+	{#if notification}
+		<div
+			class="flex items-center justify-between rounded-xl border px-4 py-3 transition {notification.type ===
+			'success'
+				? 'border-green-500/30 bg-green-500/10'
+				: 'border-red-500/30 bg-red-500/10'}"
+			role="alert"
+		>
+			<p class="text-sm {notification.type === 'success' ? 'text-green-400' : 'text-red-400'}">
+				{notification.message}
+			</p>
+			<button
+				type="button"
+				onclick={() => (notification = null)}
+				class="text-white/40 transition hover:text-white/80"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M18 6L6 18M6 6l12 12" />
+				</svg>
+			</button>
 		</div>
 	{/if}
 
@@ -204,7 +244,7 @@
 		aria-modal="true"
 	>
 		<div
-			class="glass-panel w-full max-w-md rounded-3xl p-6"
+			class="glass-panel max-h-[85vh] w-full max-w-md overflow-y-auto rounded-3xl p-6"
 			onclick={(e) => e.stopPropagation()}
 			role="document"
 		>
@@ -245,90 +285,100 @@
 						/>
 					</div>
 
-					<!-- Type -->
+					<!-- Type Selector dengan tab style -->
 					<div>
-						<label for="type" class="mb-2 block text-sm font-medium text-white/80">
+						<label class="mb-2 block text-sm font-medium text-white/80">
 							Tipe Promo <span class="text-red-400">*</span>
 						</label>
-						<select
-							id="type"
-							name="type"
-							required
-							class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-blue-500/50 focus:bg-white/10"
-						>
-							<option value="discount">Diskon</option>
-							<option value="grant">Grant (Gratis)</option>
-						</select>
+						<div class="grid grid-cols-2 gap-2">
+							<button
+								type="button"
+								class="rounded-xl px-4 py-3 text-sm font-medium transition {promoType === 'discount'
+									? 'border border-blue-500/50 bg-blue-500/20 text-blue-400'
+									: 'border border-white/10 bg-white/5 text-white/70 hover:border-white/30'}"
+								onclick={() => (promoType = 'discount')}
+							>
+								<div class="text-lg">🏷️</div>
+								<div class="mt-1 font-semibold">Diskon</div>
+								<div class="text-xs opacity-60">Potongan harga</div>
+							</button>
+							<button
+								type="button"
+								class="rounded-xl px-4 py-3 text-sm font-medium transition {promoType === 'grant'
+									? 'border border-violet-500/50 bg-violet-500/20 text-violet-400'
+									: 'border border-white/10 bg-white/5 text-white/70 hover:border-white/30'}"
+								onclick={() => (promoType = 'grant')}
+							>
+								<div class="text-lg">🎫</div>
+								<div class="mt-1 font-semibold">Grant (Gratis)</div>
+								<div class="text-xs opacity-60">Aktivasi langsung</div>
+							</button>
+						</div>
+						<input type="hidden" name="type" value={promoType} />
 					</div>
 
 					<!-- Discount Fields -->
-					<div id="discount-fields" class="space-y-4">
-						<div>
-							<label for="discountType" class="mb-2 block text-sm font-medium text-white/80">
-								Tipe Diskon <span class="text-red-400">*</span>
-							</label>
-							<select
-								id="discountType"
-								name="discountType"
-								class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-blue-500/50 focus:bg-white/10"
-							>
-								<option value="percent">Persentase (%)</option>
-								<option value="fixed">Nominal (Rp)</option>
-							</select>
+					{#if promoType === 'discount'}
+						<div class="space-y-4 rounded-xl border border-white/10 bg-white/5 p-4">
+							<div class="text-xs font-semibold tracking-wider text-white/50 uppercase">
+								Pengaturan Diskon
+							</div>
+							<div>
+								<label for="discountType" class="mb-2 block text-sm font-medium text-white/80">
+									Tipe Diskon <span class="text-red-400">*</span>
+								</label>
+								<select
+									id="discountType"
+									name="discountType"
+									class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-blue-500/50 focus:bg-white/10"
+								>
+									<option value="percent">Persentase (%)</option>
+									<option value="fixed">Nominal (Rp)</option>
+								</select>
+							</div>
+							<div>
+								<label for="discountValue" class="mb-2 block text-sm font-medium text-white/80">
+									Nilai Diskon <span class="text-red-400">*</span>
+								</label>
+								<input
+									type="number"
+									id="discountValue"
+									name="discountValue"
+									min="1"
+									placeholder="20"
+									class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-blue-500/50 focus:bg-white/10"
+								/>
+							</div>
 						</div>
-
-						<div>
-							<label for="discountValue" class="mb-2 block text-sm font-medium text-white/80">
-								Nilai Diskon <span class="text-red-400">*</span>
-							</label>
-							<input
-								type="number"
-								id="discountValue"
-								name="discountValue"
-								min="1"
-								placeholder="20"
-								class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-blue-500/50 focus:bg-white/10"
-							/>
-						</div>
-					</div>
+					{/if}
 
 					<!-- Grant Fields -->
-					<div id="grant-fields" class="hidden space-y-4">
-						<div>
-							<label for="grantDays" class="mb-2 block text-sm font-medium text-white/80">
-								Durasi (hari) <span class="text-red-400">*</span>
-							</label>
-							<input
-								type="number"
-								id="grantDays"
-								name="grantDays"
-								required
-								min="1"
-								placeholder="7"
-								class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-blue-500/50 focus:bg-white/10"
-							/>
+					{#if promoType === 'grant'}
+						<div class="space-y-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+							<div class="text-xs font-semibold tracking-wider text-white/50 uppercase">
+								Pengaturan Grant
+							</div>
+							<div>
+								<label for="grantDays" class="mb-2 block text-sm font-medium text-white/80">
+									Durasi Akses (hari) <span class="text-red-400">*</span>
+								</label>
+								<input
+									type="number"
+									id="grantDays"
+									name="grantDays"
+									required
+									min="1"
+									placeholder="7"
+									class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 transition outline-none focus:border-violet-500/50 focus:bg-white/10"
+								/>
+							</div>
+							<div class="rounded-xl bg-white/5 p-3 text-xs text-white/50">
+								User akan mendapatkan akses <strong class="text-white">Pro</strong> selama durasi yang
+								ditentukan, tanpa perlu bayar.
+							</div>
+							<input type="hidden" name="grantPlan" value="pro" />
 						</div>
-						<input type="hidden" name="grantPlan" value="pro" />
-					</div>
-
-					<script>
-						let typeSelect = document.getElementById('type');
-						let discountFields = document.getElementById('discount-fields');
-						let grantFields = document.getElementById('grant-fields');
-						if (typeSelect && discountFields && grantFields) {
-							const toggleFields = () => {
-								if (typeSelect.value === 'grant') {
-									discountFields.classList.add('hidden');
-									grantFields.classList.remove('hidden');
-								} else {
-									discountFields.classList.remove('hidden');
-									grantFields.classList.add('hidden');
-								}
-							};
-							typeSelect.addEventListener('change', toggleFields);
-							toggleFields();
-						}
-					</script>
+					{/if}
 
 					<!-- Max Uses -->
 					<div>
@@ -410,7 +460,17 @@
 				>
 					Batal
 				</button>
-				<form method="POST" action="?/delete" use:enhance class="flex-1">
+				<form
+					method="POST"
+					action="?/delete"
+					use:enhance={() => {
+						return async ({ update }) => {
+							await update({ reset: true });
+							deletingId = null;
+						};
+					}}
+					class="flex-1"
+				>
 					<input type="hidden" name="id" value={deletingId} />
 					<button
 						type="submit"
