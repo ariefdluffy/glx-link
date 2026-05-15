@@ -1,4 +1,8 @@
+import { PUBLIC_BASE_URL } from '$env/static/public';
+
 export function verifyEmailHtml(name: string, verificationUrl: string): string {
+	const logoUrl = PUBLIC_BASE_URL ? `${PUBLIC_BASE_URL}/favicon.svg` : '';
+
 	return `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -14,8 +18,7 @@ export function verifyEmailHtml(name: string, verificationUrl: string): string {
           <!-- Logo -->
           <tr>
             <td align="center" style="padding-bottom:20px;">
-              <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:700;color:#f4f4f5;">GLX</span>
-              <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:300;color:#7c3aed;">ShortLink</span>
+              ${logoUrl ? `<img src="${logoUrl}" alt="GLX ShortLink" width="48" height="48" style="display:block;border-radius:12px;" />` : `<span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:700;color:#f4f4f5;">GLX</span><span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:300;color:#7c3aed;">ShortLink</span>`}
             </td>
           </tr>
           <!-- Title -->

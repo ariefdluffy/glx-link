@@ -193,7 +193,7 @@
 									</span>
 								</div>
 								<div class="mt-0.5 flex items-center gap-2 text-xs text-white/40">
-									<span>/site/{ms.slug}</span>
+									<span>/m/{ms.slug}</span>
 									<span>•</span>
 									<span>User ID: {ms.userId}</span>
 								</div>
