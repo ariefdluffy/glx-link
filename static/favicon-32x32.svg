@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="url(#grad)"/>
+
+  <!-- Link Icon (Simplified) -->
+  <path d="M10 12 L10 15 C10 16.5 9 17.5 7.5 17.5 L6.5 17.5 C5 17.5 4 16.5 4 15 L4 12 C4 10.5 5 9.5 6.5 9.5 L7.5 9.5 C9 9.5 10 10.5 10 12 Z"
+        fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+
+  <path d="M22 17 L22 20 C22 21.5 23 22.5 24.5 22.5 L25.5 22.5 C27 22.5 28 21.5 28 20 L28 17 C28 15.5 27 14.5 25.5 14.5 L24.5 14.5 C23 14.5 22 15.5 22 17 Z"
+        fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+
+  <line x1="10" y1="15" x2="22" y2="17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- GLX Text (Small) -->
+  <text x="16" y="28" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="white" text-anchor="middle">GLX</text>
+</svg>
