@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
 
@@ -29,14 +29,15 @@
 		return new Intl.NumberFormat('id-ID').format(num);
 	};
 
-	const changePage = (type: 'users' | 'microsites', pageNum: number) => {
+	const changePage = async (type: 'users' | 'microsites', pageNum: number) => {
 		const url = new URL(currentUrl);
 		if (type === 'users') {
 			url.searchParams.set('userPage', pageNum.toString());
 		} else {
 			url.searchParams.set('msPage', pageNum.toString());
 		}
-		goto(url.toString());
+		await goto(url.toString());
+		invalidateAll();
 	};
 
 	const getPaginationRange = (current: number, total: number) => {
@@ -476,7 +477,18 @@
 			</div>
 		{/if}
 
-		<form method="POST" action="?/createSubscription" use:enhance>
+		<form
+			method="POST"
+			action="?/createSubscription"
+			use:enhance={() => {
+				return async ({ result, update }) => {
+					await update();
+					if (result.type === 'success' || result.type === 'redirect') {
+						invalidateAll();
+					}
+				};
+			}}
+		>
 			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				<!-- User Selection -->
 				<div>

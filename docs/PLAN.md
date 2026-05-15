@@ -1073,5 +1073,47 @@ SESSION_SECRET=ganti_dengan_string_random_panjang_32_karakter
 
 ---
 
+## 🐞 Bug Diketahui
+
+### Login — Session cookie tidak di-apply setelah login
+
+**Lokasi:** `src/routes/login/+page.svelte` → diubah ke form action `?/login`
+
+**Deskripsi:**
+Login pakai `fetch('/api/auth/login')` + `window.location.href` — kadang `Set-Cookie` dari response fetch tidak keproses browser sebelum navigasi, menyebabkan dashboard tampilkan data user lama (salah email).
+
+**Fix:**
+- Ganti ke SvelteKit form action (`+page.server.ts` dengan `actions.login`)
+- Login page pake `<form method="POST" action="?/login" use:enhance>`
+- `Set-Cookie` diproses internal SvelteKit, gak ada race condition
+- Redirect via `throw redirect(303, '/dashboard')` di form action
+
+**Status:** ✅ Sudah diperbaiki
+
+---
+
+### Admin Dashboard — Data card tidak reload setelah pagination / form action
+
+**Lokasi:** `src/routes/dashboard/admin/+page.svelte` + `+page.server.ts`
+
+**Deskripsi:**
+3 section data di halaman `/dashboard/admin` tidak reload otomatis:
+1. **Monitoring & Audit Logs** — 4 card stat (Total Logs, Unique Actions, 24h Logs, Status)
+2. **User Terbaru** — tabel users + pagination
+3. **Microsite** — tabel microsites + pagination
+
+**Masalah:**
+- Pagination (`changePage` → `goto()`): data tidak berubah
+- Setelah form action (buat subscription via `use:enhance`): data tidak update
+- Harus F5 manual agar semua data ter-refresh dari database
+
+**Fix:**
+- `changePage` jadi `async`, panggil `invalidateAll()` setelah `await goto()`
+- Form subscription `use:enhance` pake callback — panggil `invalidateAll()` setelah `update()` sukses/redirect
+
+**Status:** ✅ Sudah diperbaiki
+
+---
+
 _Dokumen ini adalah rancangan awal (v0.1). Diperbarui sesuai perkembangan pengembangan._  
 _Dibuat untuk project glx.my.id — © 2025_
