@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { microsites, micrositeLinks } from '$lib/db/schema';
 
@@ -52,10 +52,12 @@ export const load = async ({ params }) => {
 			animation: micrositeLinks.animation,
 			alignment: micrositeLinks.alignment,
 			fontSize: micrositeLinks.fontSize,
+			isHidden: micrositeLinks.isHidden,
 			sortOrder: micrositeLinks.sortOrder
 		})
 		.from(micrositeLinks)
-		.where(eq(micrositeLinks.micrositeId, microsite.id));
+		.where(and(eq(micrositeLinks.micrositeId, microsite.id), eq(micrositeLinks.isHidden, false)))
+		.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
 
 	return { microsite, links };
 };

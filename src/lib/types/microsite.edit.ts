@@ -7,6 +7,7 @@ export interface MicrositeLink {
 	animation: string;
 	fontSize: number;
 	alignment: 'left' | 'center' | 'right';
+	isHidden?: boolean;
 }
 
 export const themes = ['default', 'gradient', 'minimal', 'neon', 'tech'];

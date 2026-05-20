@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import MicrositePreview from '$lib/components/MicrositePreview.svelte';
 	import Toast from '$lib/components/toast/Toast.svelte';
@@ -46,6 +47,131 @@
 	let dragOverIndex: number | null = $state(null);
 	let expandedIndex: number | null = $state(null);
 
+	const slugTakenMessage = 'Slug microsite sudah dipakai.';
+	let slugCheckTimer: ReturnType<typeof setTimeout> | null = null;
+	let lastCheckedSlug = '';
+	let slugCheckRequestId = 0;
+	let originalSlug = $state('');
+	let isCheckingSlug = $state(false);
+	let slugAvailable = $state<boolean | null>(null);
+	let slugValidationMessage = $state('');
+
+	const sanitizeSlug = (value: string) =>
+		value
+			.toLowerCase()
+			.trim()
+			.replace(/\s+/g, '-')
+			.replace(/[^a-z0-9-]/g, '')
+			.replace(/-+/g, '-');
+
+	const clearSlugTakenMessage = () => {
+		if (errorMessage === slugTakenMessage) {
+			errorMessage = '';
+		}
+	};
+
+	const checkSlugAvailability = async (rawSlug: string) => {
+		const normalizedSlug = sanitizeSlug(rawSlug);
+		const normalizedOriginalSlug = sanitizeSlug(originalSlug);
+		if (!normalizedSlug) {
+			lastCheckedSlug = '';
+			slugAvailable = null;
+			slugValidationMessage = '';
+			isCheckingSlug = false;
+			clearSlugTakenMessage();
+			return true;
+		}
+
+		if (normalizedSlug.length < 3 || normalizedSlug.length > 50) {
+			lastCheckedSlug = '';
+			slugAvailable = false;
+			slugValidationMessage = 'Slug harus 3-50 karakter.';
+			isCheckingSlug = false;
+			clearSlugTakenMessage();
+			return true;
+		}
+
+		if (normalizedSlug === normalizedOriginalSlug) {
+			lastCheckedSlug = normalizedSlug;
+			slugAvailable = true;
+			slugValidationMessage = 'Slug tersedia.';
+			isCheckingSlug = false;
+			clearSlugTakenMessage();
+			return true;
+		}
+
+		if (normalizedSlug === lastCheckedSlug) {
+			return errorMessage !== slugTakenMessage;
+		}
+
+		lastCheckedSlug = normalizedSlug;
+		slugCheckRequestId += 1;
+		const requestId = slugCheckRequestId;
+		const micrositeId = Number($page.params.id);
+		const excludeIdPart = Number.isFinite(micrositeId) ? `&excludeId=${micrositeId}` : '';
+		isCheckingSlug = true;
+		slugValidationMessage = 'Mengecek ketersediaan slug...';
+
+		try {
+			const response = await fetch(
+				`/api/microsites/check-slug?slug=${encodeURIComponent(normalizedSlug)}${excludeIdPart}`
+			);
+			const payload = await response.json().catch(() => ({}));
+			if (requestId !== slugCheckRequestId) {
+				return true;
+			}
+			isCheckingSlug = false;
+			if (!response.ok) {
+				slugAvailable = null;
+				slugValidationMessage = '';
+				clearSlugTakenMessage();
+				return true;
+			}
+			if (payload?.available === false) {
+				slugAvailable = false;
+				slugValidationMessage = payload?.message ?? slugTakenMessage;
+				errorMessage = payload?.message ?? slugTakenMessage;
+				return false;
+			}
+
+			slugAvailable = true;
+			slugValidationMessage = 'Slug tersedia.';
+			clearSlugTakenMessage();
+			return true;
+		} catch {
+			if (requestId !== slugCheckRequestId) {
+				return true;
+			}
+			isCheckingSlug = false;
+			slugAvailable = null;
+			slugValidationMessage = '';
+			clearSlugTakenMessage();
+			return true;
+		}
+	};
+
+	$effect(() => {
+		if (!dataLoaded) {
+			return;
+		}
+
+		const watchedSlug = slug;
+		slugCheckRequestId += 1;
+		isCheckingSlug = false;
+		if (slugCheckTimer) {
+			clearTimeout(slugCheckTimer);
+		}
+		slugCheckTimer = setTimeout(() => {
+			void checkSlugAvailability(watchedSlug);
+		}, 450);
+
+		return () => {
+			if (slugCheckTimer) {
+				clearTimeout(slugCheckTimer);
+			}
+		};
+	});
+
 	// Handlers
 	const handleAvatarUpload = async (e: Event) => {
 		const input = e.target as HTMLInputElement;
@@ -83,12 +209,20 @@
 				caption: '',
 				animation: '',
 				fontSize: 14,
-				alignment: 'left'
+				alignment: 'left',
+				isHidden: false
 			}
 		];
 	};
 
 	const addTextLabel = () => addLink('text', { label: 'Label tanpa link' });
+
+	const handleLinkAnimationChange = (index: number, anim: string) => {
+		if (index < 0 || index >= links.length) return;
+		const nextLinks = [...links];
+		nextLinks[index] = { ...nextLinks[index], animation: anim };
+		links = nextLinks;
+	};
 
 	const iconPreview = (icon: string | null | undefined) => {
 		if (!icon) return '—';
@@ -248,6 +382,7 @@
 			const m = payload.microsite;
 			title = m.title ?? '';
 			slug = m.slug ?? '';
+			originalSlug = m.slug ?? '';
 			bio = m.bio ?? '';
 			theme = m.theme ?? 'default';
 			animation = m.animation ?? 'fade';
@@ -259,16 +394,29 @@
 			youtubeUrl = m.youtubeUrl ?? '';
 			instagramUrl = m.instagramUrl ?? '';
 			isActive = m.isActive !== false;
-			links = (payload.links ?? []).map((l: any) => ({
-				label: l.label,
-				url: l.url,
-				icon: l.icon ?? '',
-				type: l.type ?? 'link',
-				caption: l.caption ?? '',
-				animation: l.animation ?? '',
-				alignment: l.alignment ?? 'left',
-				fontSize: l.fontSize ?? 14
-			}));
+			links = (payload.links ?? []).map(
+				(l: {
+					label?: string;
+					url?: string;
+					icon?: string;
+					type?: string;
+					caption?: string;
+					animation?: string;
+					alignment?: string;
+					fontSize?: number;
+					isHidden?: boolean;
+				}) => ({
+					label: l.label ?? '',
+					url: l.url ?? '',
+					icon: l.icon ?? '',
+					type: l.type ?? 'link',
+					caption: l.caption ?? '',
+					animation: l.animation ?? '',
+					alignment: l.alignment ?? 'left',
+					fontSize: l.fontSize ?? 14,
+					isHidden: l.isHidden === true
+				})
+			);
 			if (links.length === 0) {
 				links = [
 					{
@@ -279,7 +427,8 @@
 						caption: '',
 						animation: '',
 						alignment: 'left',
-						fontSize: 14
+						fontSize: 14,
+						isHidden: false
 					}
 				];
 			}
@@ -299,6 +448,9 @@
 		}
 		if (slug.trim().length < 3) {
 			errorMessage = 'Slug minimal 3 karakter.';
+			return;
+		}
+		if (!(await checkSlugAvailability(slug))) {
 			return;
 		}
 		isLoading = true;
@@ -328,7 +480,8 @@
 						caption: l.caption || '',
 						animation: l.animation || '',
 						alignment: l.alignment || 'left',
-						fontSize: l.fontSize || 14
+						fontSize: l.fontSize || 14,
+						isHidden: l.isHidden === true
 					}))
 				})
 			});
@@ -361,8 +514,9 @@
 				<p class="text-sm text-white/60">Sesuaikan tampilan dan konten microsite kamu.</p>
 			</div>
 			<a
-				href="/dashboard/microsites"
+				href={resolve('/dashboard/microsites')}
 				class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/70 transition-all hover:bg-white/10 hover:text-white"
+				aria-label="Kembali ke daftar microsite"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
@@ -405,8 +559,11 @@
 					bind:animation
 					{themes}
 					{animations}
+					{links}
+					bind:expandedIndex
 					onavatarupload={handleAvatarUpload}
 					onheaderupload={handleHeaderUpload}
+					onlinkanimationchange={handleLinkAnimationChange}
 				/>
 
 				<SocialSection bind:facebookUrl bind:instagramUrl bind:youtubeUrl bind:websiteUrl />
@@ -449,7 +606,15 @@
 
 		<!-- Right Column: Sidebar & Preview -->
 		<div class="flex flex-col gap-6 lg:sticky lg:top-6">
-			<SidebarSection bind:title bind:slug bind:bio bind:isActive />
+			<SidebarSection
+				bind:title
+				bind:slug
+				bind:bio
+				bind:isActive
+				slugChecking={isCheckingSlug}
+				slugAvailability={slugAvailable}
+				slugStatusMessage={slugValidationMessage}
+			/>
 
 			<div class="glass-panel rounded-3xl p-4">
 				<div class="mb-3 text-center text-xs text-white/50">Pratinjau Langsung</div>

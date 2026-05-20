@@ -71,6 +71,7 @@ export const GET = async ({ params, cookies }) => {
 			animation: micrositeLinks.animation,
 			alignment: micrositeLinks.alignment,
 			fontSize: micrositeLinks.fontSize,
+			isHidden: micrositeLinks.isHidden,
 			sortOrder: micrositeLinks.sortOrder
 		})
 		.from(micrositeLinks)
@@ -179,6 +180,7 @@ export const PATCH = async ({ params, cookies, request }) => {
 						animation?: unknown;
 						alignment?: unknown;
 						fontSize?: unknown;
+						isHidden?: unknown;
 					},
 					index: number
 				) => ({
@@ -191,10 +193,12 @@ export const PATCH = async ({ params, cookies, request }) => {
 					animation: typeof link.animation === 'string' ? link.animation : null,
 					alignment: typeof link.alignment === 'string' ? link.alignment : 'left',
 					fontSize: typeof link.fontSize === 'number' ? link.fontSize : 14,
+					isHidden: link.isHidden === true,
 					sortOrder: index
 				})
 			)
-			.filter((link: { type: string; url: string | null; label: string }) => {
+			.filter((link: { type: string; url: string | null; label: string; isHidden: boolean }) => {
+				if (link.isHidden) return true;
 				if (link.type === 'divider') return true;
 				if (link.type === 'image') return link.url !== null;
 				if (link.type === 'text') return link.label.length > 0;

@@ -10,6 +10,7 @@
 		animation?: string;
 		alignment?: string;
 		fontSize?: number;
+		isHidden?: boolean;
 	}
 
 	let {
@@ -102,6 +103,7 @@
 
 	const displayLinks = $derived(
 		links.filter((l) => {
+			if (l.isHidden) return false;
 			if (l.type === 'divider') return true;
 			if (l.type === 'image') return l.url !== null && l.url !== '';
 			if (l.type === 'text') return !!l.label;

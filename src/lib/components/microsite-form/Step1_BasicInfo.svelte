@@ -8,7 +8,10 @@
 		facebookUrl = $bindable(''),
 		instagramUrl = $bindable(''),
 		youtubeUrl = $bindable(''),
-		websiteUrl = $bindable('')
+		websiteUrl = $bindable(''),
+		slugChecking = false,
+		slugAvailability = null,
+		slugStatusMessage = ''
 	} = $props<{
 		title: string;
 		slug: string;
@@ -19,6 +22,9 @@
 		instagramUrl: string;
 		youtubeUrl: string;
 		websiteUrl: string;
+		slugChecking?: boolean;
+		slugAvailability?: boolean | null;
+		slugStatusMessage?: string;
 	}>();
 
 	// Auto-generate slug from title
@@ -86,6 +92,12 @@
 		<p class="mt-1.5 text-[10px] text-white/40">
 			{#if plan !== 'pro'}
 				<span class="text-amber-400">⚠️ Upgrade ke Pro untuk custom slug</span>
+			{:else if slugChecking}
+				<span class="text-cyan-300">⏳ {slugStatusMessage || 'Mengecek ketersediaan slug...'}</span>
+			{:else if slugAvailability === true}
+				<span class="text-emerald-300">✓ {slugStatusMessage || 'Slug tersedia.'}</span>
+			{:else if slugAvailability === false && slugStatusMessage}
+				<span class="text-rose-300">✕ {slugStatusMessage}</span>
 			{:else}
 				Hanya huruf kecil, angka, dan tanda hubung (-)
 			{/if}

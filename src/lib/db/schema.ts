@@ -73,6 +73,7 @@ export const micrositeLinks = mysqlTable('microsite_links', {
 	animation: varchar('animation', { length: 50 }),
 	alignment: varchar('alignment', { length: 10 }).default('left'),
 	fontSize: int('font_size').default(14),
+	isHidden: boolean('is_hidden').default(false),
 	sortOrder: tinyint('sort_order').default(0)
 });
 

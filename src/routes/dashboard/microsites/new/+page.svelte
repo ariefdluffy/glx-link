@@ -50,7 +50,117 @@
 	let copiedQrLink = $state(false);
 	let draggedIndex: number | null = $state(null);
 	let dragOverIndex: number | null = $state(null);
-	let links = $state([{ label: '', url: '', icon: '', type: 'link', caption: '', animation: '' }]);
+	let links = $state([
+		{ label: '', url: '', icon: '', type: 'link', caption: '', animation: '', isHidden: false }
+	]);
+
+	const slugTakenMessage = 'Slug microsite sudah dipakai.';
+	let slugCheckTimer: ReturnType<typeof setTimeout> | null = null;
+	let lastCheckedSlug = '';
+	let slugCheckRequestId = 0;
+	let isCheckingSlug = $state(false);
+	let slugAvailable = $state<boolean | null>(null);
+	let slugValidationMessage = $state('');
+
+	const sanitizeSlug = (value: string) =>
+		value
+			.toLowerCase()
+			.trim()
+			.replace(/\s+/g, '-')
+			.replace(/[^a-z0-9-]/g, '')
+			.replace(/-+/g, '-');
+
+	const clearSlugTakenMessage = () => {
+		if (errorMessage === slugTakenMessage) {
+			errorMessage = '';
+		}
+	};
+
+	const checkSlugAvailability = async (rawSlug: string) => {
+		const normalizedSlug = sanitizeSlug(rawSlug);
+		if (!normalizedSlug) {
+			lastCheckedSlug = '';
+			slugAvailable = null;
+			slugValidationMessage = '';
+			isCheckingSlug = false;
+			clearSlugTakenMessage();
+			return true;
+		}
+
+		if (normalizedSlug.length < 3 || normalizedSlug.length > 50) {
+			lastCheckedSlug = '';
+			slugAvailable = false;
+			slugValidationMessage = 'Slug harus 3-50 karakter.';
+			isCheckingSlug = false;
+			clearSlugTakenMessage();
+			return true;
+		}
+
+		if (normalizedSlug === lastCheckedSlug) {
+			return errorMessage !== slugTakenMessage;
+		}
+
+		lastCheckedSlug = normalizedSlug;
+		slugCheckRequestId += 1;
+		const requestId = slugCheckRequestId;
+		isCheckingSlug = true;
+		slugValidationMessage = 'Mengecek ketersediaan slug...';
+
+		try {
+			const response = await fetch(
+				`/api/microsites/check-slug?slug=${encodeURIComponent(normalizedSlug)}`
+			);
+			const payload = await response.json().catch(() => ({}));
+			if (requestId !== slugCheckRequestId) {
+				return true;
+			}
+			isCheckingSlug = false;
+			if (!response.ok) {
+				slugAvailable = null;
+				slugValidationMessage = '';
+				clearSlugTakenMessage();
+				return true;
+			}
+			if (payload?.available === false) {
+				slugAvailable = false;
+				slugValidationMessage = payload?.message ?? slugTakenMessage;
+				errorMessage = payload?.message ?? slugTakenMessage;
+				return false;
+			}
+
+			slugAvailable = true;
+			slugValidationMessage = 'Slug tersedia.';
+			clearSlugTakenMessage();
+			return true;
+		} catch {
+			if (requestId !== slugCheckRequestId) {
+				return true;
+			}
+			isCheckingSlug = false;
+			slugAvailable = null;
+			slugValidationMessage = '';
+			clearSlugTakenMessage();
+			return true;
+		}
+	};
+
+	$effect(() => {
+		const watchedSlug = slug;
+		slugCheckRequestId += 1;
+		isCheckingSlug = false;
+		if (slugCheckTimer) {
+			clearTimeout(slugCheckTimer);
+		}
+		slugCheckTimer = setTimeout(() => {
+			void checkSlugAvailability(watchedSlug);
+		}, 450);
+
+		return () => {
+			if (slugCheckTimer) {
+				clearTimeout(slugCheckTimer);
+			}
+		};
+	});
 
 	// Upload handlers
 	const handleAvatarUpload = async (e: Event) => {
@@ -214,7 +324,8 @@
 				icon: preset?.icon ?? '',
 				type,
 				caption: '',
-				animation: ''
+				animation: '',
+				isHidden: false
 			}
 		];
 	};
@@ -300,6 +411,9 @@
 			errorMessage = 'Slug minimal 3 karakter.';
 			return;
 		}
+		if (!(await checkSlugAvailability(slug))) {
+			return;
+		}
 
 		const socialLinks = [];
 		if (facebookUrl)
@@ -309,7 +423,8 @@
 				url: facebookUrl,
 				icon: 'facebook',
 				caption: '',
-				animation: ''
+				animation: '',
+				isHidden: false
 			});
 		if (instagramUrl)
 			socialLinks.push({
@@ -318,7 +433,8 @@
 				url: instagramUrl,
 				icon: 'instagram',
 				caption: '',
-				animation: ''
+				animation: '',
+				isHidden: false
 			});
 		if (youtubeUrl)
 			socialLinks.push({
@@ -327,7 +443,8 @@
 				url: youtubeUrl,
 				icon: 'youtube',
 				caption: '',
-				animation: ''
+				animation: '',
+				isHidden: false
 			});
 		if (websiteUrl)
 			socialLinks.push({
@@ -336,7 +453,8 @@
 				url: websiteUrl,
 				icon: 'website',
 				caption: '',
-				animation: ''
+				animation: '',
+				isHidden: false
 			});
 
 		isLoading = true;
@@ -359,7 +477,8 @@
 						url: l.url || '',
 						icon: l.icon || '',
 						caption: l.caption || '',
-						animation: l.animation || ''
+						animation: l.animation || '',
+						isHidden: (l as { isHidden?: boolean }).isHidden === true
 					}))
 				})
 			});
@@ -428,13 +547,13 @@
 						</p>
 						<div class="mt-4 flex gap-3">
 							<a
-								href="/dashboard/billing"
-								class="rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/40"
+								href={resolve('/dashboard/billing')}
+								class="rounded-full bg-linear-to-r from-amber-500 to-yellow-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition hover:-translate-y-0.5 hover:shadow-amber-500/40"
 							>
 								🔄 Perpanjang Langganan
 							</a>
 							<a
-								href="/dashboard/microsites"
+								href={resolve('/dashboard/microsites')}
 								class="rounded-full border border-white/20 px-6 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/5"
 							>
 								← Kembali
@@ -467,6 +586,9 @@
 							bind:instagramUrl
 							bind:youtubeUrl
 							bind:websiteUrl
+							slugChecking={isCheckingSlug}
+							slugAvailability={slugAvailable}
+							slugStatusMessage={slugValidationMessage}
 						/>
 					{:else if currentStep === 2}
 						<Step2_Appearance
