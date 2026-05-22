@@ -8,6 +8,7 @@
 		animation?: string;
 		alignment?: string;
 		fontSize?: number;
+		isHidden?: boolean;
 	}
 
 	let {
@@ -44,6 +45,10 @@
 
 	const addTextLabel = () => {
 		onAddLink('text');
+	};
+
+	const toggleHidden = (index: number) => {
+		links[index].isHidden = !(links[index].isHidden === true);
 	};
 
 	interface IconOption {
@@ -165,7 +170,7 @@
 						class="w-full max-w-full min-w-0 space-y-3 rounded-2xl border bg-white/5 p-4 transition-all duration-150 {dragOverIndex ===
 						index
 							? 'border-violet-500/50 ring-2 ring-violet-500/20'
-							: 'border-white/10'}"
+							: 'border-white/10'} {link.isHidden ? 'opacity-70' : ''}"
 						draggable="true"
 						ondragstart={() => onDragStart(index)}
 						ondragover={(e) => onDragOver(e, index)}
@@ -202,6 +207,13 @@
 										? '...'
 										: ''}
 								</div>
+								{#if link.isHidden}
+									<span
+										class="rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300"
+									>
+										Hidden
+									</span>
+								{/if}
 							</div>
 							<div class="flex shrink-0 items-center gap-1">
 								<button
@@ -241,6 +253,53 @@
 											d="M19 9l-7 7-7-7"
 										/>
 									</svg>
+								</button>
+								<button
+									type="button"
+									class="rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-amber-300"
+									onclick={(e) => {
+										e.stopPropagation();
+										toggleHidden(index);
+									}}
+									title={link.isHidden ? 'Unhide' : 'Hide'}
+								>
+									{#if link.isHidden}
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.79.47-3.47 1.292-4.924m2.122-2.122A9.956 9.956 0 0112 3c5.523 0 10 4.477 10 10 0 1.5-.33 2.924-.924 4.202M15 12a3 3 0 10-4.243-4.243M3 3l18 18"
+											/>
+										</svg>
+									{:else}
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+											/>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+											/>
+										</svg>
+									{/if}
 								</button>
 								<button
 									type="button"

@@ -22,6 +22,14 @@ const isValidUrl = (value: string) => {
 	}
 };
 
+const isMissingIsHiddenColumnError = (err: unknown) => {
+	const message = err instanceof Error ? err.message : String(err);
+	return (
+		message.includes('is_hidden') &&
+		(message.includes('Unknown column') || message.includes('ER_BAD_FIELD_ERROR'))
+	);
+};
+
 export const GET = async ({ cookies }) => {
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
@@ -115,7 +123,13 @@ export const POST = async ({ request, cookies }) => {
 		avatarUrl,
 		headerBg,
 		animation,
-		isActive
+		isActive,
+		facebookUrl:
+			typeof payload.facebookUrl === 'string' ? payload.facebookUrl.trim() || null : null,
+		websiteUrl: typeof payload.websiteUrl === 'string' ? payload.websiteUrl.trim() || null : null,
+		youtubeUrl: typeof payload.youtubeUrl === 'string' ? payload.youtubeUrl.trim() || null : null,
+		instagramUrl:
+			typeof payload.instagramUrl === 'string' ? payload.instagramUrl.trim() || null : null
 	});
 
 	// Fetch the newly created microsite to get the ID
@@ -166,7 +180,17 @@ export const POST = async ({ request, cookies }) => {
 			});
 
 		if (linkRows.length > 0) {
-			await db.insert(micrositeLinks).values(linkRows);
+			try {
+				await db.insert(micrositeLinks).values(linkRows);
+			} catch (err) {
+				if (!isMissingIsHiddenColumnError(err)) throw err;
+				const fallbackRows = linkRows.map((row: Record<string, unknown>) => {
+					const { isHidden, ...rest } = row;
+					void isHidden;
+					return rest;
+				});
+				await db.insert(micrositeLinks).values(fallbackRows);
+			}
 		}
 	}
 

@@ -471,6 +471,10 @@
 					avatarUrl: avatarUrl.trim() || null,
 					headerBg: headerBg.trim() || null,
 					isActive,
+					facebookUrl: facebookUrl || null,
+					instagramUrl: instagramUrl || null,
+					youtubeUrl: youtubeUrl || null,
+					websiteUrl: websiteUrl || null,
 					links: [...links, ...socialLinks].map((l) => ({
 						type: l.type || 'link',
 						label: l.label || '',

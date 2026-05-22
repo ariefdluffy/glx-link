@@ -389,34 +389,41 @@
 			avatarUrl = m.avatarUrl ?? '';
 			headerBg = m.headerBg ?? '';
 			linkTextColor = m.linkTextColor ?? '';
-			facebookUrl = m.facebookUrl ?? '';
-			websiteUrl = m.websiteUrl ?? '';
-			youtubeUrl = m.youtubeUrl ?? '';
-			instagramUrl = m.instagramUrl ?? '';
 			isActive = m.isActive !== false;
-			links = (payload.links ?? []).map(
-				(l: {
-					label?: string;
-					url?: string;
-					icon?: string;
-					type?: string;
-					caption?: string;
-					animation?: string;
-					alignment?: string;
-					fontSize?: number;
-					isHidden?: boolean;
-				}) => ({
+
+			// Social media URLs - from dedicated columns (new flow) or fallback to type:'social' links (legacy)
+			const allLinks: Array<{
+				type?: string;
+				url?: string;
+				icon?: string;
+				label?: string;
+				caption?: string;
+				animation?: string;
+				alignment?: string;
+				fontSize?: number;
+				isHidden?: boolean;
+			}> = payload.links ?? [];
+			const socials = allLinks.filter((l) => l.type === 'social');
+			const getSocialUrl = (icon: string) => socials.find((l) => l.icon === icon)?.url ?? '';
+
+			facebookUrl = m.facebookUrl ?? getSocialUrl('facebook');
+			websiteUrl = m.websiteUrl ?? getSocialUrl('website');
+			youtubeUrl = m.youtubeUrl ?? getSocialUrl('youtube');
+			instagramUrl = m.instagramUrl ?? getSocialUrl('instagram');
+
+			links = allLinks
+				.filter((l) => l.type !== 'social')
+				.map((l) => ({
 					label: l.label ?? '',
 					url: l.url ?? '',
 					icon: l.icon ?? '',
-					type: l.type ?? 'link',
+					type: (l.type ?? 'link') as 'link' | 'divider' | 'image' | 'text',
 					caption: l.caption ?? '',
 					animation: l.animation ?? '',
-					alignment: l.alignment ?? 'left',
+					alignment: (l.alignment ?? 'left') as 'left' | 'center' | 'right',
 					fontSize: l.fontSize ?? 14,
 					isHidden: l.isHidden === true
-				})
-			);
+				}));
 			if (links.length === 0) {
 				links = [
 					{

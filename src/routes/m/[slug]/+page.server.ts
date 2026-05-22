@@ -3,6 +3,14 @@ import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { microsites, micrositeLinks } from '$lib/db/schema';
 
+const isMissingIsHiddenColumnError = (err: unknown) => {
+	const message = err instanceof Error ? err.message : String(err);
+	return (
+		message.includes('is_hidden') &&
+		(message.includes('Unknown column') || message.includes('ER_BAD_FIELD_ERROR'))
+	);
+};
+
 export const load = async ({ params }) => {
 	const slug = params.slug?.trim().toLowerCase();
 	if (!slug) {
@@ -40,24 +48,46 @@ export const load = async ({ params }) => {
 		.set({ clicks: sql`${microsites.clicks} + 1` })
 		.where(eq(microsites.id, microsite.id));
 
-	const links = await db
-		.select({
-			id: micrositeLinks.id,
-			micrositeId: micrositeLinks.micrositeId,
-			type: micrositeLinks.type,
-			label: micrositeLinks.label,
-			url: micrositeLinks.url,
-			icon: micrositeLinks.icon,
-			caption: micrositeLinks.caption,
-			animation: micrositeLinks.animation,
-			alignment: micrositeLinks.alignment,
-			fontSize: micrositeLinks.fontSize,
-			isHidden: micrositeLinks.isHidden,
-			sortOrder: micrositeLinks.sortOrder
-		})
-		.from(micrositeLinks)
-		.where(and(eq(micrositeLinks.micrositeId, microsite.id), eq(micrositeLinks.isHidden, false)))
-		.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
+	let links: Array<Record<string, unknown>> = [];
+	try {
+		links = await db
+			.select({
+				id: micrositeLinks.id,
+				micrositeId: micrositeLinks.micrositeId,
+				type: micrositeLinks.type,
+				label: micrositeLinks.label,
+				url: micrositeLinks.url,
+				icon: micrositeLinks.icon,
+				caption: micrositeLinks.caption,
+				animation: micrositeLinks.animation,
+				alignment: micrositeLinks.alignment,
+				fontSize: micrositeLinks.fontSize,
+				isHidden: micrositeLinks.isHidden,
+				sortOrder: micrositeLinks.sortOrder
+			})
+			.from(micrositeLinks)
+			.where(and(eq(micrositeLinks.micrositeId, microsite.id), eq(micrositeLinks.isHidden, false)))
+			.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
+	} catch (err) {
+		if (!isMissingIsHiddenColumnError(err)) throw err;
+		links = await db
+			.select({
+				id: micrositeLinks.id,
+				micrositeId: micrositeLinks.micrositeId,
+				type: micrositeLinks.type,
+				label: micrositeLinks.label,
+				url: micrositeLinks.url,
+				icon: micrositeLinks.icon,
+				caption: micrositeLinks.caption,
+				animation: micrositeLinks.animation,
+				alignment: micrositeLinks.alignment,
+				fontSize: micrositeLinks.fontSize,
+				sortOrder: micrositeLinks.sortOrder
+			})
+			.from(micrositeLinks)
+			.where(eq(micrositeLinks.micrositeId, microsite.id))
+			.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
+	}
 
 	return { microsite, links };
 };

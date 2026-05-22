@@ -21,6 +21,14 @@ const isValidUrl = (value: string) => {
 	}
 };
 
+const isMissingIsHiddenColumnError = (err: unknown) => {
+	const message = err instanceof Error ? err.message : String(err);
+	return (
+		message.includes('is_hidden') &&
+		(message.includes('Unknown column') || message.includes('ER_BAD_FIELD_ERROR'))
+	);
+};
+
 export const GET = async ({ params, cookies }) => {
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
@@ -59,24 +67,46 @@ export const GET = async ({ params, cookies }) => {
 		return json({ message: 'Microsite tidak ditemukan.' }, { status: 404 });
 	}
 
-	const links = await db
-		.select({
-			id: micrositeLinks.id,
-			micrositeId: micrositeLinks.micrositeId,
-			type: micrositeLinks.type,
-			label: micrositeLinks.label,
-			url: micrositeLinks.url,
-			icon: micrositeLinks.icon,
-			caption: micrositeLinks.caption,
-			animation: micrositeLinks.animation,
-			alignment: micrositeLinks.alignment,
-			fontSize: micrositeLinks.fontSize,
-			isHidden: micrositeLinks.isHidden,
-			sortOrder: micrositeLinks.sortOrder
-		})
-		.from(micrositeLinks)
-		.where(eq(micrositeLinks.micrositeId, id))
-		.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
+	let links: Array<Record<string, unknown>> = [];
+	try {
+		links = await db
+			.select({
+				id: micrositeLinks.id,
+				micrositeId: micrositeLinks.micrositeId,
+				type: micrositeLinks.type,
+				label: micrositeLinks.label,
+				url: micrositeLinks.url,
+				icon: micrositeLinks.icon,
+				caption: micrositeLinks.caption,
+				animation: micrositeLinks.animation,
+				alignment: micrositeLinks.alignment,
+				fontSize: micrositeLinks.fontSize,
+				isHidden: micrositeLinks.isHidden,
+				sortOrder: micrositeLinks.sortOrder
+			})
+			.from(micrositeLinks)
+			.where(eq(micrositeLinks.micrositeId, id))
+			.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
+	} catch (err) {
+		if (!isMissingIsHiddenColumnError(err)) throw err;
+		links = await db
+			.select({
+				id: micrositeLinks.id,
+				micrositeId: micrositeLinks.micrositeId,
+				type: micrositeLinks.type,
+				label: micrositeLinks.label,
+				url: micrositeLinks.url,
+				icon: micrositeLinks.icon,
+				caption: micrositeLinks.caption,
+				animation: micrositeLinks.animation,
+				alignment: micrositeLinks.alignment,
+				fontSize: micrositeLinks.fontSize,
+				sortOrder: micrositeLinks.sortOrder
+			})
+			.from(micrositeLinks)
+			.where(eq(micrositeLinks.micrositeId, id))
+			.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
+	}
 
 	return json({ microsite, links });
 };
@@ -207,7 +237,17 @@ export const PATCH = async ({ params, cookies, request }) => {
 			});
 
 		if (linkRows.length > 0) {
-			await db.insert(micrositeLinks).values(linkRows);
+			try {
+				await db.insert(micrositeLinks).values(linkRows);
+			} catch (err) {
+				if (!isMissingIsHiddenColumnError(err)) throw err;
+				const fallbackRows = linkRows.map((row: Record<string, unknown>) => {
+					const { isHidden, ...rest } = row;
+					void isHidden;
+					return rest;
+				});
+				await db.insert(micrositeLinks).values(fallbackRows);
+			}
 		}
 
 		// Audit log
