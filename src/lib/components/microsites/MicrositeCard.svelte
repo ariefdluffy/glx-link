@@ -89,7 +89,7 @@
 			</button>
 			<a
 				class="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-medium text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-				href={resolve(`/dashboard/microsites/${microsite.id}/edit`)}
+				href={resolve(`/dashboard/microsites/${microsite.slug}/edit`)}
 			>
 				✏️ Edit
 			</a>

@@ -96,7 +96,7 @@
 		isDeleting = true;
 		deleteError = '';
 
-		const result = await deleteMicrosite(deletingItem.id);
+		const result = await deleteMicrosite(deletingItem.slug);
 
 		if (!result.success) {
 			deleteError = result.message ?? 'Gagal menghapus microsite.';
@@ -104,8 +104,8 @@
 			return;
 		}
 
-		const deletedId = deletingItem.id;
-		microsites = microsites.filter((site) => site.id !== deletedId);
+		const deletedSlug = deletingItem.slug;
+		microsites = microsites.filter((site) => site.slug !== deletedSlug);
 		deletingItem = null;
 		isDeleting = false;
 	};

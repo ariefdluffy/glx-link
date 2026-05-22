@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import SocialIconRow from '$lib/components/SocialIconRow.svelte';
+	import { iconSvgPath as iconSvgPathFromLib } from '$lib/types/microsite.edit';
 
 	let { data } = $props<{
 		microsite: {
@@ -110,15 +111,7 @@
 		return iconMap[key] ?? icon;
 	};
 
-	const socialIconPath = (icon: string | null) => {
-		const key = (icon || '').toLowerCase().trim();
-		if (key === 'youtube') return '/icons/social/youtube.svg';
-		if (key === 'instagram') return '/icons/social/instagram.svg';
-		if (key === 'twitter' || key === 'x') return '/icons/social/x.svg';
-		if (key === 'facebook') return '/icons/social/facebook.svg';
-		if (key === 'website' || key === 'globe' || key === 'web') return '/icons/social/website.svg';
-		return null;
-	};
+	const socialIconPath = (icon: string | null) => iconSvgPathFromLib(icon ?? '');
 
 	const pageBgClass = $derived(
 		theme === 'neon' ? 'bg-[#060b15]' : theme === 'gradient' ? 'bg-[#faf7ff]' : 'bg-[#f6f7fb]'

@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { microsites } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
@@ -21,32 +21,23 @@ export const GET = async ({ url, cookies }) => {
 	const rawSlug = url.searchParams.get('slug') ?? '';
 	const slug = sanitizeSlug(rawSlug);
 	if (!slug || slug.length < 3 || slug.length > 50) {
-		return json({ available: false, message: 'Slug microsite harus 3-50 karakter.' }, { status: 400 });
+		return json(
+			{ available: false, message: 'Slug microsite harus 3-50 karakter.' },
+			{ status: 400 }
+		);
 	}
 
-	const excludeIdParam = url.searchParams.get('excludeId');
-	const excludeId = excludeIdParam ? Number(excludeIdParam) : null;
-	let safeExcludeId: number | null = null;
-
-	if (Number.isFinite(excludeId)) {
-		const [ownedMicrosite] = await db
-			.select({ id: microsites.id })
-			.from(microsites)
-			.where(and(eq(microsites.id, Number(excludeId)), eq(microsites.userId, userId)))
-			.limit(1);
-		if (ownedMicrosite) {
-			safeExcludeId = ownedMicrosite.id;
-		}
-	}
+	const excludeSlug = url.searchParams.get('excludeSlug');
 
 	const existing = await db
-		.select({ id: microsites.id })
+		.select({ id: microsites.id, slug: microsites.slug })
 		.from(microsites)
 		.where(eq(microsites.slug, slug))
 		.limit(1);
 
-	const available =
-		existing.length === 0 || (safeExcludeId !== null && existing[0].id === safeExcludeId);
+	// If editing: slug is available if no microsite has it, or the only match is the current one
+	const isEditing = !!excludeSlug && excludeSlug === slug;
+	const available = existing.length === 0 || (isEditing && existing[0].slug === slug);
 
 	if (!available) {
 		return json({ available: false, message: 'Slug microsite sudah dipakai.' });

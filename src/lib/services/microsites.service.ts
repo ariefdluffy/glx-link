@@ -21,9 +21,9 @@ export async function fetchMicrosites(): Promise<{
  * Delete a microsite by ID
  */
 export async function deleteMicrosite(
-	id: number
+	slug: string
 ): Promise<{ success: boolean; message?: string }> {
-	const result = await apiDelete(`/api/microsites/${id}`);
+	const result = await apiDelete(`/api/microsites/${slug}`);
 	return {
 		success: result.success,
 		message: result.message

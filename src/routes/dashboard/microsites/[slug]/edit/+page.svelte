@@ -107,14 +107,14 @@
 		lastCheckedSlug = normalizedSlug;
 		slugCheckRequestId += 1;
 		const requestId = slugCheckRequestId;
-		const micrositeId = Number($page.params.id);
-		const excludeIdPart = Number.isFinite(micrositeId) ? `&excludeId=${micrositeId}` : '';
+		const slug = $page.params.slug;
+		const excludeSlugPart = slug ? `&excludeSlug=${encodeURIComponent(slug)}` : '';
 		isCheckingSlug = true;
 		slugValidationMessage = 'Mengecek ketersediaan slug...';
 
 		try {
 			const response = await fetch(
-				`/api/microsites/check-slug?slug=${encodeURIComponent(normalizedSlug)}${excludeIdPart}`
+				`/api/microsites/check-slug?slug=${encodeURIComponent(normalizedSlug)}${excludeSlugPart}`
 			);
 			const payload = await response.json().catch(() => ({}));
 			if (requestId !== slugCheckRequestId) {
@@ -364,9 +364,9 @@
 	};
 
 	const loadMicrosite = async () => {
-		const id = $page.params.id;
+		const slugParam = $page.params.slug;
 		try {
-			const response = await fetch(`/api/microsites/${id}`);
+			const response = await fetch(`/api/microsites/${slugParam}`);
 			if (!response.ok) {
 				const payload = await response.json().catch(() => ({}));
 				errorMessage = payload?.message ?? 'Gagal memuat microsite.';
@@ -462,7 +462,7 @@
 		}
 		isLoading = true;
 		try {
-			const response = await fetch(`/api/microsites/${$page.params.id}`, {
+			const response = await fetch(`/api/microsites/${$page.params.slug}`, {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
@@ -561,7 +561,6 @@
 				<AppearanceSection
 					bind:avatarUrl
 					bind:headerBg
-					bind:linkTextColor
 					bind:theme
 					bind:animation
 					{themes}
@@ -573,7 +572,40 @@
 					onlinkanimationchange={handleLinkAnimationChange}
 				/>
 
-				<SocialSection bind:facebookUrl bind:instagramUrl bind:youtubeUrl bind:websiteUrl />
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<div>
+						<label class="mb-3 block text-xs font-medium text-white/60" for="appearance-link-color">
+							Warna Teks Link
+						</label>
+						<div class="flex flex-wrap items-center gap-3">
+							<input
+								id="appearance-link-color"
+								type="color"
+								bind:value={linkTextColor}
+								class="h-12 w-16 shrink-0 cursor-pointer rounded-xl border border-white/20 bg-white/5 p-1"
+							/>
+							<input
+								type="text"
+								bind:value={linkTextColor}
+								placeholder="#111827"
+								class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white transition outline-none focus:border-violet-400/50"
+							/>
+							<button
+								type="button"
+								class="shrink-0 rounded-full border border-white/15 px-3 py-2 text-[11px] text-white/70 transition hover:border-white/40"
+								onclick={() => (linkTextColor = '')}
+							>
+								Reset
+							</button>
+						</div>
+					</div>
+					<button
+						onclick={openQr}
+						class="mt-7 flex w-full items-center justify-center gap-2 self-start rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-medium transition-all hover:bg-white/10"
+					>
+						Lihat QR Code
+					</button>
+				</div>
 
 				<LinkSection
 					bind:links
@@ -595,19 +627,13 @@
 					iconPreviewFn={iconPreview}
 				/>
 
-				<div class="mt-4">
-					<button
-						onclick={openQr}
-						class="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium transition-all hover:bg-white/10"
-					>
-						Lihat QR Code
-					</button>
-					{#if errorMessage}
-						<div class="mt-4">
-							<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
-						</div>
-					{/if}
-				</div>
+				<SocialSection bind:facebookUrl bind:instagramUrl bind:youtubeUrl bind:websiteUrl />
+
+				{#if errorMessage}
+					<div class="mt-4">
+						<Toast message={errorMessage} type="error" onClose={() => (errorMessage = '')} />
+					</div>
+				{/if}
 			</div>
 		</div>
 

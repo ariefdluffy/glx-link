@@ -2,7 +2,7 @@
 	let {
 		avatarUrl = $bindable(''),
 		headerBg = $bindable(''),
-		linkTextColor = $bindable(''),
+
 		theme = $bindable('default'),
 		animation = $bindable('fade'),
 		themes = ['default', 'gradient', 'minimal', 'neon', 'tech'],
@@ -48,7 +48,7 @@
 	} = $props<{
 		avatarUrl: string;
 		headerBg: string;
-		linkTextColor: string;
+
 		theme: string;
 		animation: string;
 		themes: string[];
@@ -202,149 +202,123 @@
 		</div>
 	</div>
 
-	<!-- Link Text Color -->
-	<div>
-		<label class="mb-3 block text-xs font-medium text-white/60" for="appearance-link-color">
-			Warna Teks Link
-		</label>
-		<div class="flex flex-wrap items-center gap-3">
-			<input
-				id="appearance-link-color"
-				type="color"
-				bind:value={linkTextColor}
-				class="h-12 w-16 shrink-0 cursor-pointer rounded-xl border border-white/20 bg-white/5 p-1"
-			/>
-			<input
-				type="text"
-				bind:value={linkTextColor}
-				placeholder="#111827"
-				class="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white transition outline-none focus:border-violet-400/50"
-			/>
-			<button
-				type="button"
-				class="shrink-0 rounded-full border border-white/15 px-3 py-2 text-[11px] text-white/70 transition hover:border-white/40"
-				onclick={() => (linkTextColor = '')}
-			>
-				Reset
-			</button>
-		</div>
-	</div>
-
-	<!-- Theme Selector -->
-	<div>
-		<label class="mb-3 block text-xs font-medium text-white/60">Tema</label>
-		<div class="relative" bind:this={themeDropdownEl}>
-			<button
-				type="button"
-				class="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:border-white/30"
-				onclick={toggleThemeDropdown}
-			>
-				<span class="text-base">{themeIcons[theme] || '🎨'}</span>
-				<span class="flex-1 text-left text-sm text-white">{themeLabels[theme] || theme}</span>
-				<svg class="h-4 w-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M19 9l-7 7-7-7"
-					/>
-				</svg>
-			</button>
-			{#if themeDropdownOpen}
-				<div
-					class="absolute left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900 p-2 shadow-2xl"
+	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+		<!-- Theme Selector -->
+		<div>
+			<label class="mb-3 block text-xs font-medium text-white/60">Tema</label>
+			<div class="relative" bind:this={themeDropdownEl}>
+				<button
+					type="button"
+					class="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:border-white/30"
+					onclick={toggleThemeDropdown}
 				>
-					{#each themes as item (item)}
-						<button
-							type="button"
-							class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {theme ===
-							item
-								? 'bg-cyan-500/20 text-cyan-300'
-								: 'text-white/70 hover:bg-white/10'}"
-							onclick={() => selectTheme(item)}
-						>
-							<span class="text-base">{themeIcons[item] || '🎨'}</span>
-							<span class="flex-1 text-left text-sm">{themeLabels[item] || item}</span>
-							{#if theme === item}
-								<svg
-									class="ml-auto h-4 w-4 shrink-0 text-cyan-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5 13l4 4L19 7"
-									/>
-								</svg>
-							{/if}
-						</button>
-					{/each}
-				</div>
-			{/if}
+					<span class="text-base">{themeIcons[theme] || '🎨'}</span>
+					<span class="flex-1 text-left text-sm text-white">{themeLabels[theme] || theme}</span>
+					<svg class="h-4 w-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M19 9l-7 7-7-7"
+						/>
+					</svg>
+				</button>
+				{#if themeDropdownOpen}
+					<div
+						class="absolute left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900 p-2 shadow-2xl"
+					>
+						{#each themes as item (item)}
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {theme ===
+								item
+									? 'bg-cyan-500/20 text-cyan-300'
+									: 'text-white/70 hover:bg-white/10'}"
+								onclick={() => selectTheme(item)}
+							>
+								<span class="text-base">{themeIcons[item] || '🎨'}</span>
+								<span class="flex-1 text-left text-sm">{themeLabels[item] || item}</span>
+								{#if theme === item}
+									<svg
+										class="ml-auto h-4 w-4 shrink-0 text-cyan-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M5 13l4 4L19 7"
+										/>
+									</svg>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
-	</div>
 
-	<!-- Animation Selector -->
-	<div>
-		<label class="mb-3 block text-xs font-medium text-white/60">Animasi Default</label>
-		<div class="relative" bind:this={animDropdownEl}>
-			<button
-				type="button"
-				class="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:border-white/30"
-				onclick={toggleAnimDropdown}
-			>
-				<span class="text-base">
-					{animations.find((a) => a.value === animation)?.icon ?? animations[0].icon}
-				</span>
-				<span class="flex-1 text-left text-sm text-white">
-					{animations.find((a) => a.value === animation)?.label ?? animations[0].label}
-				</span>
-				<svg class="h-4 w-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M19 9l-7 7-7-7"
-					/>
-				</svg>
-			</button>
-			{#if animDropdownOpen}
-				<div
-					class="absolute left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900 p-2 shadow-2xl"
+		<!-- Animation Selector -->
+		<div>
+			<label class="mb-3 block text-xs font-medium text-white/60">Animasi Default</label>
+			<div class="relative" bind:this={animDropdownEl}>
+				<button
+					type="button"
+					class="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:border-white/30"
+					onclick={toggleAnimDropdown}
 				>
-					{#each animations as anim (anim.value)}
-						<button
-							type="button"
-							class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {animation ===
-							anim.value
-								? 'bg-cyan-500/20 text-cyan-300'
-								: 'text-white/70 hover:bg-white/10'}"
-							onclick={() => selectAnim(anim.value)}
-						>
-							<span class="text-base">{anim.icon}</span>
-							<span class="text-sm">{anim.label}</span>
-							{#if animation === anim.value}
-								<svg
-									class="ml-auto h-4 w-4 shrink-0 text-cyan-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5 13l4 4L19 7"
-									/>
-								</svg>
-							{/if}
-						</button>
-					{/each}
-				</div>
-			{/if}
+					<span class="text-base">
+						{animations.find((a) => a.value === animation)?.icon ?? animations[0].icon}
+					</span>
+					<span class="flex-1 text-left text-sm text-white">
+						{animations.find((a) => a.value === animation)?.label ?? animations[0].label}
+					</span>
+					<svg class="h-4 w-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M19 9l-7 7-7-7"
+						/>
+					</svg>
+				</button>
+				{#if animDropdownOpen}
+					<div
+						class="absolute left-0 z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900 p-2 shadow-2xl"
+					>
+						{#each animations as anim (anim.value)}
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition {animation ===
+								anim.value
+									? 'bg-cyan-500/20 text-cyan-300'
+									: 'text-white/70 hover:bg-white/10'}"
+								onclick={() => selectAnim(anim.value)}
+							>
+								<span class="text-base">{anim.icon}</span>
+								<span class="text-sm">{anim.label}</span>
+								{#if animation === anim.value}
+									<svg
+										class="ml-auto h-4 w-4 shrink-0 text-cyan-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M5 13l4 4L19 7"
+										/>
+									</svg>
+								{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 </div>

@@ -91,7 +91,7 @@
 		</div>
 	</div>
 
-	<div class="max-h-[300px] space-y-2 overflow-x-hidden overflow-y-auto pr-1 md:max-h-[500px]">
+	<div class="max-h-[400px] space-y-2 overflow-x-hidden overflow-y-auto pr-1 md:max-h-[700px]">
 		{#if links.length === 0}
 			<div class="rounded-2xl border border-dashed border-white/20 bg-white/5 py-10 text-center">
 				<svg
@@ -405,6 +405,15 @@
 													class="mb-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white outline-none placeholder:text-white/30"
 												/>
 												<div class="grid max-h-48 grid-cols-5 gap-1 overflow-y-auto">
+													<button
+														onclick={() => handleIconSelect(index, '')}
+														class="flex aspect-square flex-col items-center justify-center rounded-lg transition hover:bg-white/10 {!link.icon
+															? 'bg-violet-500/20 ring-1 ring-violet-500/50'
+															: ''}"
+														title="Tanpa Icon"
+													>
+														<span class="text-lg text-white/40">🚫</span>
+													</button>
 													{#each filteredIcons as icon}
 														<button
 															onclick={() => handleIconSelect(index, icon.name)}

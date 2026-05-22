@@ -75,7 +75,7 @@ export const iconOptions: IconOption[] = [
 	{ name: 'snapchat', label: 'Snapchat', display: '👻' },
 	{ name: 'pinterest', label: 'Pinterest', display: '📌' },
 	{ name: 'twitch', label: 'Twitch', display: '🎮' },
-	{ name: 'threads', label: 'Threads', display: '🧵' },
+	{ name: 'threads', label: 'Threads', display: '🧵', svg: '/icons/social/threads.svg' },
 	{ name: 'linktree', label: 'Linktree', display: '🌳' }
 ];
 
@@ -99,7 +99,8 @@ export const iconSvgPath = (name: string): string | null => {
 		'discord',
 		'store',
 		'shop',
-		'link'
+		'link',
+		'threads'
 	];
 	const key = name.toLowerCase().trim();
 	if (key === 'twitter' || key === 'x') return '/icons/social/x.svg';

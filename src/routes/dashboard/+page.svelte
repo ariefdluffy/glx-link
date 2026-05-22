@@ -435,7 +435,7 @@
 								<div class="mt-3 flex items-center gap-2">
 									<a
 										class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition-all hover:border-white/30 hover:bg-white/10"
-										href={`/dashboard/microsites/${ms.id}/edit`}
+										href={`/dashboard/microsites/${ms.slug}/edit`}
 									>
 										✏️ Edit
 									</a>

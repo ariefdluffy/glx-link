@@ -35,9 +35,9 @@ export const GET = async ({ params, cookies }) => {
 		return json({ message: 'Unauthorized' }, { status: 401 });
 	}
 
-	const id = Number(params.id);
-	if (!Number.isFinite(id)) {
-		return json({ message: 'ID microsite tidak valid.' }, { status: 400 });
+	const slug = params.slug?.trim().toLowerCase();
+	if (!slug || slug.length < 3) {
+		return json({ message: 'Slug microsite tidak valid.' }, { status: 400 });
 	}
 
 	const [microsite] = await db
@@ -60,12 +60,14 @@ export const GET = async ({ params, cookies }) => {
 			createdAt: microsites.createdAt
 		})
 		.from(microsites)
-		.where(and(eq(microsites.id, id), eq(microsites.userId, userId)))
+		.where(and(eq(microsites.slug, slug), eq(microsites.userId, userId)))
 		.limit(1);
 
 	if (!microsite) {
 		return json({ message: 'Microsite tidak ditemukan.' }, { status: 404 });
 	}
+
+	const micrositeId = microsite.id;
 
 	let links: Array<Record<string, unknown>> = [];
 	try {
@@ -85,7 +87,7 @@ export const GET = async ({ params, cookies }) => {
 				sortOrder: micrositeLinks.sortOrder
 			})
 			.from(micrositeLinks)
-			.where(eq(micrositeLinks.micrositeId, id))
+			.where(eq(micrositeLinks.micrositeId, micrositeId))
 			.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
 	} catch (err) {
 		if (!isMissingIsHiddenColumnError(err)) throw err;
@@ -104,7 +106,7 @@ export const GET = async ({ params, cookies }) => {
 				sortOrder: micrositeLinks.sortOrder
 			})
 			.from(micrositeLinks)
-			.where(eq(micrositeLinks.micrositeId, id))
+			.where(eq(micrositeLinks.micrositeId, micrositeId))
 			.orderBy(asc(micrositeLinks.sortOrder), asc(micrositeLinks.id));
 	}
 
@@ -117,10 +119,23 @@ export const PATCH = async ({ params, cookies, request }) => {
 		return json({ message: 'Unauthorized' }, { status: 401 });
 	}
 
-	const id = Number(params.id);
-	if (!Number.isFinite(id)) {
-		return json({ message: 'ID microsite tidak valid.' }, { status: 400 });
+	const slug = params.slug?.trim().toLowerCase();
+	if (!slug || slug.length < 3) {
+		return json({ message: 'Slug microsite tidak valid.' }, { status: 400 });
 	}
+
+	// Get the microsite's internal ID first
+	const [existingMicrosite] = await db
+		.select({ id: microsites.id })
+		.from(microsites)
+		.where(and(eq(microsites.slug, slug), eq(microsites.userId, userId)))
+		.limit(1);
+
+	if (!existingMicrosite) {
+		return json({ message: 'Microsite tidak ditemukan.' }, { status: 404 });
+	}
+
+	const micrositeId = existingMicrosite.id;
 
 	const payload = await request.json().catch(() => null);
 	if (!payload) {
@@ -133,19 +148,19 @@ export const PATCH = async ({ params, cookies, request }) => {
 		updates.title = payload.title.trim();
 	}
 	if (typeof payload.slug === 'string' && payload.slug.trim()) {
-		const slug = sanitizeSlug(payload.slug);
-		if (slug.length < 3 || slug.length > 50) {
+		const newSlug = sanitizeSlug(payload.slug);
+		if (newSlug.length < 3 || newSlug.length > 50) {
 			return json({ message: 'Slug microsite harus 3-50 karakter.' }, { status: 400 });
 		}
 		const existing = await db
 			.select({ id: microsites.id })
 			.from(microsites)
-			.where(and(eq(microsites.slug, slug), eq(microsites.userId, userId)))
+			.where(and(eq(microsites.slug, newSlug), eq(microsites.userId, userId)))
 			.limit(1);
-		if (existing.length > 0 && existing[0].id !== id) {
+		if (existing.length > 0 && existing[0].id !== micrositeId) {
 			return json({ message: 'Slug microsite sudah dipakai.' }, { status: 409 });
 		}
-		updates.slug = slug;
+		updates.slug = newSlug;
 	}
 	if ('bio' in payload) {
 		updates.bio = typeof payload.bio === 'string' ? payload.bio.trim() || null : null;
@@ -193,11 +208,11 @@ export const PATCH = async ({ params, cookies, request }) => {
 		await db
 			.update(microsites)
 			.set(updates)
-			.where(and(eq(microsites.id, id), eq(microsites.userId, userId)));
+			.where(and(eq(microsites.id, micrositeId), eq(microsites.userId, userId)));
 	}
 
 	if (Array.isArray(payload.links)) {
-		await db.delete(micrositeLinks).where(eq(micrositeLinks.micrositeId, id));
+		await db.delete(micrositeLinks).where(eq(micrositeLinks.micrositeId, micrositeId));
 		const linkRows = payload.links
 			.map(
 				(
@@ -214,7 +229,7 @@ export const PATCH = async ({ params, cookies, request }) => {
 					},
 					index: number
 				) => ({
-					micrositeId: id,
+					micrositeId,
 					type: typeof link.type === 'string' ? link.type : 'link',
 					label: String(link.label ?? '').trim(),
 					url: typeof link.url === 'string' ? link.url.trim() : null,
@@ -255,7 +270,7 @@ export const PATCH = async ({ params, cookies, request }) => {
 			await db.insert(auditLogs).values({
 				userId,
 				action: 'microsite_updated',
-				description: `Update microsite #${id}: ${updates.title || updates.slug || ''}`,
+				description: `Update microsite #${micrositeId}: ${updates.title || updates.slug || ''}`,
 				ip: 'api',
 				userAgent: 'api'
 			});
@@ -273,20 +288,34 @@ export const DELETE = async ({ params, cookies }) => {
 		return json({ message: 'Unauthorized' }, { status: 401 });
 	}
 
-	const id = Number(params.id);
-	if (!Number.isFinite(id)) {
-		return json({ message: 'ID microsite tidak valid.' }, { status: 400 });
+	const slug = params.slug?.trim().toLowerCase();
+	if (!slug || slug.length < 3) {
+		return json({ message: 'Slug microsite tidak valid.' }, { status: 400 });
 	}
 
-	await db.delete(micrositeLinks).where(eq(micrositeLinks.micrositeId, id));
-	await db.delete(microsites).where(and(eq(microsites.id, id), eq(microsites.userId, userId)));
+	const [microsite] = await db
+		.select({ id: microsites.id })
+		.from(microsites)
+		.where(and(eq(microsites.slug, slug), eq(microsites.userId, userId)))
+		.limit(1);
+
+	if (!microsite) {
+		return json({ message: 'Microsite tidak ditemukan.' }, { status: 404 });
+	}
+
+	const micrositeId = microsite.id;
+
+	await db.delete(micrositeLinks).where(eq(micrositeLinks.micrositeId, micrositeId));
+	await db
+		.delete(microsites)
+		.where(and(eq(microsites.id, micrositeId), eq(microsites.userId, userId)));
 
 	// Audit log
 	try {
 		await db.insert(auditLogs).values({
 			userId,
 			action: 'microsite_deleted',
-			description: `Hapus microsite #${id}`,
+			description: `Hapus microsite #${micrositeId}`,
 			ip: 'api',
 			userAgent: 'api'
 		});
