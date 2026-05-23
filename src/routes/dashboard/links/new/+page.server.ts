@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/db';
 import { users, shortLinks } from '$lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 import { isProActive } from '$lib/auth/plan';
 
@@ -23,7 +23,7 @@ export const load = async ({ cookies }) => {
 	const activeLinksCount = await db
 		.select({ count: shortLinks.id })
 		.from(shortLinks)
-		.where(and(eq(shortLinks.userId, userId), eq(shortLinks.isActive, true)));
+		.where(and(eq(shortLinks.userId, userId), sql`${shortLinks.isActive} = 1`));
 
 	return {
 		plan: user.plan,
