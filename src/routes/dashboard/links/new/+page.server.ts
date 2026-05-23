@@ -23,12 +23,12 @@ export const load = async ({ cookies }) => {
 	const activeLinksCount = await db
 		.select({ count: shortLinks.id })
 		.from(shortLinks)
-		.where(and(eq(shortLinks.userId, userId), eq(shortLinks.isActive, 1)));
+		.where(and(eq(shortLinks.userId, userId), eq(shortLinks.isActive, true)));
 
 	return {
 		plan: user.plan,
 		planExpiresAt: user.planExpiresAt,
 		isProActive: proActive,
-		activeLinksCount: activeLinksCount.length
+		activeLinksCount: activeLinksCount.length ?? 0
 	};
 };

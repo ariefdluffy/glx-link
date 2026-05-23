@@ -168,7 +168,9 @@ export const POST = async ({ request, cookies }) => {
 		destination,
 		userId: userId ?? null,
 		isCustom: Boolean(requestedSlug),
-		clicks: 0
+		clicks: 0,
+		isActive: true,
+		subscriptionExpiredAt: null
 	});
 
 	// Audit log
