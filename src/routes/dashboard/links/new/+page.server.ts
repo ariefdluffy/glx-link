@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/db';
 import { users, shortLinks } from '$lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 import { isProActive } from '$lib/auth/plan';
 
@@ -19,17 +19,16 @@ export const load = async ({ cookies }) => {
 
 	const proActive = isProActive(user.plan, user.planExpiresAt);
 
-	// Get current active links count
-	const activeLinksCount = await db
-		.select({ count: shortLinks.id })
-		.from(shortLinks)
-		.where(and(eq(shortLinks.userId, userId), eq(shortLinks.isActive, 1)));
-	// Note: Using 1 instead of true because MySQL stores boolean as tinyint(1)
+	// Get current active links count using raw SQL to avoid Drizzle ORM issues
+	const activeLinksResult = await db.execute(sql`
+		SELECT COUNT(*) as count FROM short_links WHERE user_id = ${userId} AND is_active = 1
+	`);
+	const activeLinksCount = activeLinksResult[0]?.count ?? 0;
 
 	return {
 		plan: user.plan,
 		planExpiresAt: user.planExpiresAt,
 		isProActive: proActive,
-		activeLinksCount: activeLinksCount.length ?? 0
+		activeLinksCount: activeLinksCount
 	};
 };

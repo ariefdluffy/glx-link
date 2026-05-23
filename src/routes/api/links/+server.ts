@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { desc, eq, and, gte } from 'drizzle-orm';
+import { desc, eq, and, gte, sql } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { shortLinks, users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
@@ -163,15 +163,11 @@ export const POST = async ({ request, cookies }) => {
 		return json({ message: 'Gagal membuat slug unik. Coba lagi.' }, { status: 500 });
 	}
 
-	await db.insert(shortLinks).values({
-		slug,
-		destination,
-		userId: userId ?? null,
-		isCustom: requestedSlug ? 1 : 0,
-		clicks: 0,
-		isActive: 1,
-		subscriptionExpiredAt: null
-	});
+	// Use raw SQL to avoid Drizzle ORM issues with default values
+	await db.execute(sql`
+		INSERT INTO short_links (user_id, slug, destination, is_custom, clicks, is_active, subscription_expired_at)
+		VALUES (${userId ?? null}, ${slug}, ${destination}, ${requestedSlug ? 1 : 0}, 0, 1, NULL)
+	`);
 
 	// Audit log
 	try {
