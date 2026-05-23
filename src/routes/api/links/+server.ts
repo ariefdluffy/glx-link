@@ -167,9 +167,9 @@ export const POST = async ({ request, cookies }) => {
 		slug,
 		destination,
 		userId: userId ?? null,
-		isCustom: Boolean(requestedSlug),
+		isCustom: requestedSlug ? 1 : 0,
 		clicks: 0,
-		isActive: true,
+		isActive: 1,
 		subscriptionExpiredAt: null
 	});
 

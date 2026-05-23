@@ -35,9 +35,9 @@ export const shortLinks = mysqlTable('short_links', {
 	userId: int('user_id'),
 	slug: varchar('slug', { length: 50 }).notNull(),
 	destination: text('destination').notNull(),
-	isCustom: boolean('is_custom').default(false),
+	isCustom: tinyint('is_custom').default(0),
 	clicks: int('clicks').default(0),
-	isActive: boolean('is_active').default(true),
+	isActive: tinyint('is_active').default(1),
 	subscriptionExpiredAt: datetime('subscription_expired_at'),
 	createdAt: datetime('created_at').default(sql`CURRENT_TIMESTAMP`)
 });
