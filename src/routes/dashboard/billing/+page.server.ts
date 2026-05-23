@@ -322,11 +322,12 @@ export const actions: Actions = {
 
 		// Apply promo code if provided
 		if (promoCode && promoCode.trim()) {
-			const [promo] = await db
-				.select()
-				.from(promoCodes)
-				.where(and(eq(promoCodes.code, promoCode.toUpperCase()), eq(promoCodes.isActive, true)))
-				.limit(1);
+			const promoResult = await db.execute(sql`
+				SELECT * FROM promo_codes
+				WHERE code = ${promoCode.toUpperCase()} AND is_active = 1
+				LIMIT 1
+			`);
+			const [promo] = promoResult;
 
 			if (promo) {
 				// Check if expired
@@ -463,17 +464,12 @@ export const actions: Actions = {
 		}
 
 		// Cari promo code grant aktif
-		const [promo] = await db
-			.select()
-			.from(promoCodes)
-			.where(
-				and(
-					eq(promoCodes.code, promoCode),
-					eq(promoCodes.isActive, true),
-					eq(promoCodes.type, 'grant')
-				)
-			)
-			.limit(1);
+		const promoResult = await db.execute(sql`
+			SELECT * FROM promo_codes
+			WHERE code = ${promoCode} AND is_active = 1 AND type = 'grant'
+			LIMIT 1
+		`);
+		const [promo] = promoResult;
 
 		if (!promo) {
 			return fail(400, { error: 'Kode promo tidak valid atau sudah tidak aktif' });

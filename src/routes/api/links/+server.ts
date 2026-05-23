@@ -106,20 +106,18 @@ export const POST = async ({ request, cookies }) => {
 		if (user) {
 			const isProActiveUser = isProActive(user.plan, user.planExpiresAt);
 
-			// Free users or Pro expired users: limit to 5 active links
-			if (user.plan === 'free' || (user.plan === 'pro' && !isProActiveUser)) {
-				const existingLinks = await db
-					.select({ id: shortLinks.id })
-					.from(shortLinks)
-					.where(and(eq(shortLinks.userId, userId), eq(shortLinks.isActive, true)));
+			// Free users or Pro expired users: limit to 5 active links using raw SQL
+			const existingLinksResult = await db.execute(sql`
+				SELECT id FROM short_links WHERE user_id = ${userId} AND is_active = 1
+			`);
+			const existingLinks = existingLinksResult;
 
-				if (existingLinks.length >= 5) {
-					const message =
-						user.plan === 'pro' && !isProActiveUser
-							? 'Batas 5 shortlink aktif telah tercapai. Perpanjang langganan untuk mengaktifkan lebih banyak.'
-							: 'Batas 5 shortlink untuk akun Free telah tercapai. Upgrade ke Pro untuk unlimited.';
-					return json({ message }, { status: 403 });
-				}
+			if (existingLinks.length >= 5) {
+				const message =
+					user.plan === 'pro' && !isProActiveUser
+						? 'Batas 5 shortlink aktif telah tercapai. Perpanjang langganan untuk mengaktifkan lebih banyak.'
+						: 'Batas 5 shortlink untuk akun Free telah tercapai. Upgrade ke Pro untuk unlimited.';
+				return json({ message }, { status: 403 });
 			}
 		}
 	}

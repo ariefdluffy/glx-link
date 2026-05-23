@@ -43,12 +43,9 @@ export const load = async ({ cookies }) => {
 
 	const totalMicrositeClicks = Number(micrositeClicksResult[0]?.totalClicks ?? 0);
 
-	const activeMicrositesResult = await db
-		.select({
-			activeMicrosites: count(microsites.id)
-		})
-		.from(microsites)
-		.where(and(eq(microsites.userId, userId), eq(microsites.isActive, true)));
+	const activeMicrositesResult = await db.execute(sql`
+		SELECT COUNT(*) as activeMicrosites FROM microsites WHERE user_id = ${userId} AND is_active = 1
+	`);
 
 	const latestLinks = await db
 		.select({

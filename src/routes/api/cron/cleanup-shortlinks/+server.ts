@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/db';
 import { shortLinks, users } from '$lib/db/schema';
-import { eq, and, lt } from 'drizzle-orm';
+import { eq, and, lt, sql } from 'drizzle-orm';
 
 /**
  * Cron job endpoint to handle automatic cleanup of shortlinks
@@ -23,50 +23,40 @@ export const GET = async () => {
 				planExpiresAt: users.planExpiresAt
 			})
 			.from(users)
-			.where(
-				and(
-					eq(users.plan, 'pro'),
-					lt(users.planExpiresAt, now)
-				)
-			);
+			.where(and(eq(users.plan, 'pro'), lt(users.planExpiresAt, now)));
 
 		let disabledCount = 0;
 		let deletedCount = 0;
 
 		for (const user of expiredUsers) {
-			// Get all active shortlinks for this user, ordered by createdAt DESC
-			const userLinks = await db
-				.select({
-					id: shortLinks.id,
-					createdAt: shortLinks.createdAt,
-					isActive: shortLinks.isActive,
-					subscriptionExpiredAt: shortLinks.subscriptionExpiredAt
-				})
-				.from(shortLinks)
-				.where(
-					and(
-						eq(shortLinks.userId, user.id),
-						eq(shortLinks.isActive, true)
-					)
-				)
-				.orderBy(shortLinks.createdAt);
+			// Get all active shortlinks for this user using raw SQL
+			const userLinksResult = await db.execute(sql`
+				SELECT id, created_at as createdAt, is_active as isActive, subscription_expired_at as subscriptionExpiredAt
+				FROM short_links
+				WHERE user_id = ${user.id} AND is_active = 1
+				ORDER BY created_at ASC
+			`);
+			const userLinks = userLinksResult.map((row) => ({
+				id: row.id,
+				createdAt: row.createdAt,
+				isActive: row.isActive,
+				subscriptionExpiredAt: row.subscriptionExpiredAt
+			}));
 
 			// Check if subscription has been expired for more than 7 days
 			const expiredAt = user.planExpiresAt ? new Date(user.planExpiresAt) : null;
 			const isExpiredMoreThan7Days = expiredAt && expiredAt < sevenDaysAgo;
 
 			if (isExpiredMoreThan7Days) {
-				// Delete ALL links for users expired more than 7 days
-				await db
-					.delete(shortLinks)
-					.where(
-						and(
-							eq(shortLinks.userId, user.id),
-							eq(shortLinks.isActive, true)
-						)
-					);
+				// Delete ALL links for users expired more than 7 days using raw SQL
+				await db.execute(sql`
+					DELETE FROM short_links
+					WHERE user_id = ${user.id} AND is_active = 1
+				`);
 				deletedCount += userLinks.length;
-				console.log(`[Cron] Deleted ${userLinks.length} links for user ${user.id} (expired >7 days)`);
+				console.log(
+					`[Cron] Deleted ${userLinks.length} links for user ${user.id} (expired >7 days)`
+				);
 			} else {
 				// Keep only 5 latest links, disable the rest
 				const linksToDisable = userLinks.slice(5);
