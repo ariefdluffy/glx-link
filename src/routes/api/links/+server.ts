@@ -1,17 +1,20 @@
 import { json } from '@sveltejs/kit';
+import crypto from 'crypto';
 import { desc, eq, and, gte, sql } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { shortLinks, users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 import { isProActive } from '$lib/auth/plan';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
 const attemptsPerLength = 10;
 
 const generateSlug = (length: number) => {
+	const bytes = crypto.randomBytes(length);
 	let slug = '';
 	for (let i = 0; i < length; i += 1) {
-		slug += alphabet[Math.floor(Math.random() * alphabet.length)];
+		slug += alphabet[bytes[i] % alphabet.length];
 	}
 	return slug;
 };
@@ -72,7 +75,8 @@ export const GET = async ({ cookies }) => {
 	return json({ links });
 };
 
-export const POST = async ({ request, cookies }) => {
+export const POST = async (event) => {
+	const { request, cookies } = event;
 	const payload = await request.json().catch(() => null);
 	if (!payload || typeof payload.destination !== 'string') {
 		return json({ message: 'URL tujuan wajib diisi.' }, { status: 400 });
@@ -106,18 +110,20 @@ export const POST = async ({ request, cookies }) => {
 		if (user) {
 			const isProActiveUser = isProActive(user.plan, user.planExpiresAt);
 
-			// Free users or Pro expired users: limit to 5 active links using raw SQL
-			const existingLinksResult = await db.execute(sql`
-				SELECT id FROM short_links WHERE user_id = ${userId} AND is_active = 1
-			`);
-			const existingLinks = existingLinksResult;
+			// Only limit Free users or expired Pro users
+			if (!isProActiveUser) {
+				const existingLinksResult = await db.execute(sql`
+					SELECT id FROM short_links WHERE user_id = ${userId} AND is_active = 1
+				`);
+				const existingLinks = existingLinksResult;
 
-			if (existingLinks.length >= 5) {
-				const message =
-					user.plan === 'pro' && !isProActiveUser
-						? 'Batas 5 shortlink aktif telah tercapai. Perpanjang langganan untuk mengaktifkan lebih banyak.'
-						: 'Batas 5 shortlink untuk akun Free telah tercapai. Upgrade ke Pro untuk unlimited.';
-				return json({ message }, { status: 403 });
+				if (existingLinks.length >= 5) {
+					const message =
+						user.plan === 'pro' && !isProActiveUser
+							? 'Batas 5 shortlink aktif telah tercapai. Perpanjang langganan untuk mengaktifkan lebih banyak.'
+							: 'Batas 5 shortlink untuk akun Free telah tercapai. Upgrade ke Pro untuk unlimited.';
+					return json({ message }, { status: 403 });
+				}
 			}
 		}
 	}
@@ -173,8 +179,8 @@ export const POST = async ({ request, cookies }) => {
 			userId: userId || undefined,
 			action: 'link_created',
 			description: `Membuat shortlink: ${slug} → ${destination}`,
-			ip: 'api',
-			userAgent: 'api'
+			ip: getRealClientIP(event),
+			userAgent: request.headers.get('user-agent') ?? 'api'
 		});
 	} catch (e) {
 		console.error('Failed to record audit log:', e);

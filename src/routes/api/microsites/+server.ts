@@ -4,6 +4,7 @@ import { db } from '$lib/db';
 import { microsites, micrositeLinks, users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 import { isProActive } from '$lib/auth/plan';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const sanitizeSlug = (value: string) =>
 	value
@@ -56,7 +57,8 @@ export const GET = async ({ cookies }) => {
 	return json({ microsites: items });
 };
 
-export const POST = async ({ request, cookies }) => {
+export const POST = async (event) => {
+	const { request, cookies } = event;
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -200,8 +202,8 @@ export const POST = async ({ request, cookies }) => {
 			userId,
 			action: 'microsite_created',
 			description: `Membuat microsite: ${title} (/${slug})`,
-			ip: 'api',
-			userAgent: 'api'
+			ip: getRealClientIP(event),
+			userAgent: request.headers.get('user-agent') ?? 'api'
 		});
 	} catch (e) {
 		console.error('Failed to record audit log:', e);

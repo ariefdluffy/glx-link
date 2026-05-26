@@ -17,7 +17,7 @@ export const load = async ({ cookies, url }) => {
 	if (!user) throw redirect(302, '/login');
 
 	// Pagination
-	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
 	const perPage = 5;
 	const search = url.searchParams.get('search') || '';
 

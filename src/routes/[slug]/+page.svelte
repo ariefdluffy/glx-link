@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-
 	// Theme Components
 	import DefaultTheme from '$lib/components/themes/DefaultTheme.svelte';
 	import GradientTheme from '$lib/components/themes/GradientTheme.svelte';
@@ -29,14 +27,6 @@
 			sortOrder: number | null;
 		}[];
 	}>();
-
-	// Redirect /site/[slug] → /[slug] for backward compatibility
-	$effect(() => {
-		if ($page.url.pathname.startsWith('/site/')) {
-			const slug = $page.params.slug;
-			window.location.href = `/${slug}`;
-		}
-	});
 
 	const theme = (data.microsite.theme || 'default') as keyof typeof themes;
 	const animation = data.microsite.animation ?? 'fade';

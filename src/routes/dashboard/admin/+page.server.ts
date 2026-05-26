@@ -4,6 +4,7 @@ import { users, shortLinks, microsites, subscriptions, auditLogs } from '$lib/db
 import { eq, count, sum, desc, like, or, sql } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 import { createSubscription } from '$lib/subscription-utils';
+import { getRealClientIP } from '$lib/utils/ip';
 import type { Actions } from './$types';
 
 export const load = async ({ cookies, url }) => {
@@ -35,12 +36,13 @@ export const load = async ({ cookies, url }) => {
 		.where(sql`${auditLogs.createdAt} >= NOW() - INTERVAL 24 HOUR`);
 
 	// Pagination
-	const userPage = Math.max(1, parseInt(url.searchParams.get('userPage') || '1'));
-	const msPage = Math.max(1, parseInt(url.searchParams.get('msPage') || '1'));
+	const userPage = Math.max(1, parseInt(url.searchParams.get('userPage') || '1', 10));
+	const msPage = Math.max(1, parseInt(url.searchParams.get('msPage') || '1', 10));
 	const perPage = 10;
 
-	// Search query for users
-	const searchQuery = url.searchParams.get('search') || '';
+	// Search query for users — escape LIKE wildcards
+	const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&');
+	const searchQuery = escapeLike(url.searchParams.get('search') || '');
 
 	// Latest users with pagination (and search if provided)
 	const latestUsers = searchQuery
@@ -159,10 +161,10 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const targetUserId = parseInt(formData.get('userId') as string);
+		const targetUserId = parseInt(formData.get('userId') as string, 10);
 		const plan = formData.get('plan') as string;
-		const price = parseInt(formData.get('price') as string);
-		const durationDays = parseInt(formData.get('durationDays') as string);
+		const price = parseInt(formData.get('price') as string, 10);
+		const durationDays = parseInt(formData.get('durationDays') as string, 10);
 		const paymentMethod = (formData.get('paymentMethod') as string) || 'manual';
 		const paymentRef = (formData.get('paymentRef') as string) || undefined;
 		const autoRenew = formData.get('autoRenew') === 'true';
@@ -211,8 +213,8 @@ export const actions: Actions = {
 					userId,
 					action: 'subscription_created',
 					description: `Admin buat langganan Pro untuk user #${targetUserId}: ${durationDays} hari, Rp${price.toLocaleString('id-ID')}, ref: ${paymentRef || '-'}`,
-					ip: 'admin',
-					userAgent: 'admin'
+					ip: getRealClientIP({ request }),
+					userAgent: request.headers.get('user-agent') ?? 'admin'
 				});
 			} catch (e) {
 				console.error('Failed to record audit log:', e);

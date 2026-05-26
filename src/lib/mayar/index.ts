@@ -1,6 +1,8 @@
 // Mayar.id Payment Gateway Integration
 // Documentation: https://docs.mayar.id/api-reference
 
+import { timingSafeEqual } from 'crypto';
+import { env } from '$env/dynamic/private';
 import { MAYAR_API_KEY } from '$env/static/private';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 
@@ -202,14 +204,29 @@ export function mapMayarStatus(
 }
 
 /**
- * Verify webhook signature (optional - Mayar doesn't have signature verification in basic plan)
- * For now, we'll just return true, but you can add IP whitelist or other verification
+ * Verify Mayar webhook authenticity using secret token
+ *
+ * Metode: Bearer token dari header `Authorization` dibandingkan dengan MAYAR_WEBHOOK_SECRET
+ * Fallback: jika Mayar basic plan tidak support signature, gunakan webhook secret statis.
+ *
+ * REQUIRED: Set MAYAR_WEBHOOK_SECRET di environment variable.
  */
-export function verifyWebhookSignature(payload: unknown): boolean {
-	// TODO: Implement IP whitelist or other verification method
-	// For now, accept all webhooks
-	console.log('[Mayar] Webhook verification - accepting all (no signature verification available)');
-	return true;
+export function verifyWebhookSignature(payload: unknown, authHeader?: string | null): boolean {
+	const secret = env.MAYAR_WEBHOOK_SECRET;
+
+	if (!secret) {
+		console.error('[Mayar] MAYAR_WEBHOOK_SECRET not configured — rejecting webhook');
+		return false;
+	}
+
+	if (!authHeader) {
+		console.error('[Mayar] No Authorization header in webhook request');
+		return false;
+	}
+
+	const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+	const match = timingSafeEqual(Buffer.from(token), Buffer.from(secret));
+	return match;
 }
 
 export type { MayarInvoiceResponse, MayarInvoiceRequest, MayarInvoiceDetailResponse };

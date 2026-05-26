@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
+import crypto from 'crypto';
 import { db } from '$lib/db';
 import { users, auditLogs, emailVerifications } from '$lib/db/schema';
 import { hashPassword } from '$lib/auth/password';
@@ -111,16 +112,17 @@ export const POST = async (event) => {
 				userAgent
 			});
 		} catch (e) {
-			console.error('Failed to record audit log:', e);
+			console.error('[Register] Gagal catat audit log untuk user baru:', e);
 		}
 
 		// Kirim email verifikasi
 		try {
 			const token = generateToken();
+			const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 			const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 			await db.insert(emailVerifications).values({
 				userId: created.id,
-				token,
+				token: hashedToken,
 				expiresAt
 			});
 

@@ -4,6 +4,7 @@ import { users, subscriptions, auditLogs, promoCodes } from '$lib/db/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 import { createInvoice } from '$lib/mayar';
+import { getRealClientIP } from '$lib/utils/ip';
 import type { Actions } from './$types';
 
 export const load = async ({ cookies, url }) => {
@@ -11,8 +12,8 @@ export const load = async ({ cookies, url }) => {
 	if (!userId) throw redirect(302, '/login');
 
 	// Get query parameters for filtering
-	const page = parseInt(url.searchParams.get('page') ?? '1');
-	const limit = parseInt(url.searchParams.get('limit') ?? '10');
+	const page = parseInt(url.searchParams.get('page') ?? '1', 10);
+	const limit = parseInt(url.searchParams.get('limit') ?? '10', 10);
 	const status = url.searchParams.get('status') as 'active' | 'expired' | 'cancelled' | null;
 	const startDate = url.searchParams.get('startDate');
 	const endDate = url.searchParams.get('endDate');
@@ -199,7 +200,7 @@ export const actions: Actions = {
 		if (!userId) throw redirect(302, '/login');
 
 		const formData = await request.formData();
-		const subscriptionId = parseInt(formData.get('subscriptionId') as string);
+		const subscriptionId = parseInt(formData.get('subscriptionId') as string, 10);
 
 		if (!subscriptionId) {
 			return fail(400, { error: 'ID langganan tidak valid' });
@@ -232,8 +233,8 @@ export const actions: Actions = {
 				userId,
 				action: 'subscription_cancelled',
 				description: `Batalkan langganan #${subscriptionId}`,
-				ip: 'self',
-				userAgent: 'self'
+				ip: getRealClientIP({ request }),
+				userAgent: request.headers.get('user-agent') ?? 'self'
 			});
 		} catch (e) {
 			console.error('Failed to record audit log:', e);
@@ -248,7 +249,7 @@ export const actions: Actions = {
 		if (!userId) throw redirect(302, '/login');
 
 		const formData = await request.formData();
-		const subscriptionId = parseInt(formData.get('subscriptionId') as string);
+		const subscriptionId = parseInt(formData.get('subscriptionId') as string, 10);
 		const autoRenew = formData.get('autoRenew') === 'true';
 
 		if (!subscriptionId) {
@@ -277,8 +278,8 @@ export const actions: Actions = {
 				description: autoRenew
 					? `Aktifkan auto-renew untuk langganan #${subscriptionId}`
 					: `Nonaktifkan auto-renew untuk langganan #${subscriptionId}`,
-				ip: 'self',
-				userAgent: 'self'
+				ip: getRealClientIP({ request }),
+				userAgent: request.headers.get('user-agent') ?? 'self'
 			});
 		} catch (e) {
 			console.error('Failed to record audit log:', e);
@@ -297,7 +298,7 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const plan = formData.get('plan') as string;
-		const durationDays = parseInt(formData.get('durationDays') as string) || 30;
+		const durationDays = parseInt(formData.get('durationDays') as string, 10) || 30;
 		const promoCode = formData.get('promoCode') as string;
 
 		if (!plan || plan !== 'pro') {
@@ -417,8 +418,8 @@ export const actions: Actions = {
 				userId,
 				action: 'PAYMENT_CREATED',
 				description: `Created Mayar invoice for subscription #${subscription.id}. Amount: ${price}`,
-				ip: 'self',
-				userAgent: 'self'
+				ip: getRealClientIP({ request }),
+				userAgent: request.headers.get('user-agent') ?? 'self'
 			});
 
 			// Return invoice URL for redirect
@@ -546,8 +547,8 @@ export const actions: Actions = {
 					userId,
 					action: 'promo_grant_redeemed',
 					description: `Redeemed grant promo ${promoCode}: ${promo.grantDays} hari ${promo.grantPlan}`,
-					ip: 'self',
-					userAgent: 'self'
+					ip: getRealClientIP({ request }),
+					userAgent: request.headers.get('user-agent') ?? 'self'
 				});
 			} catch (e) {
 				console.error('Failed to record audit log:', e);

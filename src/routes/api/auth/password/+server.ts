@@ -1,13 +1,15 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
-import { users, auditLogs } from '$lib/db/schema';
+import { users, auditLogs, userSessions } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
 import { hashPassword, verifyPassword } from '$lib/auth/password';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const hasLetterAndNumber = (value: string) => /[a-zA-Z]/.test(value) && /\d/.test(value);
 
-export const PATCH = async ({ request, cookies }) => {
+export const PATCH = async (event) => {
+	const { request, cookies } = event;
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -50,6 +52,9 @@ export const PATCH = async ({ request, cookies }) => {
 	const hashed = await hashPassword(newPassword);
 	await db.update(users).set({ password: hashed }).where(eq(users.id, userId));
 
+	// Hapus semua sesi — paksa re-login setelah ganti password
+	await db.delete(userSessions).where(eq(userSessions.userId, userId));
+
 	// Audit log
 	try {
 		const userAgent = request.headers.get('user-agent') ?? 'unknown';
@@ -57,7 +62,7 @@ export const PATCH = async ({ request, cookies }) => {
 			userId,
 			action: 'password_changed',
 			description: 'Ganti password berhasil',
-			ip: 'api',
+			ip: getRealClientIP(event),
 			userAgent
 		});
 	} catch (e) {

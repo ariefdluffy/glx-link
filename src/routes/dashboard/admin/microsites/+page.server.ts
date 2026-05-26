@@ -17,9 +17,11 @@ export const load = async ({ cookies, url }) => {
 	if (!user || user.role !== 'admin') throw redirect(302, '/dashboard');
 
 	// Pagination
-	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
 	const perPage = 20;
-	const search = url.searchParams.get('search') || '';
+	// Escape LIKE wildcards in search
+	const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&');
+	const search = escapeLike(url.searchParams.get('search') || '');
 
 	// Build query
 	let query = db.select().from(microsites);
@@ -78,10 +80,7 @@ export const actions = {
 			return { success: false, error: 'Invalid data' };
 		}
 
-		await db
-			.update(microsites)
-			.set({ isActive: !isActive })
-			.where(eq(microsites.id, micrositeId));
+		await db.update(microsites).set({ isActive: !isActive }).where(eq(microsites.id, micrositeId));
 
 		return { success: true };
 	},

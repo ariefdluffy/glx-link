@@ -1,30 +1,26 @@
 /**
  * Get real client IP address
- * Checks proxy headers first (Cloudflare, Nginx, etc.) before falling back to getClientAddress()
  *
- * Priority order:
- * 1. cf-connecting-ip (Cloudflare)
- * 2. x-real-ip (Nginx)
- * 3. x-forwarded-for (Standard proxy)
- * 4. getClientAddress() (Direct connection)
+ * Security: Only trust cf-connecting-ip (Cloudflare sets this securely).
+ * x-real-ip and x-forwarded-for are NOT blindly trusted — they're spoofable
+ * on direct connections. Instead, configure adapter-node with xForwardedFor:true
+ * in svelte.config.js, then use getClientAddress() which handles proxy headers
+ * via the adapter.
+ *
+ * Priority:
+ * 1. cf-connecting-ip (Cloudflare — trusted, strips other headers)
+ * 2. getClientAddress() (SvelteKit, respects adapter xForwardedFor config)
+ * 3. 'unknown'
  */
 export function getRealClientIP(event: any): string {
 	const headers = event?.request?.headers;
 
-	// Check proxy headers first
+	// Cloudflare: trusted proxy header (CF validates & sets this before forwarding to origin)
 	const cfIp = headers?.get?.('cf-connecting-ip');
 	if (cfIp) return cfIp;
 
-	const realIp = headers?.get?.('x-real-ip');
-	if (realIp) return realIp;
-
-	const forwardedFor = headers?.get?.('x-forwarded-for');
-	if (forwardedFor) {
-		// x-forwarded-for can contain multiple IPs, get the first one (original client)
-		return forwardedFor.split(',')[0]?.trim() || 'unknown';
-	}
-
-	// Fallback to getClientAddress
+	// SvelteKit's getClientAddress — with adapter-node xForwardedFor:true,
+	// this returns the real client IP from X-Forwarded-For set by trusted proxy
 	if (event?.getClientAddress) {
 		try {
 			return event.getClientAddress();

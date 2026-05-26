@@ -1,12 +1,15 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
+import { dev } from '$app/environment';
 import { db } from '$lib/db';
 import { users, passwordResetTokens, auditLogs } from '$lib/db/schema';
 import { sendEmail, generateToken, getBaseUrl } from '$lib/email';
 import { resetPasswordHtml } from '$lib/email/templates/reset-password';
+import { getRealClientIP } from '$lib/utils/ip';
 
-export const POST = async ({ request }) => {
+export const POST = async (event) => {
+	const { request } = event;
 	const payload = await request.json().catch(() => null);
 	if (!payload) {
 		return json({ message: 'Data tidak valid.' }, { status: 400 });
@@ -33,13 +36,14 @@ export const POST = async ({ request }) => {
 	// Invalidate old tokens
 	await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, user.id));
 
-	// Create new token (expires in 1 hour)
+	// Create new token (expires in 1 hour) — store SHA-256 hash, send raw token in email
 	const token = crypto.randomBytes(32).toString('hex');
+	const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 	const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
 	await db.insert(passwordResetTokens).values({
 		userId: user.id,
-		token,
+		token: hashedToken,
 		expiresAt
 	});
 
@@ -49,8 +53,8 @@ export const POST = async ({ request }) => {
 			userId: user.id,
 			action: 'password_reset_requested',
 			description: `Minta reset password untuk email: ${email}`,
-			ip: 'api',
-			userAgent: 'forgot-password'
+			ip: getRealClientIP(event),
+			userAgent: request.headers.get('user-agent') ?? 'forgot-password'
 		});
 	} catch (e) {
 		console.error('Audit log failed:', e);
@@ -66,8 +70,8 @@ export const POST = async ({ request }) => {
 		html: emailHtml
 	});
 
-	// Log untuk development (kalo email gagal kirim)
-	if (!emailSent) {
+	// Log untuk development — hanya tampilkan jika dev + email gagal kirim
+	if (!emailSent && dev) {
 		console.log(`\n========================================`);
 		console.log(`🔐 RESET PASSWORD LINK for ${email}`);
 		console.log(`Token: ${token}`);
@@ -77,8 +81,6 @@ export const POST = async ({ request }) => {
 
 	return json({
 		ok: true,
-		message: 'Link reset password telah dikirim ke email Anda.',
-		// In development, return token so dev can test without email
-		devToken: process.env.NODE_ENV !== 'production' ? token : undefined
+		message: 'Link reset password telah dikirim ke email Anda.'
 	});
 };

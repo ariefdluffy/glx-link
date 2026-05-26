@@ -27,8 +27,8 @@ logs/
 *.log
 pm2-*.log
 
-# Backup files
-backups/
+# Helper/dev scripts (not for production)
+scripts/
 *.sql
 *.sql.gz
 

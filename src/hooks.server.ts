@@ -3,13 +3,30 @@ import { redirect } from '@sveltejs/kit';
 import type { Handle } from '@sveltejs/kit';
 
 // Security headers configuration
-const securityHeaders = {
+const securityHeaders: Record<string, string> = {
 	'X-Content-Type-Options': 'nosniff',
 	'X-Frame-Options': 'DENY',
-	'X-XSS-Protection': '1; mode=block',
 	'Referrer-Policy': 'strict-origin-when-cross-origin',
-	'Permissions-Policy': 'geolocation=(), microphone=(), camera=()'
+	'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+	'Content-Security-Policy': [
+		"default-src 'self'",
+		"script-src 'self' https://challenges.cloudflare.com",
+		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+		"font-src 'self' https://fonts.gstatic.com",
+		"img-src 'self' data: https://api.qrserver.com https:",
+		"connect-src 'self'",
+		'frame-src https://challenges.cloudflare.com',
+		"form-action 'self'",
+		"base-uri 'self'",
+		"object-src 'none'",
+		'upgrade-insecure-requests'
+	].join('; ')
 };
+
+// HSTS — set only in production
+if (!dev) {
+	securityHeaders['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
+}
 
 // Cache control: static assets get immutable cache, everything else no-cache
 const STATIC_CACHE = 'public, max-age=31536000, immutable';
@@ -61,30 +78,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const url = new URL(event.request.url);
 	const isStaticAsset = url.pathname.startsWith('/_app/immutable/');
 
-	// Add security headers to all responses
-	const response = await resolve(event);
-
-	for (const [key, value] of Object.entries(securityHeaders)) {
-		response.headers.set(key, value);
+	// HTTPS redirect (production only) — before anything else
+	if (!dev && event.url.protocol === 'http:') {
+		const httpsUrl = event.url.toString().replace('http://', 'https://');
+		return redirect(301, httpsUrl);
 	}
 
-	// Cache static assets aggressively, dynamic pages no-cache
-	response.headers.set(
-		'Cache-Control',
-		dev ? 'no-store' : isStaticAsset ? STATIC_CACHE : DYNAMIC_CACHE
-	);
-
-	// Rate limiting (skip for static files and health checks)
+	// Rate limiting — BEFORE resolve so route handler doesn't run on blocked requests
 	if (!url.pathname.startsWith('/_sveltekit') && !url.pathname.startsWith('/health')) {
-		// Get client IP
 		const headers = event.request.headers;
 		let clientIp: string;
 		try {
-			clientIp =
-				headers.get('cf-connecting-ip') ??
-				headers.get('x-real-ip') ??
-				headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-				event.getClientAddress();
+			clientIp = headers.get('cf-connecting-ip') ?? event.getClientAddress();
 		} catch {
 			clientIp = '0.0.0.0';
 		}
@@ -103,11 +108,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	// HTTPS redirect (production only)
-	if (!dev && event.url.protocol === 'http:') {
-		const httpsUrl = event.url.toString().replace('http://', 'https://');
-		throw redirect(301, httpsUrl);
+	const response = await resolve(event);
+
+	for (const [key, value] of Object.entries(securityHeaders)) {
+		response.headers.set(key, value);
 	}
+
+	// Cache static assets aggressively, dynamic pages no-cache
+	response.headers.set(
+		'Cache-Control',
+		dev ? 'no-store' : isStaticAsset ? STATIC_CACHE : DYNAMIC_CACHE
+	);
 
 	return response;
 };

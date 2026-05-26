@@ -3,6 +3,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { microsites, micrositeLinks, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const sanitizeSlug = (value: string) =>
 	value
@@ -113,7 +114,8 @@ export const GET = async ({ params, cookies }) => {
 	return json({ microsite, links });
 };
 
-export const PATCH = async ({ params, cookies, request }) => {
+export const PATCH = async (event) => {
+	const { params, cookies, request } = event;
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -211,6 +213,11 @@ export const PATCH = async ({ params, cookies, request }) => {
 			.where(and(eq(microsites.id, micrositeId), eq(microsites.userId, userId)));
 	}
 
+	// Jika hanya update meta tanpa links, tetap return ok
+	if (!Array.isArray(payload.links)) {
+		return json({ ok: true });
+	}
+
 	if (Array.isArray(payload.links)) {
 		await db.delete(micrositeLinks).where(eq(micrositeLinks.micrositeId, micrositeId));
 		const linkRows = payload.links
@@ -271,18 +278,19 @@ export const PATCH = async ({ params, cookies, request }) => {
 				userId,
 				action: 'microsite_updated',
 				description: `Update microsite #${micrositeId}: ${updates.title || updates.slug || ''}`,
-				ip: 'api',
-				userAgent: 'api'
+				ip: getRealClientIP(event),
+				userAgent: request.headers.get('user-agent') ?? 'api'
 			});
 		} catch (e) {
 			console.error('Failed to record audit log:', e);
 		}
-
-		return json({ ok: true });
 	}
+
+	return json({ ok: true });
 };
 
-export const DELETE = async ({ params, cookies }) => {
+export const DELETE = async (event) => {
+	const { params, cookies, request } = event;
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -316,8 +324,8 @@ export const DELETE = async ({ params, cookies }) => {
 			userId,
 			action: 'microsite_deleted',
 			description: `Hapus microsite #${micrositeId}`,
-			ip: 'api',
-			userAgent: 'api'
+			ip: getRealClientIP(event),
+			userAgent: request.headers.get('user-agent') ?? 'api'
 		});
 	} catch (e) {
 		console.error('Failed to record audit log:', e);

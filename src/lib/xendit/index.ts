@@ -1,6 +1,7 @@
 // Xendit Payment Gateway Integration
 // Documentation: https://developers.xendit.co/
 
+import { timingSafeEqual } from 'crypto';
 import { XENDIT_SECRET_KEY, XENDIT_PUBLIC_KEY, XENDIT_CALLBACK_TOKEN } from '$env/static/private';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 
@@ -335,13 +336,25 @@ export async function getEWalletCharge(chargeId: string): Promise<XenditEWalletC
 /**
  * Verify Xendit callback signature
  * Used to verify that the callback is genuinely from Xendit
+ *
+ * Wajib mengandalkan XENDIT_CALLBACK_TOKEN saja. Public key bukan secret.
  */
-export function verifyCallbackSignature(
-	callbackToken: string,
-	xenditCallbackVerificationToken?: string
-): boolean {
-	const verificationToken = xenditCallbackVerificationToken || getPublicKey() || getCallbackToken();
-	return callbackToken === verificationToken;
+export function verifyCallbackSignature(callbackToken: string | null): boolean {
+	const expectedToken = getCallbackToken();
+
+	if (!expectedToken || !callbackToken) {
+		console.error('[Xendit] XENDIT_CALLBACK_TOKEN not configured or missing token in request');
+		return false;
+	}
+
+	// Timing-safe comparison
+	try {
+		const expected = Buffer.from(expectedToken);
+		const actual = Buffer.from(callbackToken);
+		return expected.length === actual.length && timingSafeEqual(expected, actual);
+	} catch {
+		return false;
+	}
 }
 
 /**

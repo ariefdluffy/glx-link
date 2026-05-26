@@ -3,10 +3,12 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { users, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const isValidEmail = (value: string) => /.+@.+\..+/.test(value);
 
-export const PATCH = async ({ request, cookies }) => {
+export const PATCH = async (event) => {
+	const { request, cookies } = event;
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -58,8 +60,8 @@ export const PATCH = async ({ request, cookies }) => {
 			userId,
 			action: 'profile_updated',
 			description: `Update profil: ${description}`,
-			ip: 'api',
-			userAgent: 'api'
+			ip: getRealClientIP(event),
+			userAgent: request.headers.get('user-agent') ?? 'api'
 		});
 	} catch (e) {
 		console.error('Failed to record audit log:', e);

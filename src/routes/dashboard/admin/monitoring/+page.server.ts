@@ -20,10 +20,14 @@ export const load = async ({ cookies, url }) => {
 	}
 
 	// Get query parameters
-	const page = parseInt(url.searchParams.get('page') ?? '1');
-	const limit = parseInt(url.searchParams.get('limit') ?? '20');
+	const page = parseInt(url.searchParams.get('page') ?? '1', 10);
+	const limit = parseInt(url.searchParams.get('limit') ?? '20', 10);
 	const action = url.searchParams.get('action');
-	const search = url.searchParams.get('search');
+	// Escape LIKE wildcards
+	const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&');
+	const search = url.searchParams.get('search')
+		? escapeLike(url.searchParams.get('search')!)
+		: null;
 
 	const offset = (page - 1) * limit;
 

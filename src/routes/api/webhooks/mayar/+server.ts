@@ -42,8 +42,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		const payload = await request.json();
 		console.log('[Mayar Webhook] Received callback:', JSON.stringify(payload, null, 2));
 
-		// Verify webhook (basic verification)
-		if (!verifyWebhookSignature(payload)) {
+		// Verify webhook — wajib Authorization: Bearer <MAYAR_WEBHOOK_SECRET>
+		const authHeader = request.headers.get('authorization');
+		if (!verifyWebhookSignature(payload, authHeader)) {
 			console.error('[Mayar Webhook] Invalid webhook signature');
 			return json({ error: 'Invalid webhook signature' }, { status: 401 });
 		}
@@ -71,7 +72,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		// Extract subscription info from extraData
-		const { external_id: externalId, subscription_id, user_id } = extraData;
+		const { external_id: externalId, subscription_id, user_id, duration_days } = extraData;
 
 		if (!externalId || !subscription_id || !user_id) {
 			console.error('[Mayar Webhook] Missing subscription info in extraData');
@@ -100,16 +101,18 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		// Handle payment status
 		if (status === true) {
+			// Validasi amount: pastikan nominal yang dibayar >= harga subscription
+			if (Number(amount) < subscription.price) {
+				console.error(
+					`[Mayar Webhook] Amount mismatch for subscription #${subscriptionId}: paid ${amount}, expected >= ${subscription.price}`
+				);
+				return json({ error: 'Amount mismatch' }, { status: 400 });
+			}
+
 			// Payment successful - activate subscription
 			await db.transaction(async (tx) => {
-				// Calculate new expiry date from now
-				let durationDays = 30; // default
-				if (subscription.notes) {
-					const match = subscription.notes.match(/(\d+)\s*days?/i);
-					if (match) {
-						durationDays = parseInt(match[1], 10);
-					}
-				}
+				// Duration dari extraData payload (dikirim saat create invoice) — bukan dari `notes`
+				const durationDays = Number(duration_days) || 30;
 
 				const newExpiresAt = new Date();
 				newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
@@ -166,14 +169,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		return json({ success: true, status: status ? 'paid' : 'failed' });
 	} catch (error) {
-		console.error('[Mayar Webhook] Error processing callback:', error);
-		return json(
-			{
-				error: 'Internal server error',
-				message: error instanceof Error ? error.message : 'Unknown error'
-			},
-			{ status: 500 }
+		const msg = error instanceof Error ? error.message : String(error);
+		console.error(
+			'[Mayar Webhook] Error processing callback — subscriptionId mungkin tidak terupdate:',
+			msg,
+			error
 		);
+		return json({ error: 'Internal server error', message: msg }, { status: 500 });
 	}
 };
 

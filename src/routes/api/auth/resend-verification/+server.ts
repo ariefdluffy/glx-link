@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { eq, and, sql, gt, desc } from 'drizzle-orm';
+import crypto from 'crypto';
 import { db } from '$lib/db';
 import { users, emailVerifications, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
@@ -64,7 +65,7 @@ export const POST = async ({ cookies, request }) => {
 		userName = user.name;
 	}
 
-	// Rate limit 1: cooldown 60 detik antar resend
+	// Rate limit 1: cooldown 120 detik (2 menit) antar resend
 	const [lastToken] = await db
 		.select({ createdAt: emailVerifications.createdAt })
 		.from(emailVerifications)
@@ -105,11 +106,12 @@ export const POST = async ({ cookies, request }) => {
 
 	// Buat token baru (berlaku 24 jam)
 	const token = generateToken();
+	const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 	const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
 	await db.insert(emailVerifications).values({
 		userId,
-		token,
+		token: hashedToken,
 		expiresAt
 	});
 

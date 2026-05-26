@@ -6,32 +6,16 @@ import { verifyCallbackSignature, mapXenditStatus } from '$lib/xendit';
 
 /**
  * Xendit Invoice Callback Webhook
- * This endpoint receives callbacks from Xendit when invoice status changes
  *
- * Expected callback payload:
- * - id: Invoice ID
- * - external_id: Your reference ID (we use subscription ID)
- * - status: PENDING | PAID | EXPIRED | FAILED
- * - amount: Payment amount
- * - paid_at: Timestamp when paid (if applicable)
- * - payment_method: The payment method used
+ * Wajib header: x-callback-token — diverifikasi dengan XENDIT_CALLBACK_TOKEN via timingSafeEqual
  */
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		// Verify callback token from Xendit header
-		// In development, skip verification if no token is configured
+		// Verify callback token — WAJIB, tidak ada skip untuk development
 		const callbackToken = request.headers.get('x-callback-token');
-		const isDevelopment = process.env.NODE_ENV !== 'production';
-		const skipVerification =
-			isDevelopment && !process.env.XENDIT_CALLBACK_TOKEN && !process.env.XENDIT_PUBLIC_KEY;
-
-		if (!skipVerification && (!callbackToken || !verifyCallbackSignature(callbackToken))) {
-			console.error('[Xendit Webhook] Invalid callback token');
+		if (!callbackToken || !verifyCallbackSignature(callbackToken)) {
+			console.error('[Xendit Webhook] Invalid or missing callback token');
 			return json({ error: 'Invalid callback token' }, { status: 401 });
-		}
-
-		if (skipVerification) {
-			console.warn('[Xendit Webhook] Skipping token verification (development mode)');
 		}
 
 		// Parse the callback payload
@@ -58,15 +42,25 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		// Parse external_id to get subscription info
-		// Format: sub_{subscriptionId}_{userId}_{timestamp}
+		// Format baru: sub_{subscriptionId}_{userId}_{durationDays}_{timestamp}
+		// Format lama (backward compat): sub_{subscriptionId}_{userId}_{timestamp}
 		const externalIdParts = externalId.split('_');
-		if (externalIdParts.length < 3 || externalIdParts[0] !== 'sub') {
+		if (externalIdParts.length < 4 || externalIdParts[0] !== 'sub') {
 			console.error('[Xendit Webhook] Invalid external_id format:', externalId);
 			return json({ error: 'Invalid external_id format' }, { status: 400 });
 		}
 
 		const subscriptionId = parseInt(externalIdParts[1], 10);
 		const userId = parseInt(externalIdParts[2], 10);
+
+		// Duration: format baru punya 5 parts (sub_a_b_c_d), format lama punya 4 (sub_a_b_c)
+		let durationDays = 30;
+		if (externalIdParts.length >= 5) {
+			const parsed = parseInt(externalIdParts[3], 10);
+			if (!isNaN(parsed) && parsed > 0) {
+				durationDays = parsed;
+			}
+		}
 
 		if (isNaN(subscriptionId) || isNaN(userId)) {
 			console.error('[Xendit Webhook] Invalid subscription or user ID in external_id');
@@ -100,18 +94,17 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		// Handle based on status
 		if (mappedStatus === 'paid') {
+			// Validasi amount: pastikan nominal yang dibayar >= harga subscription
+			if (Number(amount) < subscription.price) {
+				console.error(
+					`[Xendit Webhook] Amount mismatch for subscription #${subscriptionId}: paid ${amount}, expected >= ${subscription.price}`
+				);
+				return json({ error: 'Amount mismatch' }, { status: 400 });
+			}
+
 			// Payment successful - activate subscription
 			await db.transaction(async (tx) => {
-				// Calculate new expiry date from now (not from subscription creation)
-				// Extract duration from notes if available
-				let durationDays = 30; // default
-				if (subscription.notes) {
-					const match = subscription.notes.match(/(\d+)\s*days?/i);
-					if (match) {
-						durationDays = parseInt(match[1], 10);
-					}
-				}
-
+				// Duration diambil dari external_id (dari field parts[3]) — bukan dari `notes`
 				const newExpiresAt = new Date();
 				newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
 
@@ -197,14 +190,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		return json({ success: true, status: mappedStatus });
 	} catch (error) {
-		console.error('[Xendit Webhook] Error processing callback:', error);
-		return json(
-			{
-				error: 'Internal server error',
-				message: error instanceof Error ? error.message : 'Unknown error'
-			},
-			{ status: 500 }
+		const msg = error instanceof Error ? error.message : String(error);
+		console.error(
+			'[Xendit Webhook] Error processing callback — subscriptionId mungkin tidak terupdate:',
+			msg,
+			error
 		);
+		return json({ error: 'Internal server error', message: msg }, { status: 500 });
 	}
 };
 

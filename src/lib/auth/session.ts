@@ -3,7 +3,7 @@ import { SESSION_SECRET } from '$env/static/private';
 import { dev } from '$app/environment';
 import { db } from '$lib/db';
 import { userSessions } from '$lib/db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import type { Cookies, RequestEvent } from '@sveltejs/kit';
 import { getRealClientIP } from '$lib/utils/ip';
 
@@ -31,39 +31,15 @@ export const createSession = async (cookies: Cookies, userId: number, event?: Re
 		const ip = getRealClientIP(event);
 		const userAgent = event?.request?.headers?.get?.('user-agent') ?? 'unknown';
 
-		// Check if session with same IP and User Agent exists
-		const existingSession = await db
-			.select()
-			.from(userSessions)
-			.where(
-				and(
-					eq(userSessions.userId, userId),
-					eq(userSessions.ip, ip),
-					eq(userSessions.userAgent, userAgent)
-				)
-			)
-			.limit(1);
-
-		if (existingSession.length > 0) {
-			// Update existing session
-			await db
-				.update(userSessions)
-				.set({
-					token: payload,
-					lastActiveAt: sql`CURRENT_TIMESTAMP`
-				})
-				.where(eq(userSessions.id, existingSession[0].id));
-		} else {
-			// Create new session
-			await db.insert(userSessions).values({
-				userId,
-				token: payload,
-				ip,
-				userAgent
-			});
-		}
+		// Always insert new session row — no dedup via IP+UA (security: prevent session spoofing)
+		await db.insert(userSessions).values({
+			userId,
+			token: payload,
+			ip,
+			userAgent
+		});
 	} catch (e) {
-		console.error('Failed to record session:', e);
+		console.error(`[Session] Gagal rekam sesi DB untuk user #${userId}:`, e);
 	}
 
 	cookies.set(COOKIE_NAME, `${payload}.${signature}`, {

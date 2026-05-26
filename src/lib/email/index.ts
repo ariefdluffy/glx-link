@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import { env } from '$env/dynamic/private';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 
@@ -26,7 +27,7 @@ function getTransporter(): nodemailer.Transporter {
 	 *   SMTP_PASS=app-password-16-digit
 	 */
 	const host = env.SMTP_HOST || 'smtp-relay.brevo.com';
-	const port = parseInt(env.SMTP_PORT || '587');
+	const port = parseInt(env.SMTP_PORT || '587', 10);
 	const user = env.SMTP_USER || '';
 	const pass = env.SMTP_PASS || '';
 
@@ -64,12 +65,13 @@ export async function sendEmail(options: {
 	}
 }
 
-// Generate random token
+// Generate random token using crypto.randomBytes (not Math.random)
 export function generateToken(length = 48): string {
 	const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	const bytes = crypto.randomBytes(length);
 	let result = '';
 	for (let i = 0; i < length; i++) {
-		result += chars.charAt(Math.floor(Math.random() * chars.length));
+		result += chars[bytes[i] % chars.length];
 	}
 	return result;
 }

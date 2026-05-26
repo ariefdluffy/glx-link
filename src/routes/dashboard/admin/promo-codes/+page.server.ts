@@ -72,7 +72,7 @@ export const actions: Actions = {
 
 		if (type === 'discount') {
 			const discountType = formData.get('discountType') as 'percent' | 'fixed';
-			const discountValue = parseInt(formData.get('discountValue') as string);
+			const discountValue = parseInt(formData.get('discountValue') as string, 10);
 
 			if (!discountType || !discountValue) {
 				return fail(400, { error: 'Tipe dan nilai diskon wajib diisi' });
@@ -88,7 +88,7 @@ export const actions: Actions = {
 					type: 'discount',
 					discountType,
 					discountValue,
-					maxUses: maxUses ? parseInt(maxUses) : null,
+					maxUses: maxUses ? parseInt(maxUses, 10) : null,
 					expiresAt: expiresAt ? new Date(expiresAt) : null,
 					description: description || null
 				});
@@ -101,7 +101,7 @@ export const actions: Actions = {
 		}
 
 		if (type === 'grant') {
-			const grantDays = parseInt(formData.get('grantDays') as string);
+			const grantDays = parseInt(formData.get('grantDays') as string, 10);
 			const grantPlan = (formData.get('grantPlan') as string) || 'pro';
 
 			if (!grantDays || grantDays < 1) {
@@ -114,7 +114,7 @@ export const actions: Actions = {
 					type: 'grant',
 					grantDays,
 					grantPlan,
-					maxUses: maxUses ? parseInt(maxUses) : null,
+					maxUses: maxUses ? parseInt(maxUses, 10) : null,
 					expiresAt: expiresAt ? new Date(expiresAt) : null,
 					description: description || null
 				});
@@ -146,7 +146,7 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const id = parseInt(formData.get('id') as string);
+		const id = parseInt(formData.get('id') as string, 10);
 		const isActive = formData.get('isActive') === 'true';
 
 		try {
@@ -176,7 +176,7 @@ export const actions: Actions = {
 		}
 
 		const formData = await request.formData();
-		const id = parseInt(formData.get('id') as string);
+		const id = parseInt(formData.get('id') as string, 10);
 
 		try {
 			await db.delete(promoCodes).where(eq(promoCodes.id, id));

@@ -3,6 +3,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { shortLinks, auditLogs } from '$lib/db/schema';
 import { getSessionUserId } from '$lib/auth/session';
+import { getRealClientIP } from '$lib/utils/ip';
 
 const isValidUrl = (value: string) => {
 	try {
@@ -21,7 +22,8 @@ const sanitizeSlug = (value: string) =>
 		.replace(/[^a-z0-9-]/g, '')
 		.replace(/-+/g, '-');
 
-export const PATCH = async ({ params, request, cookies }) => {
+export const PATCH = async (event) => {
+	const { params, request, cookies } = event;
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -90,8 +92,8 @@ export const PATCH = async ({ params, request, cookies }) => {
 			userId,
 			action: 'link_updated',
 			description: `Update shortlink #${id}: ${description}`,
-			ip: 'api',
-			userAgent: 'api'
+			ip: getRealClientIP(event),
+			userAgent: request.headers.get('user-agent') ?? 'api'
 		});
 	} catch (e) {
 		console.error('Failed to record audit log:', e);
@@ -100,7 +102,8 @@ export const PATCH = async ({ params, request, cookies }) => {
 	return json({ ok: true });
 };
 
-export const DELETE = async ({ params, cookies, request }) => {
+export const DELETE = async (event) => {
+	const { params, cookies, request } = event;
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
@@ -119,8 +122,8 @@ export const DELETE = async ({ params, cookies, request }) => {
 			userId,
 			action: 'link_deleted',
 			description: `Hapus shortlink #${id}`,
-			ip: 'api',
-			userAgent: 'api'
+			ip: getRealClientIP(event),
+			userAgent: request.headers.get('user-agent') ?? 'api'
 		});
 	} catch (e) {
 		console.error('Failed to record audit log:', e);

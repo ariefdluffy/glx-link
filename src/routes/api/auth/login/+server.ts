@@ -31,6 +31,68 @@ const verifyTurnstile = async (token: string, ip: string): Promise<boolean> => {
 	}
 };
 
+// Per-email brute force protection (in-memory)
+// Uses separate windowEnd (attempt tracking) and blockedUntil (lockout) fields
+interface LoginEntry {
+	count: number;
+	windowEnd: number; // end of the counting window
+	blockedUntil: number; // 0 until actually blocked
+}
+const loginAttempts = new Map<string, LoginEntry>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_BLOCK_MINUTES = 15;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+function checkLoginRateLimit(email: string): string | null {
+	const now = Date.now();
+	const entry = loginAttempts.get(email);
+	if (!entry) return null;
+
+	// Actively blocked
+	if (entry.blockedUntil > 0 && now < entry.blockedUntil) {
+		const remaining = Math.ceil((entry.blockedUntil - now) / 1000);
+		return `Terlalu banyak percobaan login. Coba lagi dalam ${remaining} detik.`;
+	}
+
+	// Window expired — clean up
+	if (now > entry.windowEnd) {
+		loginAttempts.delete(email);
+	}
+	return null;
+}
+
+function recordLoginAttempt(email: string, success: boolean) {
+	const now = Date.now();
+
+	if (success) {
+		loginAttempts.delete(email);
+		return;
+	}
+
+	const entry = loginAttempts.get(email);
+
+	if (!entry || now > entry.windowEnd) {
+		// Fresh window
+		loginAttempts.set(email, { count: 1, windowEnd: now + LOGIN_WINDOW_MS, blockedUntil: 0 });
+	} else {
+		entry.count++;
+		if (entry.count >= MAX_LOGIN_ATTEMPTS) {
+			entry.blockedUntil = now + LOGIN_BLOCK_MINUTES * 60 * 1000;
+		}
+		loginAttempts.set(email, entry);
+	}
+}
+
+// Periodic cleanup
+setInterval(() => {
+	const now = Date.now();
+	for (const [email, entry] of loginAttempts.entries()) {
+		if (now > Math.max(entry.windowEnd, entry.blockedUntil)) {
+			loginAttempts.delete(email);
+		}
+	}
+}, 60 * 1000);
+
 export const POST = async (event) => {
 	const { request, cookies } = event;
 	const payload = await request.json().catch(() => null);
@@ -50,6 +112,12 @@ export const POST = async (event) => {
 
 	if (!turnstileToken) {
 		return json({ message: 'Verifikasi Turnstile diperlukan.' }, { status: 400 });
+	}
+
+	// Check per-email brute force rate limit
+	const rateLimitMsg = checkLoginRateLimit(email);
+	if (rateLimitMsg) {
+		return json({ message: rateLimitMsg }, { status: 429 });
 	}
 
 	const clientIp = getRealClientIP(event);
@@ -72,19 +140,18 @@ export const POST = async (event) => {
 		.limit(1);
 	const user = rows[0];
 	if (!user) {
+		recordLoginAttempt(email, false);
 		return json({ message: 'Email atau password salah.' }, { status: 401 });
 	}
 
 	const ok = await verifyPassword(password, user.password);
 	if (!ok) {
+		recordLoginAttempt(email, false);
 		return json({ message: 'Email atau password salah.' }, { status: 401 });
 	}
 
-	// Bypass email verification for specific admin accounts
-	const bypassEmails = ['admin@wedding.com'];
-	const needsVerification = !user.emailVerified && !bypassEmails.includes(email);
-
-	if (needsVerification) {
+	// Wajib verifikasi email — tanpa bypass hardcoded
+	if (!user.emailVerified) {
 		return json(
 			{
 				message: 'Email belum diverifikasi. Silakan cek inbox email kamu.',
@@ -95,6 +162,9 @@ export const POST = async (event) => {
 	}
 
 	await createSession(cookies, user.id, event);
+
+	// Clear failed attempts on successful login
+	recordLoginAttempt(email, true);
 
 	// Audit log
 	try {
@@ -107,8 +177,7 @@ export const POST = async (event) => {
 			userAgent
 		});
 	} catch (e) {
-		// Non-critical, don't block login
-		console.error('Failed to record audit log:', e);
+		console.error('[Login] Gagal catat audit log untuk user login:', e);
 	}
 
 	return json({ ok: true });

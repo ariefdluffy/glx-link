@@ -7,7 +7,7 @@ export const DELETE = async ({ cookies, params }) => {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const sessionId = parseInt(params.id);
+	const sessionId = parseInt(params.id, 10);
 	if (!sessionId) {
 		return json({ error: 'ID sesi tidak valid' }, { status: 400 });
 	}

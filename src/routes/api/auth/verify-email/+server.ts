@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { eq, and, gt, sql } from 'drizzle-orm';
+import crypto from 'crypto';
 import { db } from '$lib/db';
 import { users, emailVerifications } from '$lib/db/schema';
 
@@ -9,15 +10,16 @@ export const POST = async ({ request }) => {
 		return json({ message: 'Token tidak valid.' }, { status: 400 });
 	}
 
-	const token = String(payload.token);
+	const rawToken = String(payload.token);
+	const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
-	// Cari token valid
+	// Cari token valid (compare by hash)
 	const [verification] = await db
 		.select()
 		.from(emailVerifications)
 		.where(
 			and(
-				eq(emailVerifications.token, token),
+				eq(emailVerifications.token, hashedToken),
 				gt(emailVerifications.expiresAt, sql`CURRENT_TIMESTAMP`)
 			)
 		)
@@ -28,15 +30,10 @@ export const POST = async ({ request }) => {
 	}
 
 	// Update user jadi verified
-	await db
-		.update(users)
-		.set({ emailVerified: true })
-		.where(eq(users.id, verification.userId));
+	await db.update(users).set({ emailVerified: true }).where(eq(users.id, verification.userId));
 
 	// Hapus token yang sudah dipakai
-	await db
-		.delete(emailVerifications)
-		.where(eq(emailVerifications.userId, verification.userId));
+	await db.delete(emailVerifications).where(eq(emailVerifications.userId, verification.userId));
 
 	return json({ ok: true, message: 'Email berhasil diverifikasi.' });
 };

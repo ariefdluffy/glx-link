@@ -4,13 +4,23 @@ import { shortLinks, users } from '$lib/db/schema';
 import { eq, and, lt, sql } from 'drizzle-orm';
 
 /**
- * Cron job endpoint to handle automatic cleanup of shortlinks
+ * Cron job endpoint untuk cleanup shortlink expired
  *
- * This handles two scenarios:
- * 1. When a user's Pro subscription expires, disable excess links (keep only 5 latest)
- * 2. Delete links from expired Pro users after 7 days of no renewal
+ * Wajib header: Authorization: Bearer <CRON_SECRET>
  */
-export const GET = async () => {
+export const GET = async ({ request }) => {
+	// Verify cron secret
+	const authHeader = request.headers.get('authorization');
+	const cronSecret = process.env.CRON_SECRET;
+
+	if (!cronSecret) {
+		console.error('[Cron] CRON_SECRET environment variable is not set!');
+		return json({ success: false, error: 'Server configuration error' }, { status: 500 });
+	}
+
+	if (authHeader !== `Bearer ${cronSecret}`) {
+		return json({ success: false, error: 'Unauthorized' }, { status: 401 });
+	}
 	try {
 		const now = new Date();
 		const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

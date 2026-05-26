@@ -10,9 +10,17 @@ import type { RequestHandler } from './$types';
  * Authorization: Bearer YOUR_CRON_SECRET
  */
 export const POST: RequestHandler = async ({ request }) => {
-	// Verify cron secret
+	// Verify cron secret — WAJIB set CRON_SECRET di environment
 	const authHeader = request.headers.get('authorization');
-	const cronSecret = process.env.CRON_SECRET || 'your-secret-key-here';
+	const cronSecret = process.env.CRON_SECRET;
+
+	if (!cronSecret) {
+		console.error('[Cron] CRON_SECRET environment variable is not set!');
+		return json(
+			{ error: 'Server configuration error: CRON_SECRET not configured' },
+			{ status: 500 }
+		);
+	}
 
 	if (authHeader !== `Bearer ${cronSecret}`) {
 		return json({ error: 'Unauthorized' }, { status: 401 });
