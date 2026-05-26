@@ -74,9 +74,7 @@ export const actions: Actions = {
 			return fail(401, { message: 'Email atau password salah.' });
 		}
 
-		const bypassEmails = ['admin@wedding.com'];
-		const needsVerification = !user.emailVerified && !bypassEmails.includes(email);
-		if (needsVerification) {
+		if (!user.emailVerified) {
 			return fail(403, {
 				message: 'Email belum diverifikasi. Silakan cek inbox email kamu.',
 				needsVerification: true

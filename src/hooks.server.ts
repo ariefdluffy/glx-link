@@ -10,7 +10,7 @@ const securityHeaders: Record<string, string> = {
 	'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
 	'Content-Security-Policy': [
 		"default-src 'self'",
-		"script-src 'self' https://challenges.cloudflare.com",
+		"script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 		"font-src 'self' https://fonts.gstatic.com",
 		"img-src 'self' data: https://api.qrserver.com https:",
