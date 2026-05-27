@@ -288,16 +288,18 @@
 				<p class="text-sm text-white/60">{data.user.email}</p>
 				<div class="mt-2 flex flex-wrap gap-2">
 					<span
-						class="rounded-full px-3 py-1 text-xs font-medium {data.user.plan === 'pro'
+						class="rounded-full px-3 py-1 text-xs font-medium {data.user.role === 'admin'
 							? 'bg-violet-500/20 text-violet-400'
-							: 'bg-white/10 text-white/60'}"
+							: data.user.plan === 'pro'
+								? 'bg-violet-500/20 text-violet-400'
+								: 'bg-white/10 text-white/60'}"
 					>
-						{data.user.plan === 'pro' ? 'Pro' : 'Free'}
+						{data.user.role === 'admin' ? 'Admin' : data.user.plan === 'pro' ? 'Pro' : 'Free'}
 					</span>
 					<span class="rounded-full bg-white/5 px-3 py-1 text-xs text-white/50">
 						Bergabung {formatDate(data.user.createdAt)}
 					</span>
-					{#if data.user.planExpiresAt}
+					{#if data.user.planExpiresAt && data.user.role !== 'admin'}
 						<span class="rounded-full bg-amber-500/10 px-3 py-1 text-xs text-amber-400">
 							Aktif hingga {formatDate(data.user.planExpiresAt)}
 						</span>

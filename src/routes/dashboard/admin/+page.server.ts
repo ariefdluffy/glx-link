@@ -74,7 +74,7 @@ export const load = async ({ cookies, url }) => {
 				.limit(perPage)
 				.offset((userPage - 1) * perPage);
 
-	// All users for admin dropdown (for creating subscription)
+	// All users for admin dropdown (for creating subscription) — limit 200 untuk performa
 	const allUsers = await db
 		.select({
 			id: users.id,
@@ -83,7 +83,8 @@ export const load = async ({ cookies, url }) => {
 			plan: users.plan
 		})
 		.from(users)
-		.orderBy(users.name);
+		.orderBy(users.name)
+		.limit(200);
 
 	// All microsites with pagination
 	const allMs = await db

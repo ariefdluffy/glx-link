@@ -129,11 +129,13 @@
 		qrLink = null;
 	};
 
-	// Auto-refresh stats every 10 seconds
+	// Auto-refresh stats every 10 seconds (hanya saat tab aktif)
 	const startAutoRefresh = () => {
 		autoRefreshInterval = setInterval(() => {
-			invalidateAll();
-		}, 10000); // 10 seconds
+			if (!document.hidden) {
+				invalidateAll();
+			}
+		}, 10000);
 	};
 
 	const stopAutoRefresh = () => {

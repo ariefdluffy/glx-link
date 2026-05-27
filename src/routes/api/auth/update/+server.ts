@@ -43,6 +43,8 @@ export const PATCH = async (event) => {
 			return json({ message: 'Email sudah terdaftar.' }, { status: 409 });
 		}
 		updates.email = email;
+		// Reset emailVerified karena email berubah
+		(updates as Record<string, unknown>).emailVerified = false;
 	}
 
 	if (Object.keys(updates).length === 0) {

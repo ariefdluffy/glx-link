@@ -1,23 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { invalidateAll } from '$app/navigation';
-	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import Toast from '$lib/components/toast/Toast.svelte';
 
 	const baseUrl = 'glx.my.id';
 	let plan = $derived($page.data.plan);
 	let isProActive = $derived($page.data.isProActive);
-
-	// Force refresh data on mount to get latest from database
-	onMount(() => {
-		if (browser) {
-			console.log('[Links New] Refreshing data on mount...');
-			invalidateAll().then(() => {
-				console.log('[Links New] Data refreshed, plan:', plan, 'isProActive:', isProActive);
-			});
-		}
-	});
 
 	let destination = $state('');
 	let mode: 'random' | 'custom' = $state('random');

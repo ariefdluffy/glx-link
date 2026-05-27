@@ -10,14 +10,15 @@ export const load = async ({ cookies }) => {
 	if (!userId) throw redirect(302, '/login');
 
 	const [user] = await db
-		.select({ plan: users.plan, planExpiresAt: users.planExpiresAt })
+		.select({ plan: users.plan, planExpiresAt: users.planExpiresAt, role: users.role })
 		.from(users)
 		.where(eq(users.id, userId))
 		.limit(1);
 
 	if (!user) throw redirect(302, '/login');
 
-	const proActive = isProActive(user.plan, user.planExpiresAt);
+	// Admin selalu dianggap Pro aktif
+	const proActive = user.role === 'admin' ? true : isProActive(user.plan, user.planExpiresAt);
 
 	// Get current active links count using raw SQL to avoid Drizzle ORM issues
 	const activeLinksResult = await db.execute(sql`

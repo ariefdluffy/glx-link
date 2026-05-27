@@ -114,11 +114,24 @@ export const POST: RequestHandler = async ({ request }) => {
 				// Duration dari extraData payload (dikirim saat create invoice) — bukan dari `notes`
 				const durationDays = Number(duration_days) || 30;
 
-				const newExpiresAt = new Date();
+				// Extend dari planExpiresAt user jika masih aktif, otherwise dari sekarang
+				const [currentUser] = await tx
+					.select({ planExpiresAt: users.planExpiresAt })
+					.from(users)
+					.where(eq(users.id, userId))
+					.limit(1);
+
+				const now = new Date();
+				const baseDate =
+					currentUser?.planExpiresAt && new Date(currentUser.planExpiresAt) > now
+						? new Date(currentUser.planExpiresAt)
+						: now;
+
+				const newExpiresAt = new Date(baseDate);
 				newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
 
 				console.log(
-					`[Mayar Webhook] Calculating expiry: ${durationDays} days from now = ${newExpiresAt.toISOString()}`
+					`[Mayar Webhook] Calculating expiry: ${durationDays} days from ${baseDate.toISOString()} = ${newExpiresAt.toISOString()}`
 				);
 
 				// Update subscription

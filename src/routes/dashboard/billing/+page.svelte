@@ -53,6 +53,7 @@
 			startDate: string | null;
 			endDate: string | null;
 		};
+		isAdmin?: boolean;
 		migrationWarning?: string;
 	};
 
@@ -141,6 +142,7 @@
 	};
 
 	const isProActive = () => {
+		if (data.isAdmin) return false;
 		if (data.user.plan !== 'pro' || !data.user.planExpiresAt) return false;
 		return new Date(data.user.planExpiresAt) > new Date();
 	};
@@ -404,7 +406,10 @@
 			<div>
 				<div class="text-xs text-white/50">Paket Saat Ini</div>
 				<div class="relative inline-flex items-center gap-2">
-					{#if data.user.plan === 'pro'}
+					{#if data.isAdmin}
+						<span class="font-display mt-1 bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-2xl font-semibold text-transparent">Admin</span>
+						<span class="rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 px-2 py-0.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-500/25">ADMIN</span>
+					{:else if data.user.plan === 'pro'}
 						<span
 							class="font-display mt-1 bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-2xl font-semibold text-transparent"
 							>Pro</span
@@ -417,7 +422,13 @@
 						<span class="font-display mt-1 text-2xl font-semibold text-white">Free</span>
 					{/if}
 				</div>
-				{#if isProActive()}
+				{#if data.isAdmin}
+					<div class="mt-2 flex items-center gap-2">
+						<span class="flex h-2 w-2 rounded-full bg-violet-500"></span>
+						<span class="text-sm text-violet-400">Akses penuh sebagai Administrator</span>
+					</div>
+				<div class="mt-1 text-xs text-white/60">Admin tidak memerlukan langganan berbayar</div>
+				{:else if isProActive()}
 					<div class="mt-2 flex items-center gap-2">
 						<span class="flex h-2 w-2 rounded-full bg-green-500"></span>
 						<span class="text-sm text-green-400">Langganan Aktif</span>
@@ -431,7 +442,7 @@
 					<div class="mt-2 text-sm text-white/60">Upgrade ke Pro untuk fitur lengkap</div>
 				{/if}
 			</div>
-			{#if !isProActive()}
+			{#if !isProActive() && !data.isAdmin}
 				<a
 					class="rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
 					href="#upgrade"
@@ -475,7 +486,7 @@
 	</div>
 
 	<!-- Upgrade Section -->
-	{#if !isProActive()}
+	{#if !isProActive() && !data.isAdmin}
 		<div id="upgrade" class="glass-panel mt-6 rounded-3xl p-4">
 			<h2 class="font-display text-lg font-semibold">
 				{data.user.plan === 'pro' ? 'Perpanjang Langganan Pro' : 'Upgrade ke Pro'}
@@ -602,6 +613,17 @@
 	{/if}
 
 	<!-- Grid: Langganan Aktif + Riwayat -->
+	{#if data.isAdmin}
+		<div class="glass-panel mt-6 rounded-3xl border border-violet-500/20 bg-violet-500/5 p-6">
+			<div class="flex items-start gap-3">
+				<div class="text-2xl">🛡️</div>
+				<div>
+					<h3 class="font-display text-base font-semibold text-violet-300">Akun Administrator</h3>
+					<p class="mt-1 text-sm text-white/60">Halaman ini tidak tersedia untuk akun administrator.</p>
+				</div>
+			</div>
+		</div>
+	{:else}
 	<div
 		class="mt-6 {data.user.plan === 'pro' || data.activeSubscription
 			? 'grid gap-6 md:grid-cols-2'
@@ -961,6 +983,7 @@
 			{/if}
 		</div>
 	</div>
+	{/if}
 
 	<!-- Account Info -->
 	<div class="glass-panel mt-6 rounded-3xl p-6">

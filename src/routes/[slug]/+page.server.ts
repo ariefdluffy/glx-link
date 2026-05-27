@@ -1,5 +1,5 @@
 import { error, redirect } from '@sveltejs/kit';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/db';
 import { shortLinks } from '$lib/db/schema';
 
@@ -12,7 +12,7 @@ export const load = async ({ params }) => {
 	const [link] = await db
 		.select({ destination: shortLinks.destination })
 		.from(shortLinks)
-		.where(eq(shortLinks.slug, slug))
+		.where(and(eq(shortLinks.slug, slug), eq(shortLinks.isActive, 1)))
 		.limit(1);
 
 	if (!link) {

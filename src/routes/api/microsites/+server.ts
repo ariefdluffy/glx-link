@@ -116,7 +116,7 @@ export const POST = async (event) => {
 		return json({ message: 'Slug microsite sudah dipakai.' }, { status: 409 });
 	}
 
-	await db.insert(microsites).values({
+	const [created] = await db.insert(microsites).values({
 		userId,
 		slug,
 		title,
@@ -132,14 +132,7 @@ export const POST = async (event) => {
 		youtubeUrl: typeof payload.youtubeUrl === 'string' ? payload.youtubeUrl.trim() || null : null,
 		instagramUrl:
 			typeof payload.instagramUrl === 'string' ? payload.instagramUrl.trim() || null : null
-	});
-
-	// Fetch the newly created microsite to get the ID
-	const [created] = await db
-		.select({ id: microsites.id })
-		.from(microsites)
-		.where(and(eq(microsites.userId, userId), eq(microsites.slug, slug)))
-		.limit(1);
+	}).$returningId();
 	const micrositeId = created?.id ?? 0;
 
 	if (micrositeId && links.length > 0) {

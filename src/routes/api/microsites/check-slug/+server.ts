@@ -35,9 +35,9 @@ export const GET = async ({ url, cookies }) => {
 		.where(eq(microsites.slug, slug))
 		.limit(1);
 
-	// If editing: slug is available if no microsite has it, or the only match is the current one
-	const isEditing = !!excludeSlug && excludeSlug === slug;
-	const available = existing.length === 0 || (isEditing && existing[0].slug === slug);
+	// If editing: slug is available if no microsite has it, or the only match is the current one being edited
+	const isEditing = !!excludeSlug;
+	const available = existing.length === 0 || (isEditing && existing[0].slug === excludeSlug);
 
 	if (!available) {
 		return json({ available: false, message: 'Slug microsite sudah dipakai.' });

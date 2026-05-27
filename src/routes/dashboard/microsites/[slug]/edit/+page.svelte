@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import MicrositePreview from '$lib/components/MicrositePreview.svelte';
 	import Toast from '$lib/components/toast/Toast.svelte';
@@ -497,7 +498,7 @@
 				errorMessage = payload?.message ?? 'Gagal menyimpan microsite.';
 				return;
 			}
-			window.location.href = '/dashboard/microsites';
+			await goto('/dashboard/microsites', { invalidateAll: true });
 		} catch {
 			errorMessage = 'Gagal terhubung ke server.';
 		} finally {
@@ -538,7 +539,22 @@
 	</div>
 
 	<div class="grid gap-8 lg:grid-cols-[1fr_420px]">
-		<!-- Left Column: Main Editor -->
+		<!-- Load Error State -->
+		{#if dataLoaded && errorMessage && !title}
+			<div class="glass-panel col-span-full rounded-3xl border border-red-500/20 bg-red-500/5 p-8 text-center">
+				<div class="text-3xl">⚠️</div>
+				<h3 class="font-display mt-3 text-lg font-semibold text-red-400">Gagal Memuat Microsite</h3>
+				<p class="mt-2 text-sm text-white/60">{errorMessage}</p>
+				<button
+					type="button"
+					onclick={() => { errorMessage = ''; dataLoaded = false; loadMicrosite(); }}
+					class="mt-4 rounded-xl bg-white/10 px-5 py-2 text-sm text-white transition hover:bg-white/20"
+				>
+					Coba Lagi
+				</button>
+			</div>
+		{:else}
+			<!-- Left Column: Main Editor -->
 		<div class="glass-panel overflow-hidden rounded-3xl p-4 md:p-8">
 			<div class="space-y-4">
 				<div class="mb-1 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -677,6 +693,7 @@
 				Tampilan mungkin berbeda pada perangkat aslinya.
 			</p>
 		</div>
+		{/if}
 	</div>
 </div>
 

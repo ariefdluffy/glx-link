@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/db';
-import { users, auditLogs } from '$lib/db/schema';
+import { users, auditLogs, shortLinks, microsites, subscriptions, userSessions, emailVerifications, passwordResetTokens } from '$lib/db/schema';
 import { eq, count, desc, like, or } from 'drizzle-orm';
 import { getSessionUserId } from '$lib/auth/session';
 
@@ -33,12 +33,21 @@ export const load = async ({ cookies, url }) => {
 	}
 	const total = Number(totalRows[0]?.c ?? 0);
 
-	// Get paginated users
+	// Get paginated users — tanpa kolom password
 	let allUsers;
 	if (search) {
 		const searchCondition = or(like(users.name, `%${search}%`), like(users.email, `%${search}%`));
 		allUsers = await db
-			.select()
+			.select({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				role: users.role,
+				plan: users.plan,
+				planExpiresAt: users.planExpiresAt,
+				emailVerified: users.emailVerified,
+				createdAt: users.createdAt
+			})
 			.from(users)
 			.where(searchCondition)
 			.orderBy(desc(users.createdAt))
@@ -46,7 +55,16 @@ export const load = async ({ cookies, url }) => {
 			.offset((page - 1) * perPage);
 	} else {
 		allUsers = await db
-			.select()
+			.select({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				role: users.role,
+				plan: users.plan,
+				planExpiresAt: users.planExpiresAt,
+				emailVerified: users.emailVerified,
+				createdAt: users.createdAt
+			})
 			.from(users)
 			.orderBy(desc(users.createdAt))
 			.limit(perPage)
@@ -111,7 +129,15 @@ export const actions = {
 			return { success: false, error: 'Invalid data' };
 		}
 
-		await db.update(users).set({ plan: newPlan }).where(eq(users.id, targetUserId));
+		// Jika downgrade ke free, reset planExpiresAt ke null
+		if (newPlan === 'free') {
+			await db
+				.update(users)
+				.set({ plan: 'free', planExpiresAt: null })
+				.where(eq(users.id, targetUserId));
+		} else {
+			await db.update(users).set({ plan: newPlan }).where(eq(users.id, targetUserId));
+		}
 
 		return { success: true };
 	},
@@ -135,6 +161,13 @@ export const actions = {
 			return { success: false, error: 'Cannot delete yourself' };
 		}
 
+		// Hapus semua data terkait user sebelum hapus user
+		await db.delete(shortLinks).where(eq(shortLinks.userId, targetUserId));
+		await db.delete(microsites).where(eq(microsites.userId, targetUserId));
+		await db.delete(subscriptions).where(eq(subscriptions.userId, targetUserId));
+		await db.delete(userSessions).where(eq(userSessions.userId, targetUserId));
+		await db.delete(emailVerifications).where(eq(emailVerifications.userId, targetUserId));
+		await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, targetUserId));
 		await db.delete(users).where(eq(users.id, targetUserId));
 
 		return { success: true };

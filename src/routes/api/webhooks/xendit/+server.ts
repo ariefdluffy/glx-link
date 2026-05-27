@@ -104,12 +104,24 @@ export const POST: RequestHandler = async ({ request }) => {
 
 			// Payment successful - activate subscription
 			await db.transaction(async (tx) => {
-				// Duration diambil dari external_id (dari field parts[3]) — bukan dari `notes`
-				const newExpiresAt = new Date();
+				// Extend dari planExpiresAt user jika masih aktif, otherwise dari sekarang
+				const [currentUser] = await tx
+					.select({ planExpiresAt: users.planExpiresAt })
+					.from(users)
+					.where(eq(users.id, userId))
+					.limit(1);
+
+				const now = new Date();
+				const baseDate =
+					currentUser?.planExpiresAt && new Date(currentUser.planExpiresAt) > now
+						? new Date(currentUser.planExpiresAt)
+						: now;
+
+				const newExpiresAt = new Date(baseDate);
 				newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
 
 				console.log(
-					`[Xendit Webhook] Calculating expiry: ${durationDays} days from now = ${newExpiresAt.toISOString()}`
+					`[Xendit Webhook] Calculating expiry: ${durationDays} days from ${baseDate.toISOString()} = ${newExpiresAt.toISOString()}`
 				);
 
 				// Update subscription

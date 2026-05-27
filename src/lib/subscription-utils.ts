@@ -97,7 +97,21 @@ export async function createSubscription(data: {
 	notes?: string;
 }) {
 	const startedAt = new Date();
-	const expiresAt = new Date(startedAt);
+
+	// Extend dari planExpiresAt user jika masih aktif, otherwise dari sekarang
+	const [currentUser] = await db
+		.select({ planExpiresAt: users.planExpiresAt })
+		.from(users)
+		.where(eq(users.id, data.userId))
+		.limit(1);
+
+	const now = new Date();
+	const baseDate =
+		currentUser?.planExpiresAt && new Date(currentUser.planExpiresAt) > now
+			? new Date(currentUser.planExpiresAt)
+			: now;
+
+	const expiresAt = new Date(baseDate);
 	expiresAt.setDate(expiresAt.getDate() + data.durationDays);
 
 	// Create subscription record
@@ -175,6 +189,8 @@ export async function cancelSubscription(subscriptionId: number, userId: number)
 
 /**
  * Renew a subscription (for auto-renew)
+ * NOTE: Hanya membuat subscription baru dengan status 'pending'.
+ * Pembayaran nyata harus diproses via payment gateway — auto-renew gratis tidak diizinkan.
  */
 export async function renewSubscription(subscriptionId: number) {
 	const [oldSub] = await db
@@ -187,16 +203,39 @@ export async function renewSubscription(subscriptionId: number) {
 		return null;
 	}
 
-	// Create new subscription
-	const newSub = await createSubscription({
-		userId: oldSub.userId,
-		plan: oldSub.plan ?? 'pro',
-		price: oldSub.price ?? 29000,
-		durationDays: 30,
-		paymentMethod: oldSub.paymentMethod ?? 'manual',
-		autoRenew: true,
-		notes: `Auto-renewed from subscription #${subscriptionId}`
-	});
+	// Buat subscription baru dengan status 'pending' — tidak langsung active
+	// Payment gateway harus konfirmasi pembayaran sebelum diaktifkan
+	const startedAt = new Date();
+	const expiresAt = new Date(startedAt);
+	expiresAt.setDate(expiresAt.getDate() + 30);
+
+	const [newSub] = await db
+		.insert(subscriptions)
+		.values({
+			userId: oldSub.userId,
+			plan: oldSub.plan ?? 'pro',
+			price: oldSub.price ?? 29000,
+			startedAt,
+			expiresAt,
+			paymentMethod: oldSub.paymentMethod ?? 'manual',
+			status: 'pending',
+			autoRenew: true,
+			notes: `Auto-renew pending dari subscription #${subscriptionId} — menunggu konfirmasi pembayaran`
+		})
+		.$returningId();
+
+	// Audit log
+	try {
+		await db.insert(auditLogs).values({
+			userId: oldSub.userId,
+			action: 'AUTO_RENEW_PENDING',
+			description: `Auto-renew subscription #${subscriptionId} dibuat sebagai pending #${newSub.id}`,
+			ip: null,
+			userAgent: 'system-cron'
+		});
+	} catch (e) {
+		console.error('Failed to create audit log for auto-renew:', e);
+	}
 
 	return newSub;
 }

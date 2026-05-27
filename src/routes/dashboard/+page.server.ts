@@ -13,7 +13,8 @@ export const load = async ({ cookies }) => {
 			plan: users.plan,
 			planExpiresAt: users.planExpiresAt,
 			name: users.name,
-			email: users.email
+			email: users.email,
+			role: users.role
 		})
 		.from(users)
 		.where(eq(users.id, userId))
@@ -95,7 +96,8 @@ export const load = async ({ cookies }) => {
 			plan,
 			planExpiresAt: userDb?.planExpiresAt ?? null,
 			userName: userDb?.name ?? 'User',
-			userEmail: userDb?.email ?? ''
+			userEmail: userDb?.email ?? '',
+			role: userDb?.role ?? 'user'
 		},
 		latestLinks,
 		latestMicrosites

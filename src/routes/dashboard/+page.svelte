@@ -1,52 +1,36 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { browser } from '$app/environment';
 
 	let { data } = $props();
 	let autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
 	// Check if Pro is active
 	const isProActive = () => {
+		if (data.stats.role === 'admin') return true;
 		if (data.stats.plan !== 'pro' || !data.stats.planExpiresAt) return false;
 		return new Date(data.stats.planExpiresAt) > new Date();
 	};
 
 	// Check if Pro is expired
 	const isProExpired = () => {
+		if (data.stats.role === 'admin') return false;
 		return data.stats.plan === 'pro' && !isProActive();
 	};
 
-	// Force refresh data on mount to get latest from database
 	onMount(() => {
-		if (browser) {
-			console.log('[Dashboard] Refreshing data on mount...');
-			invalidateAll().then(() => {
-				console.log('[Dashboard] Data refreshed');
-			});
-		}
-	});
-
-	// Auto-refresh stats every 10 seconds
-	const startAutoRefresh = () => {
+		// Auto-refresh stats every 10 seconds (hanya saat tab aktif)
 		autoRefreshInterval = setInterval(() => {
-			invalidateAll();
-		}, 10000); // 10 seconds
-	};
+			if (!document.hidden) {
+				invalidateAll();
+			}
+		}, 10000);
 
-	const stopAutoRefresh = () => {
-		if (autoRefreshInterval) {
-			clearInterval(autoRefreshInterval);
-			autoRefreshInterval = null;
-		}
-	};
-
-	onMount(() => {
-		startAutoRefresh();
-
-		// Cleanup on unmount
 		return () => {
-			stopAutoRefresh();
+			if (autoRefreshInterval) {
+				clearInterval(autoRefreshInterval);
+				autoRefreshInterval = null;
+			}
 		};
 	});
 </script>

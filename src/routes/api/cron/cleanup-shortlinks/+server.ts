@@ -44,7 +44,7 @@ export const GET = async ({ request }) => {
 				SELECT id, created_at as createdAt, is_active as isActive, subscription_expired_at as subscriptionExpiredAt
 				FROM short_links
 				WHERE user_id = ${user.id} AND is_active = 1
-				ORDER BY created_at ASC
+				ORDER BY created_at DESC
 			`);
 			const userLinks = userLinksResult.map((row) => ({
 				id: row.id,

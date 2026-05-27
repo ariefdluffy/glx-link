@@ -24,6 +24,7 @@ export const load = async ({ cookies, url }) => {
 		.select({
 			name: users.name,
 			email: users.email,
+			role: users.role,
 			plan: users.plan,
 			planExpiresAt: users.planExpiresAt
 		})
@@ -32,6 +33,23 @@ export const load = async ({ cookies, url }) => {
 		.limit(1);
 
 	if (!user) throw redirect(302, '/login');
+
+	// Admin tidak menggunakan sistem langganan
+	if (user.role === 'admin') {
+		return {
+			user: {
+				name: user.name,
+				email: user.email,
+				plan: 'free' as const,
+				planExpiresAt: null
+			},
+			activeSubscription: null,
+			subscriptions: [],
+			pagination: { page: 1, limit: 10, totalCount: 0, totalPages: 0 },
+			filters: { status: null, startDate: null, endDate: null },
+			isAdmin: true
+		};
+	}
 
 	try {
 		// Build where conditions
@@ -134,7 +152,8 @@ export const load = async ({ cookies, url }) => {
 				status,
 				startDate,
 				endDate
-			}
+			},
+			isAdmin: false
 		};
 	} catch (error) {
 		// If columns don't exist yet (migration not run), return basic data
@@ -188,6 +207,7 @@ export const load = async ({ cookies, url }) => {
 				startDate: null,
 				endDate: null
 			},
+			isAdmin: false,
 			migrationWarning: 'Kolom baru belum ada. Jalankan migration: migration-subscriptions.sql'
 		};
 	}
@@ -226,6 +246,25 @@ export const actions: Actions = {
 				cancelledAt: new Date()
 			})
 			.where(eq(subscriptions.id, subscriptionId));
+
+		// Downgrade user plan ke free jika tidak ada subscription aktif lain
+		const [otherActive] = await db
+			.select({ id: subscriptions.id })
+			.from(subscriptions)
+			.where(
+				and(
+					eq(subscriptions.userId, userId),
+					eq(subscriptions.status, 'active')
+				)
+			)
+			.limit(1);
+
+		if (!otherActive) {
+			await db
+				.update(users)
+				.set({ plan: 'free', planExpiresAt: null })
+				.where(eq(users.id, userId));
+		}
 
 		// Audit log
 		try {
@@ -291,7 +330,7 @@ export const actions: Actions = {
 		};
 	},
 
-	// Create Xendit payment
+	// Create Mayar payment
 	createPayment: async ({ cookies, request }) => {
 		const userId = getSessionUserId(cookies);
 		if (!userId) throw redirect(302, '/login');
@@ -347,10 +386,10 @@ export const actions: Actions = {
 					price = Math.max(0, price - discount);
 					console.log(`[Xendit] Promo code applied: ${promoCode}, discount: ${discount}`);
 
-					// Increment used count
+					// Increment used count — atomic untuk hindari race condition
 					await db
 						.update(promoCodes)
-						.set({ usedCount: (promo.usedCount ?? 0) + 1 })
+						.set({ usedCount: sql`used_count + 1` })
 						.where(eq(promoCodes.id, promo.id));
 				}
 			} else {
@@ -535,10 +574,10 @@ export const actions: Actions = {
 				notes: `Grant via promo: ${promoCode} (${promo.grantDays} hari)`
 			});
 
-			// Increment used count
+			// Increment used count — atomic untuk hindari race condition
 			await db
 				.update(promoCodes)
-				.set({ usedCount: (promo.usedCount ?? 0) + 1 })
+				.set({ usedCount: sql`used_count + 1` })
 				.where(eq(promoCodes.id, promo.id));
 
 			// Audit log

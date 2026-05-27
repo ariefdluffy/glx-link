@@ -1,12 +1,13 @@
 import { json } from '@sveltejs/kit';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { getSessionUserId } from '$lib/auth/session';
 import crypto from 'crypto';
 import { dev } from '$app/environment';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 512 * 1024; // 512KB
+const MAX_FILES_PER_USER = 20; // maksimal 20 file per user
 
 // Magic bytes untuk validasi tipe file
 const MAGIC_BYTES: Record<string, number[][]> = {
@@ -87,7 +88,7 @@ export const POST = async ({ request, cookies }) => {
 	}
 
 	if (file.size > MAX_SIZE) {
-		return json({ message: 'File terlalu besar. Maksimal 5MB.' }, { status: 400 });
+		return json({ message: 'File terlalu besar. Maksimal 512KB.' }, { status: 400 });
 	}
 
 	// Validasi magic bytes (layer 2) — cek 8 byte pertama file
@@ -105,13 +106,26 @@ export const POST = async ({ request, cookies }) => {
 
 	// Ekstensi dari MIME yang sudah diverifikasi — bukan dari split client
 	const ext = MIME_TO_EXT[detectedMime] || 'jpeg';
-	const filename = `${crypto.randomUUID()}.${ext}`;
+	const filename = `${userId}_${crypto.randomUUID()}.${ext}`;
 
 	// In dev, use relative path. In production, use absolute path
 	const dir = dev ? join(process.cwd(), UPLOAD_DIR) : UPLOAD_DIR;
 
 	if (!existsSync(dir)) {
 		mkdirSync(dir, { recursive: true });
+	}
+
+	// Cek limit file per user
+	try {
+		const userFiles = readdirSync(dir).filter((f) => f.startsWith(`${userId}_`));
+		if (userFiles.length >= MAX_FILES_PER_USER) {
+			return json(
+				{ message: `Batas upload ${MAX_FILES_PER_USER} file per akun telah tercapai.` },
+				{ status: 400 }
+			);
+		}
+	} catch {
+		// Jika tidak bisa baca dir, lanjut saja
 	}
 
 	writeFileSync(join(dir, filename), buffer);

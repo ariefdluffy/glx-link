@@ -33,7 +33,6 @@ export const load = async ({ cookies, url }) => {
 
 	// Build WHERE conditions
 	const conditions = [];
-	const params: any[] = [];
 
 	if (action) {
 		conditions.push(sql`${auditLogs.action} = ${action}`);

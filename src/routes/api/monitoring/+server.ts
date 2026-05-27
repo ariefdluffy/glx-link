@@ -2,8 +2,25 @@ import { json } from '@sveltejs/kit';
 import { db } from '$lib/db';
 import { shortLinks, microsites, users, userSessions } from '$lib/db/schema';
 import { eq, count, sum, sql } from 'drizzle-orm';
+import { getSessionUserId } from '$lib/auth/session';
 
-export const GET = async () => {
+export const GET = async ({ cookies }) => {
+	const userId = getSessionUserId(cookies);
+	if (!userId) {
+		return json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	// Hanya admin yang boleh akses monitoring
+	const [user] = await db
+		.select({ role: users.role })
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+
+	if (!user || user.role !== 'admin') {
+		return json({ error: 'Forbidden' }, { status: 403 });
+	}
+
 	try {
 		// System health check
 		const health = {
