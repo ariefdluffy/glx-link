@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { readFileSync, existsSync } from 'fs';
+import { access, readFile } from 'fs/promises';
 import { join } from 'path';
 import { dev } from '$app/environment';
 
@@ -18,12 +18,14 @@ export const GET = async ({ params }) => {
 	const dir = dev ? join(process.cwd(), UPLOAD_DIR) : UPLOAD_DIR;
 	const filePath = join(dir, filename);
 
-	if (!existsSync(filePath)) {
+	try {
+		await access(filePath);
+	} catch {
 		throw error(404, 'File not found');
 	}
 
 	try {
-		const file = readFileSync(filePath);
+		const file = await readFile(filePath);
 
 		// Determine content type based on file extension
 		const ext = filename.split('.').pop()?.toLowerCase();

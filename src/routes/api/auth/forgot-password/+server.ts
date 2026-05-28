@@ -1,10 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { dev } from '$app/environment';
 import { db } from '$lib/db';
 import { users, passwordResetTokens, auditLogs } from '$lib/db/schema';
-import { sendEmail, generateToken, getBaseUrl } from '$lib/email';
+import { sendEmail, getBaseUrl } from '$lib/email';
 import { resetPasswordHtml } from '$lib/email/templates/reset-password';
 import { getRealClientIP } from '$lib/utils/ip';
 
@@ -70,13 +69,8 @@ export const POST = async (event) => {
 		html: emailHtml
 	});
 
-	// Log untuk development — hanya tampilkan jika dev + email gagal kirim
-	if (!emailSent && dev) {
-		console.log(`\n========================================`);
-		console.log(`🔐 RESET PASSWORD LINK for ${email}`);
-		console.log(`Token: ${token}`);
-		console.log(`Link: ${resetUrl}`);
-		console.log(`========================================\n`);
+	if (!emailSent) {
+		console.error(`[ForgotPassword] Failed to send reset email to: ${email}`);
 	}
 
 	return json({
