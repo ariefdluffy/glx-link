@@ -1,3 +1,5 @@
+const MAX_SLUG = 50;
+
 import { json } from '@sveltejs/kit';
 import crypto from 'crypto';
 import { desc, eq, and, gte, sql } from 'drizzle-orm';
@@ -94,6 +96,10 @@ export const POST = async (event) => {
 	const userId = getSessionUserId(cookies);
 	const rawCustom = typeof payload.customSlug === 'string' ? payload.customSlug : '';
 	const requestedSlug = rawCustom ? sanitizeSlug(rawCustom) : '';
+
+	if (requestedSlug && requestedSlug.length > MAX_SLUG) {
+		return json({ message: 'Custom slug maksimal ' + MAX_SLUG + ' karakter.' }, { status: 400 });
+	}
 
 	if (!userId && requestedSlug) {
 		return json({ message: 'Slug custom hanya untuk pengguna terdaftar.' }, { status: 403 });

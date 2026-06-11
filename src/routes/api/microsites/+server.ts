@@ -1,3 +1,9 @@
+const MAX_TITLE = 150;
+const MAX_SLUG = 50;
+const MAX_URL = 255;
+const MAX_LABEL = 200;
+const MAX_CAPTION = 200;
+
 import { json } from '@sveltejs/kit';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '$lib/db';
@@ -103,8 +109,12 @@ export const POST = async (event) => {
 		return json({ message: 'Judul microsite minimal 2 karakter.' }, { status: 400 });
 	}
 
+	if (title.length > MAX_TITLE) {
+		return json({ message: 'Judul microsite maksimal ' + MAX_TITLE + ' karakter.' }, { status: 400 });
+	}
+
 	if (!slug || slug.length < 3 || slug.length > 50) {
-		return json({ message: 'Slug microsite harus 3-50 karakter.' }, { status: 400 });
+		return json({ message: 'Slug microsite harus 3-' + MAX_SLUG + ' karakter.' }, { status: 400 });
 	}
 
 	const existing = await db
@@ -114,6 +124,36 @@ export const POST = async (event) => {
 		.limit(1);
 	if (existing.length > 0) {
 		return json({ message: 'Slug microsite sudah dipakai.' }, { status: 409 });
+	}
+
+	// Validate social URLs length
+	const facebookUrl = typeof payload.facebookUrl === 'string' ? payload.facebookUrl.trim() || null : null;
+	const websiteUrl = typeof payload.websiteUrl === 'string' ? payload.websiteUrl.trim() || null : null;
+	const youtubeUrl = typeof payload.youtubeUrl === 'string' ? payload.youtubeUrl.trim() || null : null;
+	const instagramUrl = typeof payload.instagramUrl === 'string' ? payload.instagramUrl.trim() || null : null;
+	if (facebookUrl && facebookUrl.length > MAX_URL) {
+		return json({ message: 'URL Facebook maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+	}
+	if (websiteUrl && websiteUrl.length > MAX_URL) {
+		return json({ message: 'URL Website maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+	}
+	if (youtubeUrl && youtubeUrl.length > MAX_URL) {
+		return json({ message: 'URL YouTube maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+	}
+	if (instagramUrl && instagramUrl.length > MAX_URL) {
+		return json({ message: 'URL Instagram maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+	}
+
+	// Validate links length
+	for (const [i, link] of links.entries()) {
+		const label = typeof link.label === 'string' ? link.label.trim() : '';
+		const caption = typeof link.caption === 'string' ? link.caption.trim() : '';
+		if (label.length > MAX_LABEL) {
+			return json({ message: 'Label link ke-' + (i + 1) + ' maksimal ' + MAX_LABEL + ' karakter.' }, { status: 400 });
+		}
+		if (caption.length > MAX_CAPTION) {
+			return json({ message: 'Caption link ke-' + (i + 1) + ' maksimal ' + MAX_CAPTION + ' karakter.' }, { status: 400 });
+		}
 	}
 
 	const [created] = await db.insert(microsites).values({
@@ -126,12 +166,10 @@ export const POST = async (event) => {
 		headerBg,
 		animation,
 		isActive,
-		facebookUrl:
-			typeof payload.facebookUrl === 'string' ? payload.facebookUrl.trim() || null : null,
-		websiteUrl: typeof payload.websiteUrl === 'string' ? payload.websiteUrl.trim() || null : null,
-		youtubeUrl: typeof payload.youtubeUrl === 'string' ? payload.youtubeUrl.trim() || null : null,
-		instagramUrl:
-			typeof payload.instagramUrl === 'string' ? payload.instagramUrl.trim() || null : null
+		facebookUrl,
+		websiteUrl,
+		youtubeUrl,
+		instagramUrl
 	}).$returningId();
 	const micrositeId = created?.id ?? 0;
 

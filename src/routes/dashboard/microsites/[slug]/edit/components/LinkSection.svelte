@@ -351,6 +351,7 @@
 											id="link-label-{index}"
 											type="text"
 											bind:value={link.label}
+											maxlength="200"
 											placeholder="Nama Link"
 											class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
 										/>
@@ -457,6 +458,7 @@
 											id="link-caption-{index}"
 											type="text"
 											bind:value={link.caption}
+											maxlength="200"
 											placeholder="Keterangan singkat"
 											class="w-full min-w-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
 										/>
@@ -485,6 +487,7 @@
 											id="text-label-{index}"
 											type="text"
 											bind:value={link.label}
+											maxlength="200"
 											placeholder="Masukkan teks di sini..."
 											class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
 										/>
@@ -576,6 +579,7 @@
 											id="image-caption-{index}"
 											type="text"
 											bind:value={link.caption}
+											maxlength="200"
 											placeholder="Keterangan gambar"
 											class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white transition outline-none focus:border-violet-400/50"
 										/>

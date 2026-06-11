@@ -1,3 +1,6 @@
+const MAX_NAME = 100;
+const MAX_EMAIL = 150;
+
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/db';
@@ -26,6 +29,9 @@ export const PATCH = async (event) => {
 		if (name.length < 2) {
 			return json({ message: 'Nama minimal 2 karakter.' }, { status: 400 });
 		}
+		if (name.length > MAX_NAME) {
+			return json({ message: 'Nama maksimal ' + MAX_NAME + ' karakter.' }, { status: 400 });
+		}
 		updates.name = name;
 	}
 
@@ -33,6 +39,9 @@ export const PATCH = async (event) => {
 		const email = payload.email.trim().toLowerCase();
 		if (!isValidEmail(email)) {
 			return json({ message: 'Email tidak valid.' }, { status: 400 });
+		}
+		if (email.length > MAX_EMAIL) {
+			return json({ message: 'Email maksimal ' + MAX_EMAIL + ' karakter.' }, { status: 400 });
 		}
 		const existing = await db
 			.select({ id: users.id })

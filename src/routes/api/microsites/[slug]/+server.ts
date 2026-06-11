@@ -1,3 +1,9 @@
+const MAX_TITLE = 150;
+const MAX_SLUG = 50;
+const MAX_URL = 255;
+const MAX_LABEL = 200;
+const MAX_CAPTION = 200;
+
 import { json } from '@sveltejs/kit';
 import { and, asc, eq } from 'drizzle-orm';
 import { db } from '$lib/db';
@@ -147,12 +153,16 @@ export const PATCH = async (event) => {
 	const updates: Record<string, unknown> = {};
 
 	if (typeof payload.title === 'string' && payload.title.trim()) {
-		updates.title = payload.title.trim();
+		const trimmed = payload.title.trim();
+		if (trimmed.length > MAX_TITLE) {
+			return json({ message: 'Judul microsite maksimal ' + MAX_TITLE + ' karakter.' }, { status: 400 });
+		}
+		updates.title = trimmed;
 	}
 	if (typeof payload.slug === 'string' && payload.slug.trim()) {
 		const newSlug = sanitizeSlug(payload.slug);
-		if (newSlug.length < 3 || newSlug.length > 50) {
-			return json({ message: 'Slug microsite harus 3-50 karakter.' }, { status: 400 });
+		if (newSlug.length < 3 || newSlug.length > MAX_SLUG) {
+			return json({ message: 'Slug microsite harus 3-' + MAX_SLUG + ' karakter.' }, { status: 400 });
 		}
 		const existing = await db
 			.select({ id: microsites.id })
@@ -174,32 +184,53 @@ export const PATCH = async (event) => {
 		updates.animation = payload.animation;
 	}
 	if ('avatarUrl' in payload) {
-		updates.avatarUrl =
-			typeof payload.avatarUrl === 'string' ? payload.avatarUrl.trim() || null : null;
+		const val = typeof payload.avatarUrl === 'string' ? payload.avatarUrl.trim() || null : null;
+		if (val && val.length > MAX_URL) {
+			return json({ message: 'URL Avatar maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+		}
+		updates.avatarUrl = val;
 	}
 	if ('headerBg' in payload) {
-		updates.headerBg =
-			typeof payload.headerBg === 'string' ? payload.headerBg.trim() || null : null;
+		const val = typeof payload.headerBg === 'string' ? payload.headerBg.trim() || null : null;
+		if (val && val.length > MAX_URL) {
+			return json({ message: 'Header BG URL maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+		}
+		updates.headerBg = val;
 	}
 	if ('linkTextColor' in payload) {
-		updates.linkTextColor =
-			typeof payload.linkTextColor === 'string' ? payload.linkTextColor.trim() || null : null;
+		const val = typeof payload.linkTextColor === 'string' ? payload.linkTextColor.trim() || null : null;
+		if (val && val.length > 20) {
+			return json({ message: 'Warna teks link maksimal 20 karakter.' }, { status: 400 });
+		}
+		updates.linkTextColor = val;
 	}
 	if ('facebookUrl' in payload) {
-		updates.facebookUrl =
-			typeof payload.facebookUrl === 'string' ? payload.facebookUrl.trim() || null : null;
+		const val = typeof payload.facebookUrl === 'string' ? payload.facebookUrl.trim() || null : null;
+		if (val && val.length > MAX_URL) {
+			return json({ message: 'URL Facebook maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+		}
+		updates.facebookUrl = val;
 	}
 	if ('websiteUrl' in payload) {
-		updates.websiteUrl =
-			typeof payload.websiteUrl === 'string' ? payload.websiteUrl.trim() || null : null;
+		const val = typeof payload.websiteUrl === 'string' ? payload.websiteUrl.trim() || null : null;
+		if (val && val.length > MAX_URL) {
+			return json({ message: 'URL Website maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+		}
+		updates.websiteUrl = val;
 	}
 	if ('youtubeUrl' in payload) {
-		updates.youtubeUrl =
-			typeof payload.youtubeUrl === 'string' ? payload.youtubeUrl.trim() || null : null;
+		const val = typeof payload.youtubeUrl === 'string' ? payload.youtubeUrl.trim() || null : null;
+		if (val && val.length > MAX_URL) {
+			return json({ message: 'URL YouTube maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+		}
+		updates.youtubeUrl = val;
 	}
 	if ('instagramUrl' in payload) {
-		updates.instagramUrl =
-			typeof payload.instagramUrl === 'string' ? payload.instagramUrl.trim() || null : null;
+		const val = typeof payload.instagramUrl === 'string' ? payload.instagramUrl.trim() || null : null;
+		if (val && val.length > MAX_URL) {
+			return json({ message: 'URL Instagram maksimal ' + MAX_URL + ' karakter.' }, { status: 400 });
+		}
+		updates.instagramUrl = val;
 	}
 
 	if (typeof payload.isActive === 'boolean') {
@@ -219,6 +250,17 @@ export const PATCH = async (event) => {
 	}
 
 	if (Array.isArray(payload.links)) {
+		// Validate links length
+		for (const [i, link] of payload.links.entries()) {
+			const label = typeof link.label === 'string' ? link.label.trim() : '';
+			const caption = typeof link.caption === 'string' ? link.caption.trim() : '';
+			if (label.length > MAX_LABEL) {
+				return json({ message: 'Label link ke-' + (i + 1) + ' maksimal ' + MAX_LABEL + ' karakter.' }, { status: 400 });
+			}
+			if (caption.length > MAX_CAPTION) {
+				return json({ message: 'Caption link ke-' + (i + 1) + ' maksimal ' + MAX_CAPTION + ' karakter.' }, { status: 400 });
+			}
+		}
 		await db.delete(micrositeLinks).where(eq(micrositeLinks.micrositeId, micrositeId));
 		const linkRows = payload.links
 			.map(

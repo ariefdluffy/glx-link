@@ -59,6 +59,7 @@
 					id="email"
 					type="email"
 					bind:value={email}
+					maxlength="150"
 					placeholder="nama@email.com"
 					class="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition outline-none focus:border-white/40"
 				/>

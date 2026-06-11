@@ -66,7 +66,7 @@ export const micrositeLinks = mysqlTable('microsite_links', {
 	id: int('id').autoincrement().primaryKey(),
 	micrositeId: int('microsite_id').notNull(),
 	type: varchar('type', { length: 20 }).default('link').notNull(),
-	label: varchar('label', { length: 100 }).default('').notNull(),
+	label: varchar('label', { length: 200 }).default('').notNull(),
 	url: text('url'),
 	icon: varchar('icon', { length: 50 }),
 	caption: varchar('caption', { length: 200 }),

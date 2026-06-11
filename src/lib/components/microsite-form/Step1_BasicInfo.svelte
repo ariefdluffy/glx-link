@@ -150,6 +150,7 @@
 						id="fb-url"
 						type="url"
 						bind:value={facebookUrl}
+						maxlength="255"
 						placeholder="https://facebook.com/..."
 						class="w-full border-none bg-transparent p-0 text-xs text-white outline-none placeholder:text-white/30"
 					/>
@@ -165,6 +166,7 @@
 						id="ig-url"
 						type="url"
 						bind:value={instagramUrl}
+						maxlength="255"
 						placeholder="https://instagram.com/..."
 						class="w-full border-none bg-transparent p-0 text-xs text-white outline-none placeholder:text-white/30"
 					/>
@@ -180,6 +182,7 @@
 						id="yt-url"
 						type="url"
 						bind:value={youtubeUrl}
+						maxlength="255"
 						placeholder="https://youtube.com/@..."
 						class="w-full border-none bg-transparent p-0 text-xs text-white outline-none placeholder:text-white/30"
 					/>
@@ -195,6 +198,7 @@
 						id="web-url"
 						type="url"
 						bind:value={websiteUrl}
+						maxlength="255"
 						placeholder="https://example.com"
 						class="w-full border-none bg-transparent p-0 text-xs text-white outline-none placeholder:text-white/30"
 					/>

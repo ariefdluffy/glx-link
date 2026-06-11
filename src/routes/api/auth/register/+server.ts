@@ -1,3 +1,7 @@
+const MAX_NAME = 100;
+const MAX_EMAIL = 150;
+const MAX_PASSWORD = 255;
+
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -63,9 +67,15 @@ export const POST = async (event) => {
 	if (!name || name.length < 2) {
 		return json({ message: 'Nama minimal 2 karakter.' }, { status: 400 });
 	}
+	if (name.length > MAX_NAME) {
+		return json({ message: 'Nama maksimal ' + MAX_NAME + ' karakter.' }, { status: 400 });
+	}
 
 	if (!email || !isValidEmail(email)) {
 		return json({ message: 'Email tidak valid.' }, { status: 400 });
+	}
+	if (email.length > MAX_EMAIL) {
+		return json({ message: 'Email maksimal ' + MAX_EMAIL + ' karakter.' }, { status: 400 });
 	}
 
 	if (!password || password.length < 8 || !hasLetterAndNumber(password)) {
@@ -73,6 +83,9 @@ export const POST = async (event) => {
 			{ message: 'Password minimal 8 karakter, wajib huruf dan angka.' },
 			{ status: 400 }
 		);
+	}
+	if (password.length > MAX_PASSWORD) {
+		return json({ message: 'Password maksimal ' + MAX_PASSWORD + ' karakter.' }, { status: 400 });
 	}
 
 	const existing = await db

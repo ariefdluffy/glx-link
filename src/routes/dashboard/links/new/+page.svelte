@@ -141,6 +141,7 @@
 							type="text"
 							placeholder="misal: tokokamu"
 							bind:value={customSlug}
+							maxlength="50"
 							class="w-full bg-transparent px-2 py-2 text-sm text-white outline-none"
 						/>
 					</div>

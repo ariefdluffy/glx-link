@@ -88,6 +88,7 @@
 					id="editSlug"
 					class="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pr-4 pl-22.5 font-mono text-sm text-white transition outline-none focus:border-violet-400/50 focus:bg-white/10"
 					bind:value={editSlug}
+					maxlength="50"
 					placeholder="slug-anda"
 				/>
 			</div>

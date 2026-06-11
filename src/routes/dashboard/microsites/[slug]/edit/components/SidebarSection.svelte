@@ -36,6 +36,7 @@
 				id="title"
 				type="text"
 				bind:value={title}
+				maxlength="150"
 				placeholder="e.g. My Links"
 				class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
 			/>
@@ -47,6 +48,7 @@
 				id="slug"
 				type="text"
 				bind:value={slug}
+				maxlength="50"
 				placeholder="e.g. mylinks"
 				class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
 			/>

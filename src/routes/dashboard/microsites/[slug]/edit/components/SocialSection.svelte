@@ -16,6 +16,7 @@
 			<input
 				type="url"
 				bind:value={facebookUrl}
+				maxlength="255"
 				placeholder="https://facebook.com/..."
 				class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
 			/>
@@ -26,6 +27,7 @@
 			<input
 				type="url"
 				bind:value={instagramUrl}
+				maxlength="255"
 				placeholder="https://instagram.com/..."
 				class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
 			/>
@@ -36,6 +38,7 @@
 			<input
 				type="url"
 				bind:value={youtubeUrl}
+				maxlength="255"
 				placeholder="https://youtube.com/..."
 				class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
 			/>
@@ -46,6 +49,7 @@
 			<input
 				type="url"
 				bind:value={websiteUrl}
+				maxlength="255"
 				placeholder="https://..."
 				class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-white/20 focus:outline-none"
 			/>

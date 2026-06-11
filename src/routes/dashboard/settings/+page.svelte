@@ -370,6 +370,7 @@
 							id="settings-name"
 							type="text"
 							bind:value={name}
+							maxlength="100"
 							class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pr-10 text-sm text-white transition outline-none focus:border-violet-500/50 focus:bg-violet-500/5"
 							placeholder="Nama kamu"
 						/>

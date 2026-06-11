@@ -1,3 +1,5 @@
+const MAX_EMAIL = 150;
+
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -19,6 +21,9 @@ export const POST = async (event) => {
 		.toLowerCase();
 	if (!email) {
 		return json({ message: 'Email wajib diisi.' }, { status: 400 });
+	}
+	if (email.length > MAX_EMAIL) {
+		return json({ message: 'Email maksimal ' + MAX_EMAIL + ' karakter.' }, { status: 400 });
 	}
 
 	const [user] = await db
