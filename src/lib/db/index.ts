@@ -4,7 +4,7 @@ import { DATABASE_URL } from '$env/static/private';
 
 const pool = mysql.createPool({
 	uri: DATABASE_URL,
-	connectionLimit: 10
+	connectionLimit: 20
 });
 
 export const db = drizzle(pool);
