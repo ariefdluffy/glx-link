@@ -4,6 +4,7 @@
 	import Toast from '$lib/components/toast/Toast.svelte';
 
 	const baseUrl = 'glx.my.id';
+	let role = $derived($page.data.role);
 	let plan = $derived($page.data.plan);
 	let isProActive = $derived($page.data.isProActive);
 
@@ -71,7 +72,7 @@
 <div class="mx-auto w-full max-w-4xl px-6 pb-16">
 	<div class="py-6">
 		<h1 class="font-display text-2xl font-semibold">Buat Shortlink Baru</h1>
-		<p class="text-sm text-white/60">Pilih slug acak atau gunakan custom untuk akun Pro.</p>
+		<p class="text-sm text-white/60">Pilih slug acak atau gunakan custom sendiri.</p>
 	</div>
 
 	<!-- Pro Expired Warning -->
@@ -123,10 +124,22 @@
 					<label class="flex items-center gap-2 text-xs text-white/60">
 						<input type="radio" bind:group={mode} value="custom" />
 						Slug custom
-						<span
-							class="rounded bg-linear-to-r from-violet-500 to-cyan-400 px-1.5 py-0.5 text-[10px] font-semibold text-white"
-							>Pro</span
-						>
+						{#if role === 'admin'}
+							<span
+								class="rounded bg-linear-to-r from-indigo-500 to-blue-400 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+								>Admin</span
+							>
+						{:else if plan === 'pro'}
+							<span
+								class="rounded bg-linear-to-r from-violet-500 to-cyan-400 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+								>Pro</span
+							>
+						{:else}
+							<span
+								class="rounded bg-linear-to-r from-gray-500 to-gray-400 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+								>Free</span
+							>
+						{/if}
 					</label>
 				</div>
 			</div>
