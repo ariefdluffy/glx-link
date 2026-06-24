@@ -155,7 +155,12 @@
 					<div>
 						<div class="font-display text-sm font-semibold">{data.userName ?? 'User'}</div>
 						<div class="text-xs text-white/50">
-							{#if data.plan === 'pro'}
+							{#if data.role === 'admin'}
+								<span
+									class="rounded-full bg-linear-to-r from-indigo-500 to-blue-400 px-2 py-0.5 text-[10px] font-semibold text-white"
+									>Admin</span
+								>
+							{:else if data.plan === 'pro'}
 								<span
 									class="rounded-full bg-linear-to-r from-violet-500 to-cyan-400 px-2 py-0.5 text-[10px] font-semibold text-white"
 									>GLX Pro</span
