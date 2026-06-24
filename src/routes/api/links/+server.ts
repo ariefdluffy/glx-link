@@ -108,13 +108,14 @@ export const POST = async (event) => {
 	// Check limit for Free users and Pro expired users
 	if (userId) {
 		const [user] = await db
-			.select({ plan: users.plan, planExpiresAt: users.planExpiresAt })
+			.select({ plan: users.plan, planExpiresAt: users.planExpiresAt, role: users.role })
 			.from(users)
 			.where(eq(users.id, userId))
 			.limit(1);
 
 		if (user) {
-			const isProActiveUser = isProActive(user.plan, user.planExpiresAt);
+			const isProActiveUser =
+				user.role === 'admin' ? true : isProActive(user.plan, user.planExpiresAt);
 
 			// Only limit Free users or expired Pro users
 			if (!isProActiveUser) {
@@ -136,12 +137,16 @@ export const POST = async (event) => {
 
 	if (userId && requestedSlug) {
 		const [userForCustom] = await db
-			.select({ plan: users.plan, planExpiresAt: users.planExpiresAt })
+			.select({ plan: users.plan, planExpiresAt: users.planExpiresAt, role: users.role })
 			.from(users)
 			.where(eq(users.id, userId))
 			.limit(1);
 
-		if (!userForCustom || !isProActive(userForCustom.plan, userForCustom.planExpiresAt)) {
+		const isCustomAllowed =
+			userForCustom?.role === 'admin' ||
+			(userForCustom ? isProActive(userForCustom.plan, userForCustom.planExpiresAt) : false);
+
+		if (!isCustomAllowed) {
 			return json(
 				{ message: 'Upgrade ke Pro atau perpanjang langganan untuk menggunakan custom slug.' },
 				{ status: 403 }
