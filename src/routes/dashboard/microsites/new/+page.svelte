@@ -9,6 +9,7 @@
 	import StepIndicator from '$lib/components/microsite-form/StepIndicator.svelte';
 	import Step1_BasicInfo from '$lib/components/microsite-form/Step1_BasicInfo.svelte';
 	import Step2_Appearance from '$lib/components/microsite-form/Step2_Appearance.svelte';
+	import { buildHeaderBg } from '$lib/utils/headerBg';
 	import Step3_Links from '$lib/components/microsite-form/Step3_Links.svelte';
 	import Step4_Review from '$lib/components/microsite-form/Step4_Review.svelte';
 
@@ -45,6 +46,8 @@
 	let isActive = $state(true);
 	let errorMessage = $state('');
 	let isLoading = $state(false);
+	let isUploadingAvatar = $state(false);
+	let isUploadingBg = $state(false);
 	let qrUrl = $state('');
 	let showQr = $state(false);
 	let copiedQrLink = $state(false);
@@ -167,22 +170,51 @@
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
-		const formData = new FormData();
-		formData.append('file', file);
-		const res = await fetch('/api/upload', { method: 'POST', body: formData });
-		const data = await res.json();
-		if (data.url) avatarUrl = data.url;
+		isUploadingAvatar = true;
+		errorMessage = '';
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const res = await fetch('/api/upload', { method: 'POST', body: formData });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok || !data.url) {
+				errorMessage = data?.message ?? 'Gagal upload foto profil.';
+				return;
+			}
+			avatarUrl = data.url;
+		} catch {
+			errorMessage = 'Gagal terhubung ke server.';
+		} finally {
+			isUploadingAvatar = false;
+			input.value = '';
+		}
 	};
 
 	const handleHeaderUpload = async (e: Event) => {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
-		const formData = new FormData();
-		formData.append('file', file);
-		const res = await fetch('/api/upload', { method: 'POST', body: formData });
-		const data = await res.json();
-		if (data.url) headerBg = `url(${data.url})`;
+		isUploadingBg = true;
+		errorMessage = '';
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const res = await fetch('/api/upload?type=background', {
+				method: 'POST',
+				body: formData
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok || !data.url) {
+				errorMessage = data?.message ?? 'Gagal upload background.';
+				return;
+			}
+			headerBg = buildHeaderBg({ url: data.url, posX: 50, posY: 50, zoom: 100 });
+		} catch {
+			errorMessage = 'Gagal terhubung ke server.';
+		} finally {
+			isUploadingBg = false;
+			input.value = '';
+		}
 	};
 
 	// Drag and drop handlers
@@ -601,6 +633,8 @@
 							bind:linkTextColor
 							bind:theme
 							bind:animation
+							avatarUploading={isUploadingAvatar}
+							headerUploading={isUploadingBg}
 							onAvatarUpload={handleAvatarUpload}
 							onHeaderUpload={handleHeaderUpload}
 						/>

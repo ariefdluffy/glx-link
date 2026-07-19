@@ -1,31 +1,33 @@
 import { json } from '@sveltejs/kit';
-import { writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { getSessionUserId } from '$lib/auth/session';
 import crypto from 'crypto';
 import { dev } from '$app/environment';
+import sharp from 'sharp';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_SIZE = 512 * 1024; // 512KB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // jpg/jpeg/png/webp
+// Backgrounds are auto-resized server-side, so allow larger uploads.
+const MAX_SIZE_DEFAULT = 512 * 1024; // 512KB (avatar, link images)
+const MAX_SIZE_BACKGROUND = 2 * 1024 * 1024; // 2MB (background header)
 const MAX_FILES_PER_USER = 20; // maksimal 20 file per user
+
+// Background normalization target: cap width, output jpeg.
+const BG_MAX_WIDTH = 1600;
+const BG_JPEG_QUALITY = 82;
 
 // Magic bytes untuk validasi tipe file
 const MAGIC_BYTES: Record<string, number[][]> = {
 	'image/jpeg': [[0xff, 0xd8, 0xff]],
 	'image/png': [[0x89, 0x50, 0x4e, 0x47]],
-	'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header (cek lebih lanjut)
-	'image/gif': [
-		[0x47, 0x49, 0x46, 0x38, 0x39, 0x61],
-		[0x47, 0x49, 0x46, 0x38, 0x37, 0x61]
-	]
+	'image/webp': [[0x52, 0x49, 0x46, 0x46]] // RIFF header (cek lebih lanjut)
 };
 
 // Map MIME → ekstensi (server-side, bukan dari client)
 const MIME_TO_EXT: Record<string, string> = {
 	'image/jpeg': 'jpeg',
 	'image/png': 'png',
-	'image/webp': 'webp',
-	'image/gif': 'gif'
+	'image/webp': 'webp'
 };
 
 /**
@@ -63,11 +65,14 @@ function detectMimeByMagicBytes(buffer: Buffer): string | null {
 // In production, use a persistent directory outside the build folder
 const UPLOAD_DIR = dev ? 'static/uploads' : process.env.UPLOAD_DIR || '/glx-link/uploads';
 
-export const POST = async ({ request, cookies }) => {
+export const POST = async ({ request, cookies, url }) => {
 	const userId = getSessionUserId(cookies);
 	if (!userId) {
 		return json({ message: 'Unauthorized' }, { status: 401 });
 	}
+
+	const isBackground = url.searchParams.get('type') === 'background';
+	const maxsize = isBackground ? MAX_SIZE_BACKGROUND : MAX_SIZE_DEFAULT;
 
 	const formData = await request.formData().catch(() => null);
 	if (!formData) {
@@ -79,33 +84,66 @@ export const POST = async ({ request, cookies }) => {
 		return json({ message: 'File tidak ditemukan.' }, { status: 400 });
 	}
 
-	// Validasi MIME dari client (layer 1)
-	if (!ALLOWED_TYPES.includes(file.type)) {
+	// Validasi MIME dari client (layer 1) — quick filter berdasarkan ekstensi.
+	// Catatan: file bisa ber-ekstensi .jpeg padahal isinya WebP. Magic bytes (layer 2)
+	// adalah sumber kebenaran, jadi di sini kita hanya menolak MIME yang jelas-jelas
+	// bukan gambar yang didukung.
+	if (file.type && !ALLOWED_TYPES.includes(file.type)) {
 		return json(
-			{ message: 'Tipe file tidak didukung. Gunakan JPG, PNG, WebP, atau GIF.' },
+			{ message: 'Tipe file tidak didukung. Gunakan JPG, JPEG, PNG, atau WebP.' },
 			{ status: 400 }
 		);
 	}
 
-	if (file.size > MAX_SIZE) {
-		return json({ message: 'File terlalu besar. Maksimal 512KB.' }, { status: 400 });
+	if (file.size > maxsize) {
+		return json(
+			{
+				message: `File terlalu besar. Maksimal ${isBackground ? '2MB' : '512KB'}.`
+			},
+			{ status: 400 }
+		);
 	}
 
-	// Validasi magic bytes (layer 2) — cek 8 byte pertama file
+	// Validasi magic bytes (layer 2) — cek isi file, BUKAN ekstensi client.
+	// Ini sumber kebenaran: file .jpeg yang isinya WebP akan terdeteksi sebagai webp.
 	const buffer = Buffer.from(await file.arrayBuffer());
 	const detectedMime = detectMimeByMagicBytes(buffer);
-	if (!detectedMime || detectedMime !== file.type) {
+	if (!detectedMime || !ALLOWED_TYPES.includes(detectedMime)) {
 		console.error(
-			`[Upload] MIME mismatch: client said ${file.type}, magic bytes say ${detectedMime || 'unknown'}, user #${userId}`
+			`[Upload] Magic bytes tidak dikenali: client=${file.type}, detected=${detectedMime || 'unknown'}, user #${userId}`
 		);
 		return json(
-			{ message: 'File tidak valid. MIME tidak sesuai dengan konten file.' },
+			{ message: 'File tidak valid atau bukan gambar yang didukung.' },
 			{ status: 400 }
 		);
 	}
 
-	// Ekstensi dari MIME yang sudah diverifikasi — bukan dari split client
-	const ext = MIME_TO_EXT[detectedMime] || 'jpeg';
+	let outputBuffer = buffer;
+	let ext = MIME_TO_EXT[detectedMime] || 'jpeg';
+
+	// Background: auto-resize + normalize to jpeg so any upload size works.
+	if (isBackground) {
+		try {
+			const pipeline = sharp(buffer, { animated: false }).rotate(); // auto-orient from EXIF
+			const meta = await pipeline.metadata();
+			let resizer = pipeline;
+			if ((meta.width ?? 0) > BG_MAX_WIDTH) {
+				resizer = resizer.resize({ width: BG_MAX_WIDTH, withoutEnlargement: true });
+			}
+			outputBuffer = await resizer
+				.flatten({ background: '#ffffff' }) // composite onto white (drop alpha for jpeg)
+				.jpeg({ quality: BG_JPEG_QUALITY, mozjpeg: true })
+				.toBuffer();
+			ext = 'jpeg';
+		} catch (err) {
+			console.error('[Upload] Background resize failed:', err);
+			return json(
+				{ message: 'Gagal memproses gambar. Coba file lain.' },
+				{ status: 400 }
+			);
+		}
+	}
+
 	const filename = `${userId}_${crypto.randomUUID()}.${ext}`;
 
 	// In dev, use relative path. In production, use absolute path
@@ -128,8 +166,8 @@ export const POST = async ({ request, cookies }) => {
 		// Jika tidak bisa baca dir, lanjut saja
 	}
 
-	writeFileSync(join(dir, filename), buffer);
+	writeFileSync(join(dir, filename), outputBuffer);
 
-	const url = `/uploads/${filename}`;
-	return json({ url });
+	const fileUrl = `/uploads/${filename}`;
+	return json({ url: fileUrl });
 };

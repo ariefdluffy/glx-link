@@ -21,6 +21,7 @@
 		iconOptions,
 		iconSvgPath
 	} from '$lib/types/microsite.edit';
+	import { buildHeaderBg } from '$lib/utils/headerBg';
 
 	// State
 	let title = $state('');
@@ -39,6 +40,8 @@
 	let errorMessage = $state('');
 	let isLoading = $state(false);
 	let dataLoaded = $state(false);
+	let isUploadingAvatar = $state(false);
+	let isUploadingBg = $state(false);
 	let links = $state<MicrositeLink[]>([]);
 
 	let qrUrl = $state('');
@@ -178,22 +181,51 @@
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
-		const formData = new FormData();
-		formData.append('file', file);
-		const res = await fetch('/api/upload', { method: 'POST', body: formData });
-		const data = await res.json();
-		if (data.url) avatarUrl = data.url;
+		isUploadingAvatar = true;
+		errorMessage = '';
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const res = await fetch('/api/upload', { method: 'POST', body: formData });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok || !data.url) {
+				errorMessage = data?.message ?? 'Gagal upload foto profil.';
+				return;
+			}
+			avatarUrl = data.url;
+		} catch {
+			errorMessage = 'Gagal terhubung ke server.';
+		} finally {
+			isUploadingAvatar = false;
+			input.value = '';
+		}
 	};
 
 	const handleHeaderUpload = async (e: Event) => {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
-		const formData = new FormData();
-		formData.append('file', file);
-		const res = await fetch('/api/upload', { method: 'POST', body: formData });
-		const data = await res.json();
-		if (data.url) headerBg = `url(${data.url})`;
+		isUploadingBg = true;
+		errorMessage = '';
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			const res = await fetch('/api/upload?type=background', {
+				method: 'POST',
+				body: formData
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok || !data.url) {
+				errorMessage = data?.message ?? 'Gagal upload background.';
+				return;
+			}
+			headerBg = buildHeaderBg({ url: data.url, posX: 50, posY: 50, zoom: 100 });
+		} catch {
+			errorMessage = 'Gagal terhubung ke server.';
+		} finally {
+			isUploadingBg = false;
+			input.value = '';
+		}
 	};
 
 	const addLink = (
@@ -583,6 +615,8 @@
 					{animations}
 					{links}
 					bind:expandedIndex
+					avatarUploading={isUploadingAvatar}
+					headerUploading={isUploadingBg}
 					onavatarupload={handleAvatarUpload}
 					onheaderupload={handleHeaderUpload}
 					onlinkanimationchange={handleLinkAnimationChange}

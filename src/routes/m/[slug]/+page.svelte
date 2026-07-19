@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import SocialIconRow from '$lib/components/SocialIconRow.svelte';
 	import { iconSvgPath as iconSvgPathFromLib } from '$lib/types/microsite.edit';
+	import { headerBgStyle } from '$lib/utils/headerBg';
 
 	let { data } = $props<{
 		microsite: {
@@ -33,11 +34,7 @@
 	}>();
 
 	const animation = $derived(data.microsite.animation ?? 'fade');
-	const bannerStyle = $derived(
-		data.microsite.headerBg
-			? `background: ${data.microsite.headerBg}; background-size: cover; background-position: center;`
-			: ''
-	);
+	const bannerStyle = $derived(headerBgStyle(data.microsite.headerBg));
 	const theme = $derived(data.microsite.theme ?? 'default');
 
 	// --- Cycle toggle (1min on / 1min off) ---

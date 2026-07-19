@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SocialIconRow from './SocialIconRow.svelte';
+	import { headerBgStyle } from '$lib/utils/headerBg';
 
 	interface MicrositeLink {
 		label: string;
@@ -120,9 +121,7 @@
 				: `anim-${animation}`
 	);
 
-	const bannerStyle = $derived(
-		headerBg ? `background: ${headerBg}; background-size: cover; background-position: center;` : ''
-	);
+	const bannerStyle = $derived(headerBgStyle(headerBg));
 
 	const cardClass = $derived(
 		theme === 'gradient'

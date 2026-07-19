@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { parseHeaderBg, buildHeaderBg, headerBgStyle } from '$lib/utils/headerBg';
+
 	let {
 		avatarUrl = $bindable(''),
 		headerBg = $bindable(''),
@@ -42,6 +44,8 @@
 		],
 		links = [],
 		expandedIndex = $bindable(null),
+		avatarUploading = false,
+		headerUploading = false,
 		onavatarupload = (e: Event) => {},
 		onheaderupload = (e: Event) => {},
 		onlinkanimationchange = (index: number, anim: string) => {}
@@ -55,10 +59,34 @@
 		animations: { value: string; label: string; icon: string }[];
 		links: { animation: string }[];
 		expandedIndex: number | null;
+		avatarUploading?: boolean;
+		headerUploading?: boolean;
 		onavatarupload: (e: Event) => void;
 		onheaderupload: (e: Event) => void;
 		onlinkanimationchange: (index: number, anim: string) => void;
 	}>();
+
+	// Parsed background parts (null = gradient / kosong).
+	const bgParts = $derived(parseHeaderBg(headerBg));
+	const bgStyle = $derived(headerBgStyle(headerBg));
+
+	const updateBgPos = (axis: 'x' | 'y', value: number) => {
+		if (!bgParts) return;
+		const next = { ...bgParts };
+		if (axis === 'x') next.posX = value;
+		else next.posY = value;
+		headerBg = buildHeaderBg(next);
+	};
+
+	const updateBgZoom = (value: number) => {
+		if (!bgParts) return;
+		headerBg = buildHeaderBg({ ...bgParts, zoom: value });
+	};
+
+	const resetBgAdjust = () => {
+		if (!bgParts) return;
+		headerBg = buildHeaderBg({ ...bgParts, posX: 50, posY: 50, zoom: 100 });
+	};
 
 	let animDropdownOpen = $state(false);
 	let themeDropdownOpen = $state(false);
@@ -122,7 +150,7 @@
 <div class="space-y-6">
 	<!-- Avatar Section -->
 	<div>
-		<label class="mb-3 block text-xs font-medium text-white/60">Foto Profil</label>
+		<label class="mb-3 block text-xs font-medium text-white/60" for="appearance-avatar-input"><span>Foto Profil</span></label>
 		<div class="flex items-center gap-4">
 			{#if avatarUrl}
 				<img
@@ -138,10 +166,11 @@
 			<div class="flex flex-wrap gap-2">
 				<button
 					type="button"
-					class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 transition hover:border-violet-400/50 hover:bg-violet-500/10"
+					disabled={avatarUploading}
+					class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 transition hover:border-violet-400/50 hover:bg-violet-500/10 disabled:cursor-not-allowed disabled:opacity-50"
 					onclick={() => document.getElementById('appearance-avatar-input')?.click()}
 				>
-					📤 Upload Foto
+					{avatarUploading ? '⏳ Mengunggah...' : '📤 Upload Foto'}
 				</button>
 				{#if avatarUrl}
 					<button
@@ -156,7 +185,7 @@
 			<input
 				id="appearance-avatar-input"
 				type="file"
-				accept="image/jpeg,image/png,image/jpg"
+				accept="image/jpeg,image/png,image/webp"
 				class="hidden"
 				onchange={onavatarupload}
 			/>
@@ -165,21 +194,22 @@
 
 	<!-- Header Background Section -->
 	<div>
-		<label class="mb-3 block text-xs font-medium text-white/60">Background Header</label>
+		<label class="mb-3 block text-xs font-medium text-white/60" for="appearance-header-input"><span>Background Header</span></label>
 		<div class="space-y-3">
 			{#if headerBg}
 				<div
 					class="h-32 w-full rounded-xl border border-white/20 shadow-lg"
-					style="background: {headerBg}; background-size: cover; background-position: center;"
+					style={bgStyle}
 				></div>
 			{/if}
 			<div class="flex flex-wrap gap-2">
 				<button
 					type="button"
-					class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 transition hover:border-violet-400/50 hover:bg-violet-500/10"
+					disabled={headerUploading}
+					class="rounded-full border border-white/15 px-4 py-2 text-xs text-white/70 transition hover:border-violet-400/50 hover:bg-violet-500/10 disabled:cursor-not-allowed disabled:opacity-50"
 					onclick={() => document.getElementById('appearance-header-input')?.click()}
 				>
-					📤 Upload Background
+					{headerUploading ? '⏳ Mengunggah...' : headerBg ? '🖼 Ganti Background' : '📤 Upload Background'}
 				</button>
 				{#if headerBg}
 					<button
@@ -191,23 +221,83 @@
 					</button>
 				{/if}
 			</div>
+			{#if bgParts}
+				<div class="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
+					<div class="flex items-center justify-between">
+						<span class="text-[10px] font-medium text-white/50">Atur Posisi & Zoom</span>
+						<button
+							type="button"
+							class="text-[10px] text-white/40 transition hover:text-white/70"
+							onclick={resetBgAdjust}
+						>
+							Reset
+						</button>
+					</div>
+					<div>
+						<div class="mb-1 flex justify-between text-[10px] text-white/40">
+							<span>Horizontal</span>
+							<span>{Math.round(bgParts.posX)}%</span>
+						</div>
+						<input
+							type="range"
+							min="0"
+							max="100"
+							step="1"
+							value={bgParts.posX}
+							oninput={(e) => updateBgPos('x', Number(e.currentTarget.value))}
+							class="w-full accent-violet-500"
+						/>
+					</div>
+					<div>
+						<div class="mb-1 flex justify-between text-[10px] text-white/40">
+							<span>Vertikal</span>
+							<span>{Math.round(bgParts.posY)}%</span>
+						</div>
+						<input
+							type="range"
+							min="0"
+							max="100"
+							step="1"
+							value={bgParts.posY}
+							oninput={(e) => updateBgPos('y', Number(e.currentTarget.value))}
+							class="w-full accent-violet-500"
+						/>
+					</div>
+					<div>
+						<div class="mb-1 flex justify-between text-[10px] text-white/40">
+							<span>Zoom</span>
+							<span>{Math.round(bgParts.zoom)}%</span>
+						</div>
+						<input
+							type="range"
+							min="100"
+							max="400"
+							step="5"
+							value={bgParts.zoom}
+							oninput={(e) => updateBgZoom(Number(e.currentTarget.value))}
+							class="w-full accent-violet-500"
+						/>
+					</div>
+				</div>
+			{/if}
 			<input
 				id="appearance-header-input"
 				type="file"
-				accept="image/jpeg,image/png,image/jpg"
+				accept="image/jpeg,image/png,image/webp"
 				class="hidden"
 				onchange={onheaderupload}
 			/>
-			<p class="text-[10px] text-white/40">Rekomendasi ukuran: 1200x400px</p>
+			<p class="text-[10px] text-white/40">Apapun ukurannya otomatis dikecilkan backend. Atur posisi & zoom di atas.</p>
 		</div>
 	</div>
 
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		<!-- Theme Selector -->
 		<div>
-			<label class="mb-3 block text-xs font-medium text-white/60">Tema</label>
+			<label class="mb-3 block text-xs font-medium text-white/60" for="appearance-theme-button"><span>Tema</span></label>
 			<div class="relative" bind:this={themeDropdownEl}>
 				<button
+					id="appearance-theme-button"
 					type="button"
 					class="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:border-white/30"
 					onclick={toggleThemeDropdown}
@@ -262,9 +352,10 @@
 
 		<!-- Animation Selector -->
 		<div>
-			<label class="mb-3 block text-xs font-medium text-white/60">Animasi Default</label>
+			<label class="mb-3 block text-xs font-medium text-white/60" for="appearance-anim-button"><span>Animasi Default</span></label>
 			<div class="relative" bind:this={animDropdownEl}>
 				<button
+					id="appearance-anim-button"
 					type="button"
 					class="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:border-white/30"
 					onclick={toggleAnimDropdown}

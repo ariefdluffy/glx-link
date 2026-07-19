@@ -5,6 +5,7 @@
 	import MinimalTheme from '$lib/components/themes/MinimalTheme.svelte';
 	import NeonTheme from '$lib/components/themes/NeonTheme.svelte';
 	import TechTheme from '$lib/components/themes/TechTheme.svelte';
+	import { headerBgStyle } from '$lib/utils/headerBg';
 
 	let { data } = $props<{
 		microsite: {
@@ -31,7 +32,7 @@
 	const theme = (data.microsite.theme || 'default') as keyof typeof themes;
 	const animation = data.microsite.animation ?? 'fade';
 	const headerBg = data.microsite.headerBg ?? '';
-	const headerStyle = headerBg ? `background: ${headerBg};` : '';
+	const headerStyle = $derived(headerBgStyle(headerBg));
 	const animClass = animation === 'none' ? '' : `anim-${animation}`;
 
 	const getAnimClass = (linkAnim: string | null | undefined) => {

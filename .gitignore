@@ -35,3 +35,6 @@ scripts/
 nul
 
 ecosystem.config.cjs
+
+# Local upload test files
+static/uploads/
